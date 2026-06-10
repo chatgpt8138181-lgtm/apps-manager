@@ -5,6 +5,8 @@ deployment:
     - /bin/mkdir -p $DEPLOYPATH
     - /bin/cp -R public/* $DEPLOYPATH
     - /bin/cp public/.htaccess $DEPLOYPATH
-    - /bin/cp -R config $DEPLOYPATH
+    - /bin/mkdir -p $DEPLOYPATH/config
+    - /bin/cp config/.htaccess $DEPLOYPATH/config/.htaccess
+    - /usr/bin/test -f $DEPLOYPATH/config/database.php || /bin/cp config/database.php $DEPLOYPATH/config/database.php
     - /bin/cp -R includes $DEPLOYPATH
     - /bin/cp -R database $DEPLOYPATH
