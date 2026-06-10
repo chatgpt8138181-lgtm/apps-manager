@@ -1,0 +1,9 @@
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+</IfModule>
+
+<FilesMatch "\.(env|ini|log|sql|bak|config)$">
+    Require all denied
+</FilesMatch>
