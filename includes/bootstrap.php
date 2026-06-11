@@ -18,6 +18,16 @@ function current_page(): string
     return basename($_SERVER['SCRIPT_NAME'] ?? 'dashboard.php');
 }
 
+function asset_version(string $path): int
+{
+    $root = app_root_path();
+    $publicAsset = $root . '/public/' . ltrim($path, '/');
+    $directAsset = $root . '/' . ltrim($path, '/');
+    $file = is_file($publicAsset) ? $publicAsset : $directAsset;
+
+    return is_file($file) ? (int) filemtime($file) : time();
+}
+
 function page_start(string $title): void
 {
     $nav = [
@@ -34,7 +44,7 @@ function page_start(string $title): void
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title><?= h($title) ?> | App Manager</title>
-        <link rel="stylesheet" href="assets/css/style.css">
+        <link rel="stylesheet" href="assets/css/style.css?v=<?= asset_version('assets/css/style.css') ?>">
     </head>
     <body>
     <div class="app-shell">
