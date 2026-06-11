@@ -28,14 +28,21 @@ page_start('Dashboard');
             <h2><?= h($category['name']) ?> (<?= (int) ($counts[(int) $category['id']] ?? 0) ?>)</h2>
         </div>
         <div class="table-wrap">
-            <table>
+            <table class="category-table">
+                <colgroup>
+                    <col class="col-id">
+                    <col class="col-icon">
+                    <col class="col-name">
+                    <col class="col-loading">
+                    <col class="col-ready">
+                </colgroup>
                 <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>App Icon</th>
-                    <th>App Name</th>
-                    <th>Loading</th>
-                    <th>Ready Loading</th>
+                    <th class="col-id">ID</th>
+                    <th class="col-icon">App Icon</th>
+                    <th class="col-name">App Name</th>
+                    <th class="col-loading">Loading</th>
+                    <th class="col-ready">Ready Loading</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -44,11 +51,11 @@ page_start('Dashboard');
                 <?php endif; ?>
                 <?php foreach ($categoryApps as $app): ?>
                     <tr>
-                        <td><?= (int) $app['display_id'] ?></td>
-                        <td><img class="app-icon" src="<?= h(app_icon_url($app['icon_path'])) ?>" alt=""></td>
-                        <td><?= h($app['app_name']) ?></td>
-                        <td><?= render_status_badge($app['loading_status']) ?></td>
-                        <td><?= render_status_badge($app['ready_loading_status']) ?></td>
+                        <td class="col-id"><?= (int) $app['display_id'] ?></td>
+                        <td class="app-icon-cell"><img class="app-icon" src="<?= h(app_icon_url($app['icon_path'])) ?>" alt=""></td>
+                        <td class="col-name"><?= h($app['app_name']) ?></td>
+                        <td class="status-cell"><?= render_status_badge($app['loading_status']) ?></td>
+                        <td class="ready-cell"><?= render_status_badge($app['ready_loading_status']) ?></td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
