@@ -210,6 +210,8 @@ th {
 
 .category-table .col-id,
 .category-table .col-icon,
+.category-table .col-loading,
+.category-table .col-ready,
 .category-table .app-icon-cell,
 .category-table .status-cell,
 .category-table .ready-cell {
