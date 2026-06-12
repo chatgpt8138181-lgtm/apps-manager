@@ -542,16 +542,6 @@ select {
         grid-template-columns: 1fr;
     }
 
-    .dashboard-filter,
-    .dashboard-filter .inline-form,
-    .dashboard-filter label {
-        width: 100%;
-    }
-
-    .dashboard-filter .inline-form {
-        grid-template-columns: 1fr;
-    }
-
     .topbar {
         align-items: flex-start;
         flex-direction: column;
@@ -661,6 +651,16 @@ select {
 
     .bulk-actions {
         justify-content: stretch;
+    }
+
+    .dashboard-filter,
+    .dashboard-filter .inline-form,
+    .dashboard-filter label {
+        width: 100%;
+    }
+
+    .dashboard-filter .inline-form {
+        grid-template-columns: 1fr;
     }
 
     .login-card {
