@@ -50,13 +50,21 @@ function page_start(string $title): void
     <body>
     <div class="app-shell">
         <aside class="sidebar">
-            <a class="brand" href="dashboard.php">App Manager</a>
-            <nav>
-                <?php foreach ($nav as $file => $label): ?>
-                    <a class="<?= current_page() === $file ? 'active' : '' ?>" href="<?= h($file) ?>"><?= h($label) ?></a>
-                <?php endforeach; ?>
-            </nav>
-            <a class="logout" href="logout.php">Logout</a>
+            <div class="sidebar-head">
+                <a class="brand" href="dashboard.php">App Manager</a>
+                <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu">
+                    <span class="menu-icon" aria-hidden="true"></span>
+                    <span>Menu</span>
+                </button>
+            </div>
+            <div class="menu-panel" id="mobile-menu">
+                <nav>
+                    <?php foreach ($nav as $file => $label): ?>
+                        <a class="<?= current_page() === $file ? 'active' : '' ?>" href="<?= h($file) ?>"><?= h($label) ?></a>
+                    <?php endforeach; ?>
+                </nav>
+                <a class="logout" href="logout.php">Logout</a>
+            </div>
         </aside>
         <main class="content">
             <header class="topbar">
@@ -77,6 +85,20 @@ function page_end(): void
     ?>
         </main>
     </div>
+    <script>
+    (() => {
+        const menuToggle = document.querySelector('.menu-toggle');
+        const menuPanel = document.querySelector('.menu-panel');
+
+        if (menuToggle && menuPanel) {
+            menuToggle.addEventListener('click', () => {
+                const isOpen = menuToggle.getAttribute('aria-expanded') === 'true';
+                menuToggle.setAttribute('aria-expanded', String(!isOpen));
+                menuPanel.classList.toggle('open', !isOpen);
+            });
+        }
+    })();
+    </script>
     </body>
     </html>
     <?php
