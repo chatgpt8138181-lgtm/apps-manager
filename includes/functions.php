@@ -79,6 +79,100 @@ function category_counts(): array
     return $counts;
 }
 
+function all_admins(): array
+{
+    $stmt = db()->query('SELECT id, username, created_at FROM admins ORDER BY created_at ASC, id ASC');
+    return $stmt->fetchAll();
+}
+
+function admin_count(): int
+{
+    $stmt = db()->query('SELECT COUNT(*) FROM admins');
+    return (int) $stmt->fetchColumn();
+}
+
+function validate_admin_username(string $username): string
+{
+    $username = trim($username);
+
+    if (!preg_match('/^[A-Za-z0-9_.-]{3,100}$/', $username)) {
+        throw new RuntimeException('Username must be 3 to 100 characters and use letters, numbers, dot, dash, or underscore.');
+    }
+
+    return $username;
+}
+
+function validate_admin_password(string $password, string $confirm): string
+{
+    if ($password !== $confirm) {
+        throw new RuntimeException('Passwords do not match.');
+    }
+
+    if (strlen($password) < 8) {
+        throw new RuntimeException('Password must be at least 8 characters.');
+    }
+
+    return $password;
+}
+
+function add_admin_user(string $username, string $password, string $confirm): void
+{
+    $username = validate_admin_username($username);
+    $password = validate_admin_password($password, $confirm);
+
+    $existing = db()->prepare('SELECT id FROM admins WHERE username = ? LIMIT 1');
+    $existing->execute([$username]);
+    if ($existing->fetch()) {
+        throw new RuntimeException('That admin username already exists.');
+    }
+
+    $stmt = db()->prepare('INSERT INTO admins (username, password_hash) VALUES (?, ?)');
+    $stmt->execute([$username, password_hash($password, PASSWORD_DEFAULT)]);
+}
+
+function update_admin_password(int $adminId, string $password, string $confirm): void
+{
+    if ($adminId <= 0) {
+        throw new RuntimeException('Admin user was not found.');
+    }
+
+    $password = validate_admin_password($password, $confirm);
+
+    $stmt = db()->prepare('UPDATE admins SET password_hash = ? WHERE id = ?');
+    $stmt->execute([password_hash($password, PASSWORD_DEFAULT), $adminId]);
+
+    if ($stmt->rowCount() < 1) {
+        throw new RuntimeException('Admin user was not found.');
+    }
+}
+
+function change_own_admin_password(int $adminId, string $currentPassword, string $newPassword, string $confirm): void
+{
+    $stmt = db()->prepare('SELECT password_hash FROM admins WHERE id = ? LIMIT 1');
+    $stmt->execute([$adminId]);
+    $admin = $stmt->fetch();
+
+    if (!$admin || !password_verify($currentPassword, $admin['password_hash'])) {
+        throw new RuntimeException('Current password is incorrect.');
+    }
+
+    update_admin_password($adminId, $newPassword, $confirm);
+}
+
+function delete_admin_user(int $adminId, int $currentAdminId): void
+{
+    if ($adminId === $currentAdminId) {
+        throw new RuntimeException('You cannot delete your own admin account.');
+    }
+
+    if (admin_count() <= 1) {
+        throw new RuntimeException('At least one admin account is required.');
+    }
+
+    $stmt = db()->prepare('DELETE FROM admins WHERE id = ?');
+    $stmt->execute([$adminId]);
+}
+
 function add_category(string $name): void
 {
     $name = trim($name);

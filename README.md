@@ -5,6 +5,7 @@ A cPanel-compatible PHP 8.x and MySQL/MariaDB version of the Google Sheets App M
 ## Features
 
 - Admin login with hashed password and session protection
+- Admin user management for adding admins, resetting other admin passwords, deleting other admins, and changing your own password
 - CSRF protection on all write forms
 - Category add/delete with live app counts
 - App add/edit/delete with secure icon uploads
@@ -30,6 +31,7 @@ public/dashboard.php
 public/add-app.php
 public/search.php
 public/categories.php
+public/admins.php
 public/assets/css/style.css
 public/uploads/apps/
 database/schema.sql
@@ -113,24 +115,14 @@ Set folder permissions to `755`. Uploaded image files should be `644`. The inclu
 
 Change this immediately after installation.
 
-## Change Admin Password
+## Admin Controls
 
-Create a new password hash with a temporary PHP file:
+After signing in, open **Admins** from the sidebar.
 
-```php
-<?php
-echo password_hash('your_new_password', PASSWORD_DEFAULT);
-```
-
-Open it once in the browser, copy the hash, then delete the temporary file.
-
-Update the database in phpMyAdmin:
-
-```sql
-UPDATE admins
-SET password_hash = 'paste_the_new_hash_here'
-WHERE username = 'admin';
-```
+- Add new admin users with a username and password.
+- Change your own password by entering your current password.
+- Reset passwords for other admin users.
+- Delete other admin users. Your own account is protected from self-delete.
 
 ## Usage
 
@@ -139,7 +131,8 @@ WHERE username = 'admin';
 3. Use **Categories** to add or delete categories.
 4. Use **Add App** to create apps and upload icons.
 5. Use **Search/Edit** to search by name or category display ID, update one app, update all visible results, or delete apps.
-6. Use **Dashboard** to view all categories and app counts.
+6. Use **Admins** to manage admin access and change passwords.
+7. Use **Dashboard** to view categories and app counts.
 
 ## Display ID Logic
 

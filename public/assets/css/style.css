@@ -102,6 +102,13 @@ h2 { font-size: 20px; }
     padding: 9px 14px;
 }
 
+.inline-pill {
+    display: inline-block;
+    font-size: 12px;
+    margin-left: 8px;
+    padding: 5px 9px;
+}
+
 .stats-grid {
     display: grid;
     gap: 16px;
@@ -138,6 +145,16 @@ h2 { font-size: 20px; }
 .form-panel {
     margin-bottom: 20px;
     padding: 18px;
+}
+
+.admin-grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-grid h2 {
+    margin-bottom: 16px;
 }
 
 .panel-heading {
@@ -191,6 +208,10 @@ table {
     border-collapse: collapse;
     min-width: 720px;
     width: 100%;
+}
+
+.admin-table {
+    min-width: 920px;
 }
 
 .category-table {
@@ -314,6 +335,13 @@ select {
     grid-template-columns: 1fr auto;
 }
 
+.inline-reset-form {
+    align-items: center;
+    display: grid;
+    gap: 8px;
+    grid-template-columns: minmax(150px, 1fr) minmax(120px, 1fr) auto;
+}
+
 .btn {
     align-items: center;
     background: #edf2f7;
@@ -425,9 +453,15 @@ select {
     }
 
     .stats-grid,
+    .admin-grid,
     .form-row,
     .search-form,
     .inline-form {
+        grid-template-columns: 1fr;
+    }
+
+    .inline-reset-form {
+        align-items: stretch;
         grid-template-columns: 1fr;
     }
 

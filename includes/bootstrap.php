@@ -35,6 +35,7 @@ function page_start(string $title): void
         'add-app.php' => 'Add App',
         'search.php' => 'Search/Edit',
         'categories.php' => 'Categories',
+        'admins.php' => 'Admins',
     ];
     $flash = flash();
     ?>
