@@ -166,7 +166,20 @@ h2 { font-size: 20px; }
 }
 
 .dashboard-filter {
-    margin-bottom: 20px;
+    align-items: flex-end;
+    display: flex;
+    margin-bottom: 16px;
+}
+
+.dashboard-filter .inline-form {
+    align-items: end;
+    display: grid;
+    gap: 10px;
+    grid-template-columns: minmax(220px, 360px) auto;
+}
+
+.dashboard-filter label {
+    max-width: 360px;
 }
 
 .category-summary-grid {

@@ -34,7 +34,7 @@ page_start('Dashboard');
     <div class="stat"><span><?= count(array_filter($apps, fn($app) => $app['ready_loading_status'] === 'Ready')) ?></span><p>Ready Apps</p></div>
 </section>
 
-<section class="form-panel dashboard-filter">
+<section class="dashboard-filter">
     <form method="get" class="inline-form">
         <label>Categories
             <select name="category_id" onchange="this.form.submit()">
