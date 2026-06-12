@@ -148,6 +148,35 @@ h2 { font-size: 20px; }
     margin-bottom: 14px;
 }
 
+.dashboard-filter {
+    margin-bottom: 20px;
+}
+
+.category-summary-grid {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.category-summary {
+    align-items: center;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+}
+
+.category-summary span {
+    overflow-wrap: anywhere;
+}
+
+.category-summary strong {
+    color: var(--primary);
+    font-size: 20px;
+}
+
 .hint,
 small {
     color: var(--muted);
