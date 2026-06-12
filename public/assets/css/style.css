@@ -169,17 +169,19 @@ h2 { font-size: 20px; }
     align-items: flex-end;
     display: flex;
     margin-bottom: 16px;
+    max-width: 100%;
+    width: fit-content;
 }
 
 .dashboard-filter .inline-form {
     align-items: end;
     display: grid;
     gap: 10px;
-    grid-template-columns: minmax(220px, 360px) auto;
+    grid-template-columns: minmax(220px, 280px) auto;
 }
 
 .dashboard-filter label {
-    max-width: 360px;
+    max-width: 280px;
 }
 
 .category-summary-grid {
@@ -475,6 +477,16 @@ select {
 
     .inline-reset-form {
         align-items: stretch;
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-filter,
+    .dashboard-filter .inline-form,
+    .dashboard-filter label {
+        width: 100%;
+    }
+
+    .dashboard-filter .inline-form {
         grid-template-columns: 1fr;
     }
 
