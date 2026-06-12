@@ -58,6 +58,14 @@ img {
     gap: 8px;
 }
 
+.sidebar nav {
+    scrollbar-width: none;
+}
+
+.sidebar nav::-webkit-scrollbar {
+    display: none;
+}
+
 .sidebar nav a,
 .logout {
     border-radius: 8px;
