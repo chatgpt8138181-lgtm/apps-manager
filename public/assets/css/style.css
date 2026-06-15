@@ -249,11 +249,11 @@ h2 { font-size: 20px; }
     align-items: end;
     display: grid;
     gap: 10px;
-    grid-template-columns: minmax(220px, 280px) auto;
+    grid-template-columns: minmax(240px, 320px);
 }
 
 .dashboard-filter label {
-    max-width: 280px;
+    max-width: 320px;
 }
 
 .category-summary-grid {

@@ -137,7 +137,6 @@ page_start('Dashboard');
                 <?php endforeach; ?>
             </select>
         </label>
-        <button class="btn primary" type="submit">Show</button>
     </form>
 </section>
 
