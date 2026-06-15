@@ -3,75 +3,34 @@ $root = is_file(__DIR__ . '/../includes/bootstrap.php') ? dirname(__DIR__) : __D
 require_once $root . '/includes/bootstrap.php';
 require_login();
 
-$categories = all_categories();
-$counts = category_counts();
-$apps = sorted_apps();
-$selectedCategoryParam = (string) ($_GET['category_id'] ?? '');
-$showAllSummary = $selectedCategoryParam === 'all';
-$selectedCategoryId = $showAllSummary ? 0 : (int) $selectedCategoryParam;
-$selectedCategory = $showAllSummary ? null : ($categories[0] ?? null);
+function selected_dashboard_category(array $categories, string $categoryParam): array
+{
+    $showAll = $categoryParam === 'all';
+    $selectedCategory = $showAll ? null : ($categories[0] ?? null);
+    $selectedCategoryId = $showAll ? 0 : (int) $categoryParam;
 
-if (!$showAllSummary) {
-    foreach ($categories as $category) {
-        if ((int) $category['id'] === $selectedCategoryId) {
-            $selectedCategory = $category;
-            break;
+    if (!$showAll) {
+        foreach ($categories as $category) {
+            if ((int) $category['id'] === $selectedCategoryId) {
+                $selectedCategory = $category;
+                break;
+            }
         }
     }
+
+    return [$showAll, $selectedCategory];
 }
 
-$selectedCategoryId = $selectedCategory ? (int) $selectedCategory['id'] : 0;
-$categoryApps = $selectedCategoryId > 0 ? sorted_apps($selectedCategoryId) : [];
-$activeCount = count(array_filter($categoryApps, fn($app) => $app['loading_status'] === 'Active'));
-$readyCount = count(array_filter($categoryApps, fn($app) => $app['ready_loading_status'] === 'Ready'));
-
-page_start('Dashboard');
-?>
-<section class="stats-grid">
-    <div class="stat"><span><?= count($categories) ?></span><p>Categories</p></div>
-    <div class="stat"><span><?= count($apps) ?></span><p>Total Apps</p></div>
-    <div class="stat"><span><?= count(array_filter($apps, fn($app) => $app['loading_status'] === 'Active')) ?></span><p>Active Apps</p></div>
-    <div class="stat"><span><?= count(array_filter($apps, fn($app) => $app['ready_loading_status'] === 'Ready')) ?></span><p>Ready Apps</p></div>
-</section>
-
-<section class="dashboard-filter">
-    <form method="get" class="inline-form">
-        <label>Categories
-            <select name="category_id" onchange="this.form.submit()">
-                <option value="all" <?= $showAllSummary ? 'selected' : '' ?>>All Categories</option>
-                <?php foreach ($categories as $category): ?>
-                    <option value="<?= (int) $category['id'] ?>" <?= !$showAllSummary && $selectedCategoryId === (int) $category['id'] ? 'selected' : '' ?>>
-                        <?= h($category['name']) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </label>
-        <button class="btn primary" type="submit">Show</button>
-    </form>
-</section>
-
-<?php if ($showAllSummary): ?>
+function render_category_table(array $category, array $counts): void
+{
+    $categoryId = (int) $category['id'];
+    $categoryApps = sorted_apps($categoryId);
+    $activeCount = count(array_filter($categoryApps, fn($app) => $app['loading_status'] === 'Active'));
+    $readyCount = count(array_filter($categoryApps, fn($app) => $app['ready_loading_status'] === 'Ready'));
+    ?>
     <section class="panel">
         <div class="panel-heading">
-            <h2>All Categories</h2>
-        </div>
-        <div class="category-summary-grid">
-            <?php foreach ($categories as $category): ?>
-                <a class="category-summary" href="dashboard.php?category_id=<?= (int) $category['id'] ?>">
-                    <span><?= h($category['name']) ?></span>
-                    <strong><?= (int) ($counts[(int) $category['id']] ?? 0) ?></strong>
-                </a>
-            <?php endforeach; ?>
-        </div>
-    </section>
-<?php elseif (!$selectedCategory): ?>
-    <section class="panel">
-        <p class="empty block">No categories found.</p>
-    </section>
-<?php else: ?>
-    <section class="panel">
-        <div class="panel-heading">
-            <h2><?= h($selectedCategory['name']) ?> (<?= (int) ($counts[$selectedCategoryId] ?? 0) ?>)</h2>
+            <h2><?= h($category['name']) ?> (<?= (int) ($counts[$categoryId] ?? 0) ?>)</h2>
         </div>
         <div class="table-wrap">
             <table class="category-table">
@@ -108,5 +67,126 @@ page_start('Dashboard');
             </table>
         </div>
     </section>
-<?php endif; ?>
+    <?php
+}
+
+function render_dashboard_category_content(array $categories, array $counts, bool $showAll, ?array $selectedCategory): void
+{
+    if (!$categories) {
+        ?>
+        <section class="panel">
+            <p class="empty block">No categories found.</p>
+        </section>
+        <?php
+        return;
+    }
+
+    if ($showAll) {
+        ?>
+        <div class="category-panels">
+            <?php foreach ($categories as $category): ?>
+                <?php render_category_table($category, $counts); ?>
+            <?php endforeach; ?>
+        </div>
+        <?php
+        return;
+    }
+
+    if (!$selectedCategory) {
+        ?>
+        <section class="panel">
+            <p class="empty block">No categories found.</p>
+        </section>
+        <?php
+        return;
+    }
+
+    render_category_table($selectedCategory, $counts);
+}
+
+$categories = all_categories();
+$counts = category_counts();
+$apps = sorted_apps();
+$selectedCategoryParam = (string) ($_GET['category_id'] ?? '');
+[$showAll, $selectedCategory] = selected_dashboard_category($categories, $selectedCategoryParam);
+$selectedCategoryId = $selectedCategory ? (int) $selectedCategory['id'] : 0;
+
+if (($_GET['partial'] ?? '') === 'category') {
+    render_dashboard_category_content($categories, $counts, $showAll, $selectedCategory);
+    exit;
+}
+
+page_start('Dashboard');
+?>
+<section class="stats-grid">
+    <div class="stat"><span><?= count($categories) ?></span><p>Categories</p></div>
+    <div class="stat"><span><?= count($apps) ?></span><p>Total Apps</p></div>
+    <div class="stat"><span><?= count(array_filter($apps, fn($app) => $app['loading_status'] === 'Active')) ?></span><p>Active Apps</p></div>
+    <div class="stat"><span><?= count(array_filter($apps, fn($app) => $app['ready_loading_status'] === 'Ready')) ?></span><p>Ready Apps</p></div>
+</section>
+
+<section class="dashboard-filter">
+    <form method="get" class="inline-form" id="dashboard-category-form">
+        <label>Categories
+            <select name="category_id" id="dashboard-category-select">
+                <option value="all" <?= $showAll ? 'selected' : '' ?>>All Categories</option>
+                <?php foreach ($categories as $category): ?>
+                    <option value="<?= (int) $category['id'] ?>" <?= !$showAll && $selectedCategoryId === (int) $category['id'] ? 'selected' : '' ?>>
+                        <?= h($category['name']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <button class="btn primary" type="submit">Show</button>
+    </form>
+</section>
+
+<div id="category-results" class="category-results" aria-live="polite">
+    <?php render_dashboard_category_content($categories, $counts, $showAll, $selectedCategory); ?>
+</div>
+
+<script>
+(() => {
+    const form = document.getElementById('dashboard-category-form');
+    const select = document.getElementById('dashboard-category-select');
+    const results = document.getElementById('category-results');
+
+    if (!form || !select || !results || !window.fetch || !window.history) {
+        return;
+    }
+
+    const loadCategory = async () => {
+        const params = new URLSearchParams(new FormData(form));
+        const pageUrl = `dashboard.php?${params.toString()}`;
+        params.set('partial', 'category');
+
+        results.classList.add('loading');
+        results.setAttribute('aria-busy', 'true');
+
+        try {
+            const response = await fetch(`dashboard.php?${params.toString()}`, {
+                headers: {'X-Requested-With': 'fetch'}
+            });
+
+            if (!response.ok) {
+                throw new Error('Category request failed.');
+            }
+
+            results.innerHTML = await response.text();
+            window.history.pushState({}, '', pageUrl);
+        } catch (error) {
+            window.location.href = pageUrl;
+        } finally {
+            results.classList.remove('loading');
+            results.setAttribute('aria-busy', 'false');
+        }
+    };
+
+    select.addEventListener('change', loadCategory);
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        loadCategory();
+    });
+})();
+</script>
 <?php page_end(); ?>

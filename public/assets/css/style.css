@@ -281,6 +281,24 @@ h2 { font-size: 20px; }
     font-size: 20px;
 }
 
+.category-results {
+    transition: opacity 0.18s ease;
+}
+
+.category-results.loading {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+.category-panels {
+    display: grid;
+    gap: 20px;
+}
+
+.category-panels .panel {
+    margin-bottom: 0;
+}
+
 .hint,
 small {
     color: var(--muted);
@@ -713,6 +731,10 @@ select {
 
     .category-summary-grid {
         grid-template-columns: 1fr;
+    }
+
+    .category-panels {
+        gap: 16px;
     }
 
     .category-table {
