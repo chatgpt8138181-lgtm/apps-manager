@@ -281,11 +281,13 @@ h2 { font-size: 20px; }
     font-size: 20px;
 }
 
-.category-results {
+.category-results,
+.async-results {
     transition: opacity 0.18s ease;
 }
 
-.category-results.loading {
+.category-results.loading,
+.async-results.loading {
     opacity: 0.55;
     pointer-events: none;
 }
