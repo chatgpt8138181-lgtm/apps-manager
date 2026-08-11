@@ -463,8 +463,12 @@ th {
 .checklist-form {
     display: grid;
     gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     margin: 16px 0;
-    max-width: 760px;
+}
+
+.checklist-form .inline-actions {
+    grid-column: 1 / -1;
 }
 
 .checklist-item {
@@ -752,7 +756,8 @@ select {
     .admin-grid,
     .form-row,
     .search-form,
-    .inline-form {
+    .inline-form,
+    .checklist-form {
         grid-template-columns: 1fr;
     }
 
