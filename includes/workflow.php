@@ -1,0 +1,504 @@
+<?php
+declare(strict_types=1);
+
+/*
+ * App production workflow + daily task distribution.
+ * Statuses: prepare -> sent -> live | rejected | suspended.
+ * Only live apps tagged ready_for_work with a console enter daily tasks.
+ */
+
+function checklist_items(): array
+{
+    return [
+        'package_name' => ['label' => 'Package name changed', 'description' => 'New unique package name set'],
+        'application_id' => ['label' => 'Application ID changed', 'description' => 'applicationId updated in Gradle'],
+        'app_icon' => ['label' => 'App icon changed', 'description' => 'New launcher icon added'],
+        'new_data' => ['label' => 'New data updated', 'description' => "App's new content/data (JSON, assets, config) updated"],
+        'build_deleted' => ['label' => 'Build folder deleted', 'description' => 'Old build/ folder removed'],
+        'cache_invalidated' => ['label' => 'Cache invalidated', 'description' => 'Invalidate Caches / Restart done'],
+        'project_rebuilt' => ['label' => 'Project rebuilt', 'description' => 'Clean + Rebuild completed successfully'],
+        'app_name_strings' => ['label' => 'App name changed in strings', 'description' => 'app_name updated in strings.xml'],
+        'privacy_policy_url' => ['label' => 'Privacy policy URL added', 'description' => 'Working privacy policy URL saved'],
+        'app_domain_url' => ['label' => 'App domain URL added', 'description' => "App's domain URL saved"],
+    ];
+}
+
+function production_statuses(): array
+{
+    return ['prepare', 'sent', 'live', 'rejected', 'suspended'];
+}
+
+function render_production_badge(string $status): string
+{
+    $map = [
+        'prepare' => ['badge badge-gray', 'Prepare'],
+        'sent' => ['badge badge-blue', 'Sent'],
+        'live' => ['badge badge-green', 'Live'],
+        'rejected' => ['badge badge-red', 'Rejected'],
+        'suspended' => ['badge badge-amber', 'Suspended'],
+    ];
+    [$class, $label] = $map[$status] ?? ['badge', $status];
+
+    return '<span class="' . $class . '">' . h($label) . '</span>';
+}
+
+function workflow_setting(string $key, string $default = ''): string
+{
+    $stmt = db()->prepare('SELECT setting_value FROM workflow_settings WHERE setting_key = ?');
+    $stmt->execute([$key]);
+    $value = $stmt->fetchColumn();
+
+    return $value === false ? $default : (string) $value;
+}
+
+function set_workflow_setting(string $key, string $value): void
+{
+    $stmt = db()->prepare(
+        'INSERT INTO workflow_settings (setting_key, setting_value) VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)'
+    );
+    $stmt->execute([$key, $value]);
+}
+
+function cycle_days(): int
+{
+    return max(1, (int) workflow_setting('cycle_days', '5'));
+}
+
+function current_cycle(): int
+{
+    return max(1, (int) workflow_setting('current_cycle', '1'));
+}
+
+function validate_production_fields(array $data): array
+{
+    $name = trim((string) ($data['name'] ?? ''));
+    if ($name === '' || text_length($name) > 200) {
+        throw new RuntimeException('App name must be 1 to 200 characters.');
+    }
+
+    $optional = [];
+    foreach (['package_name' => 200, 'application_id' => 200, 'privacy_policy_url' => 255, 'app_domain_url' => 255] as $field => $max) {
+        $value = trim((string) ($data[$field] ?? ''));
+        if (text_length($value) > $max) {
+            throw new RuntimeException(str_replace('_', ' ', ucfirst($field)) . " must be {$max} characters or fewer.");
+        }
+        $optional[$field] = $value === '' ? null : $value;
+    }
+
+    return [$name, $optional];
+}
+
+function add_production_app(array $data): int
+{
+    [$name, $optional] = validate_production_fields($data);
+
+    $stmt = db()->prepare(
+        'INSERT INTO production_apps (name, package_name, application_id, privacy_policy_url, app_domain_url)
+         VALUES (?, ?, ?, ?, ?)'
+    );
+    $stmt->execute([
+        $name,
+        $optional['package_name'],
+        $optional['application_id'],
+        $optional['privacy_policy_url'],
+        $optional['app_domain_url'],
+    ]);
+
+    return (int) db()->lastInsertId();
+}
+
+function update_production_app_details(int $appId, array $data): void
+{
+    if (!get_production_app($appId)) {
+        throw new RuntimeException('App was not found.');
+    }
+
+    [$name, $optional] = validate_production_fields($data);
+
+    $stmt = db()->prepare(
+        'UPDATE production_apps
+         SET name = ?, package_name = ?, application_id = ?, privacy_policy_url = ?, app_domain_url = ?
+         WHERE id = ?'
+    );
+    $stmt->execute([
+        $name,
+        $optional['package_name'],
+        $optional['application_id'],
+        $optional['privacy_policy_url'],
+        $optional['app_domain_url'],
+        $appId,
+    ]);
+}
+
+function delete_production_app(int $appId): void
+{
+    $stmt = db()->prepare('DELETE FROM production_apps WHERE id = ?');
+    $stmt->execute([$appId]);
+}
+
+function get_production_app(int $appId): ?array
+{
+    $stmt = db()->prepare(
+        'SELECT pa.*, c.name AS console_name,
+            (SELECT COUNT(*) FROM production_checklist pc WHERE pc.app_id = pa.id AND pc.is_done = 1) AS checklist_done
+         FROM production_apps pa
+         LEFT JOIN consoles c ON c.id = pa.console_id
+         WHERE pa.id = ?
+         LIMIT 1'
+    );
+    $stmt->execute([$appId]);
+    $app = $stmt->fetch();
+
+    return $app ?: null;
+}
+
+function production_apps_by_status(string $status): array
+{
+    $stmt = db()->prepare(
+        'SELECT pa.*, c.name AS console_name,
+            (SELECT COUNT(*) FROM production_checklist pc WHERE pc.app_id = pa.id AND pc.is_done = 1) AS checklist_done
+         FROM production_apps pa
+         LEFT JOIN consoles c ON c.id = pa.console_id
+         WHERE pa.status = ?
+         ORDER BY pa.created_at ASC, pa.id ASC'
+    );
+    $stmt->execute([$status]);
+
+    return $stmt->fetchAll();
+}
+
+function production_status_counts(): array
+{
+    $stmt = db()->query('SELECT status, COUNT(*) AS total FROM production_apps GROUP BY status');
+    $counts = array_fill_keys(production_statuses(), 0);
+
+    foreach ($stmt->fetchAll() as $row) {
+        $counts[$row['status']] = (int) $row['total'];
+    }
+
+    return $counts;
+}
+
+function checklist_state(int $appId): array
+{
+    $stmt = db()->prepare('SELECT item_key, is_done FROM production_checklist WHERE app_id = ?');
+    $stmt->execute([$appId]);
+
+    $state = [];
+    foreach ($stmt->fetchAll() as $row) {
+        $state[$row['item_key']] = (int) $row['is_done'] === 1;
+    }
+
+    return $state;
+}
+
+function save_checklist(int $appId, array $doneKeys): void
+{
+    $app = get_production_app($appId);
+    if (!$app) {
+        throw new RuntimeException('App was not found.');
+    }
+
+    if ($app['status'] !== 'prepare') {
+        throw new RuntimeException('Checklist can only be edited while the app is in Prepare Production.');
+    }
+
+    $stmt = db()->prepare(
+        'INSERT INTO production_checklist (app_id, item_key, is_done, done_at)
+         VALUES (?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE is_done = VALUES(is_done), done_at = VALUES(done_at)'
+    );
+
+    foreach (array_keys(checklist_items()) as $key) {
+        $isDone = in_array($key, $doneKeys, true);
+        $stmt->execute([$appId, $key, $isDone ? 1 : 0, $isDone ? date('Y-m-d H:i:s') : null]);
+    }
+}
+
+function checklist_is_complete(int $appId): bool
+{
+    $stmt = db()->prepare('SELECT COUNT(*) FROM production_checklist WHERE app_id = ? AND is_done = 1');
+    $stmt->execute([$appId]);
+
+    return (int) $stmt->fetchColumn() >= count(checklist_items());
+}
+
+function send_app_to_production(int $appId): void
+{
+    $app = get_production_app($appId);
+    if (!$app) {
+        throw new RuntimeException('App was not found.');
+    }
+
+    if ($app['status'] !== 'prepare') {
+        throw new RuntimeException('Only apps in Prepare Production can be sent.');
+    }
+
+    if (!checklist_is_complete($appId)) {
+        throw new RuntimeException('Checklist must be 100% complete before sending for production.');
+    }
+
+    $stmt = db()->prepare("UPDATE production_apps SET status = 'sent', sent_at = NOW() WHERE id = ?");
+    $stmt->execute([$appId]);
+}
+
+function set_production_result(int $appId, string $result): void
+{
+    if (!in_array($result, ['live', 'rejected', 'suspended'], true)) {
+        throw new RuntimeException('Invalid production result.');
+    }
+
+    $app = get_production_app($appId);
+    if (!$app) {
+        throw new RuntimeException('App was not found.');
+    }
+
+    if ($app['status'] === 'prepare') {
+        throw new RuntimeException('This app has not been sent for production yet.');
+    }
+
+    if ($result === 'live') {
+        $stmt = db()->prepare("UPDATE production_apps SET status = 'live', live_at = COALESCE(live_at, NOW()) WHERE id = ?");
+    } else {
+        $stmt = db()->prepare('UPDATE production_apps SET status = ? WHERE id = ?');
+    }
+
+    $result === 'live' ? $stmt->execute([$appId]) : $stmt->execute([$result, $appId]);
+}
+
+function assign_console(int $appId, int $consoleId): void
+{
+    $app = get_production_app($appId);
+    if (!$app) {
+        throw new RuntimeException('App was not found.');
+    }
+
+    if ($consoleId <= 0) {
+        $stmt = db()->prepare('UPDATE production_apps SET console_id = NULL, ready_for_work = 0 WHERE id = ?');
+        $stmt->execute([$appId]);
+        return;
+    }
+
+    $check = db()->prepare('SELECT id FROM consoles WHERE id = ? LIMIT 1');
+    $check->execute([$consoleId]);
+    if (!$check->fetch()) {
+        throw new RuntimeException('Console was not found.');
+    }
+
+    $stmt = db()->prepare('UPDATE production_apps SET console_id = ? WHERE id = ?');
+    $stmt->execute([$consoleId, $appId]);
+}
+
+function set_ready_for_work(int $appId, bool $ready): void
+{
+    $app = get_production_app($appId);
+    if (!$app) {
+        throw new RuntimeException('App was not found.');
+    }
+
+    if ($ready) {
+        if ($app['status'] !== 'live') {
+            throw new RuntimeException('Only Live apps can be tagged Ready for Work.');
+        }
+        if (empty($app['console_id'])) {
+            throw new RuntimeException('Assign a Play Console before tagging Ready for Work.');
+        }
+    }
+
+    $stmt = db()->prepare('UPDATE production_apps SET ready_for_work = ? WHERE id = ?');
+    $stmt->execute([$ready ? 1 : 0, $appId]);
+}
+
+function all_consoles(): array
+{
+    $stmt = db()->query('SELECT id, name, created_at FROM consoles ORDER BY created_at ASC, id ASC');
+
+    return $stmt->fetchAll();
+}
+
+function add_console(string $name): void
+{
+    $name = trim($name);
+    if ($name === '' || text_length($name) > 150) {
+        throw new RuntimeException('Console name must be 1 to 150 characters.');
+    }
+
+    $stmt = db()->prepare('INSERT INTO consoles (name) VALUES (?)');
+    $stmt->execute([$name]);
+}
+
+function delete_console(int $consoleId): void
+{
+    $stmt = db()->prepare('DELETE FROM consoles WHERE id = ?');
+    $stmt->execute([$consoleId]);
+}
+
+function console_overview(): array
+{
+    $cycle = current_cycle();
+    $stmt = db()->prepare(
+        "SELECT c.id, c.name, c.created_at,
+            (SELECT COUNT(*) FROM production_apps pa
+             WHERE pa.console_id = c.id AND pa.status = 'live') AS live_total,
+            (SELECT COUNT(*) FROM production_apps pa
+             WHERE pa.console_id = c.id AND pa.status = 'live' AND pa.ready_for_work = 1) AS ready_total,
+            (SELECT COUNT(DISTINCT dt.app_id) FROM daily_tasks dt
+             JOIN production_apps pa ON pa.id = dt.app_id
+             WHERE pa.console_id = c.id AND dt.cycle_no = ?
+               AND pa.status = 'live' AND pa.ready_for_work = 1) AS shown_total
+         FROM consoles c
+         ORDER BY c.created_at ASC, c.id ASC"
+    );
+    $stmt->execute([$cycle]);
+
+    $consoles = $stmt->fetchAll();
+    foreach ($consoles as &$console) {
+        $console['remaining'] = max(0, (int) $console['ready_total'] - (int) $console['shown_total']);
+    }
+    unset($console);
+
+    return $consoles;
+}
+
+function cycle_progress(): array
+{
+    $cycle = current_cycle();
+
+    $eligible = (int) db()->query(
+        "SELECT COUNT(*) FROM production_apps
+         WHERE status = 'live' AND ready_for_work = 1 AND console_id IS NOT NULL"
+    )->fetchColumn();
+
+    $shownStmt = db()->prepare(
+        "SELECT COUNT(DISTINCT dt.app_id) FROM daily_tasks dt
+         JOIN production_apps pa ON pa.id = dt.app_id
+         WHERE dt.cycle_no = ?
+           AND pa.status = 'live' AND pa.ready_for_work = 1 AND pa.console_id IS NOT NULL"
+    );
+    $shownStmt->execute([$cycle]);
+    $shown = (int) $shownStmt->fetchColumn();
+
+    return [
+        'cycle_no' => $cycle,
+        'cycle_days' => cycle_days(),
+        'eligible' => $eligible,
+        'shown' => $shown,
+        'remaining' => max(0, $eligible - $shown),
+        'complete' => $eligible > 0 && $shown >= $eligible,
+    ];
+}
+
+function generate_daily_tasks(): int
+{
+    $today = date('Y-m-d');
+    $cycle = current_cycle();
+
+    $exists = db()->prepare('SELECT COUNT(*) FROM daily_tasks WHERE task_date = ? AND cycle_no = ?');
+    $exists->execute([$today, $cycle]);
+    if ((int) $exists->fetchColumn() > 0) {
+        return 0;
+    }
+
+    $days = cycle_days();
+    $inserted = 0;
+
+    $insert = db()->prepare(
+        'INSERT IGNORE INTO daily_tasks (task_date, app_id, console_id, cycle_no) VALUES (?, ?, ?, ?)'
+    );
+
+    foreach (all_consoles() as $console) {
+        $consoleId = (int) $console['id'];
+
+        $totalStmt = db()->prepare(
+            "SELECT COUNT(*) FROM production_apps
+             WHERE console_id = ? AND status = 'live' AND ready_for_work = 1"
+        );
+        $totalStmt->execute([$consoleId]);
+        $total = (int) $totalStmt->fetchColumn();
+
+        if ($total === 0) {
+            continue;
+        }
+
+        $quota = (int) ceil($total / $days);
+
+        $pick = db()->prepare(
+            "SELECT id FROM production_apps
+             WHERE console_id = ? AND status = 'live' AND ready_for_work = 1
+               AND id NOT IN (SELECT app_id FROM daily_tasks WHERE cycle_no = ?)
+             ORDER BY created_at ASC, id ASC
+             LIMIT " . $quota
+        );
+        $pick->execute([$consoleId, $cycle]);
+
+        foreach ($pick->fetchAll() as $row) {
+            $insert->execute([$today, (int) $row['id'], $consoleId, $cycle]);
+            $inserted++;
+        }
+    }
+
+    return $inserted;
+}
+
+function todays_tasks(): array
+{
+    $stmt = db()->prepare(
+        'SELECT dt.id, dt.is_done, dt.cycle_no, pa.name AS app_name, pa.package_name, c.name AS console_name
+         FROM daily_tasks dt
+         JOIN production_apps pa ON pa.id = dt.app_id
+         JOIN consoles c ON c.id = dt.console_id
+         WHERE dt.task_date = ? AND dt.cycle_no = ?
+         ORDER BY c.created_at ASC, c.id ASC, dt.id ASC'
+    );
+    $stmt->execute([date('Y-m-d'), current_cycle()]);
+
+    $grouped = [];
+    foreach ($stmt->fetchAll() as $task) {
+        $grouped[$task['console_name']][] = $task;
+    }
+
+    return $grouped;
+}
+
+function task_history(): array
+{
+    $stmt = db()->query(
+        'SELECT dt.task_date, dt.is_done, dt.cycle_no, pa.name AS app_name, c.name AS console_name
+         FROM daily_tasks dt
+         JOIN production_apps pa ON pa.id = dt.app_id
+         JOIN consoles c ON c.id = dt.console_id
+         ORDER BY dt.task_date DESC, c.created_at ASC, c.id ASC, dt.id ASC'
+    );
+
+    $grouped = [];
+    foreach ($stmt->fetchAll() as $task) {
+        $grouped[$task['task_date']][] = $task;
+    }
+
+    return $grouped;
+}
+
+function toggle_task_done(int $taskId): void
+{
+    $stmt = db()->prepare('UPDATE daily_tasks SET is_done = 1 - is_done WHERE id = ?');
+    $stmt->execute([$taskId]);
+
+    if ($stmt->rowCount() < 1) {
+        throw new RuntimeException('Task was not found.');
+    }
+}
+
+function update_cycle_days(int $days): void
+{
+    if ($days < 1 || $days > 365) {
+        throw new RuntimeException('Cycle days must be between 1 and 365.');
+    }
+
+    set_workflow_setting('cycle_days', (string) $days);
+}
+
+function start_new_cycle(): void
+{
+    set_workflow_setting('current_cycle', (string) (current_cycle() + 1));
+}

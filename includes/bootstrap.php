@@ -7,6 +7,7 @@ require_once $appRoot . '/config/database.php';
 require_once $appRoot . '/includes/functions.php';
 require_once $appRoot . '/includes/auth.php';
 require_once $appRoot . '/includes/csrf.php';
+require_once $appRoot . '/includes/workflow.php';
 
 function app_root_path(): string
 {
@@ -35,6 +36,11 @@ function page_start(string $title): void
         'add-app.php' => 'Add App',
         'search.php' => 'Search/Edit',
         'categories.php' => 'Categories',
+        'production.php' => 'Production',
+        'sent-production.php' => 'Sent Apps',
+        'live-apps.php' => 'Live Apps',
+        'consoles.php' => 'Consoles',
+        'tasks.php' => 'Daily Tasks',
         'admins.php' => 'Admins',
     ];
     $flash = flash();

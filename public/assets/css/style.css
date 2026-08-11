@@ -405,6 +405,140 @@ th {
 
 .badge-green { background: var(--green-bg); color: var(--green-text); }
 .badge-red { background: var(--red-bg); color: var(--red-text); }
+.badge-blue { background: #dbeafe; color: #1e40af; }
+.badge-amber { background: #fef3c7; color: #92400e; }
+.badge-gray { background: #e5e7eb; color: #374151; }
+
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.tabs a {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 700;
+    padding: 9px 14px;
+}
+
+.tabs a:hover {
+    color: var(--text);
+}
+
+.tabs a.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+.progress {
+    background: #e5eaf2;
+    border-radius: 999px;
+    height: 8px;
+    min-width: 110px;
+    overflow: hidden;
+    width: 100%;
+}
+
+.progress span {
+    background: var(--primary);
+    border-radius: 999px;
+    display: block;
+    height: 100%;
+}
+
+.progress-label {
+    color: var(--muted);
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.checklist-form {
+    display: grid;
+    gap: 10px;
+    margin: 16px 0;
+    max-width: 760px;
+}
+
+.checklist-item {
+    align-items: center;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    cursor: pointer;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: auto 1fr;
+    padding: 10px 12px;
+}
+
+.checklist-item input[type="checkbox"] {
+    height: 18px;
+    min-height: 0;
+    width: 18px;
+}
+
+.checklist-item strong {
+    color: var(--text);
+    display: block;
+}
+
+.checklist-item small {
+    display: block;
+    margin-top: 2px;
+}
+
+.checklist-item.done {
+    background: var(--green-bg);
+    border-color: #bbf7d0;
+}
+
+.btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.inline-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.cycle-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.cycle-controls {
+    align-items: end;
+    margin-bottom: 10px;
+}
+
+.cycle-days-form {
+    grid-template-columns: minmax(140px, 200px) auto;
+}
+
+.task-group {
+    margin-bottom: 20px;
+}
+
+.task-group h3 {
+    font-size: 16px;
+    margin: 0 0 10px;
+}
+
+.console-assign-form {
+    align-items: center;
+    display: grid;
+    gap: 8px;
+    grid-template-columns: minmax(140px, 1fr) auto;
+}
 
 label {
     color: var(--muted);

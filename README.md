@@ -15,6 +15,10 @@ A cPanel-compatible PHP 8.x and MySQL/MariaDB version of the Google Sheets App M
 - Active apps sort above Inactive apps, then older apps first
 - Ready/Not Ready and Active/Inactive status badges
 - Single result update and bulk update for visible search results
+- App production workflow: Prepare Production with a mandatory 10-item checklist, Sent for Production, and Live/Rejected/Suspended results
+- Live Apps section with a Ready for Work tag and Play Console assignment
+- Play Console management with per-console totals, shown, and remaining counts
+- Daily task distribution: balanced per-console quotas, no repeats within a cycle, Today's Task view, and full task history
 
 ## File Structure
 
@@ -24,6 +28,7 @@ includes/auth.php
 includes/bootstrap.php
 includes/csrf.php
 includes/functions.php
+includes/workflow.php
 public/index.php
 public/login.php
 public/logout.php
@@ -32,6 +37,11 @@ public/add-app.php
 public/search.php
 public/categories.php
 public/admins.php
+public/production.php
+public/sent-production.php
+public/live-apps.php
+public/consoles.php
+public/tasks.php
 public/assets/css/style.css
 public/uploads/apps/
 database/schema.sql
@@ -133,6 +143,18 @@ After signing in, open **Admins** from the sidebar.
 5. Use **Search/Edit** to search by name or category display ID, update one app, update all visible results, or delete apps.
 6. Use **Admins** to manage admin access and change passwords.
 7. Use **Dashboard** to view categories and app counts.
+
+## Production Workflow & Daily Tasks
+
+The production module tracks every app from preparation to daily work tasks:
+
+1. **Production** (`production.php`) — add a new app and complete the mandatory 10-item checklist (package name, application ID, icon, data, build folder, cache, rebuild, strings.xml name, privacy policy URL, domain URL). "Send for Production" stays disabled until 10/10.
+2. **Sent Apps** (`sent-production.php`) — set the Play Console review result: Live, Rejected, or Suspended. Each status has its own tab.
+3. **Live Apps** (`live-apps.php`) — assign each live app to a Play Console, then tag it **Ready for Work**. Only tagged apps enter the task system.
+4. **Consoles** (`consoles.php`) — register Play Consoles and see per-console live totals, shown, and remaining counts.
+5. **Daily Tasks** (`tasks.php`) — the daily list auto-generates on first visit each day. Quota per console = `ceil(ready apps / cycle days)`, oldest apps first, and no app repeats within a cycle. When the cycle completes you can start a new one. Task History records every past day.
+
+Existing installs: re-import `database/schema.sql` in phpMyAdmin. The file is idempotent — it only creates the new `consoles`, `production_apps`, `production_checklist`, `daily_tasks`, and `workflow_settings` tables and leaves existing data untouched.
 
 ## Display ID Logic
 

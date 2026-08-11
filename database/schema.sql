@@ -28,6 +28,77 @@ CREATE TABLE IF NOT EXISTS apps (
         ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS consoles (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(150) NOT NULL UNIQUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS production_apps (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    package_name VARCHAR(200) NULL,
+    application_id VARCHAR(200) NULL,
+    privacy_policy_url VARCHAR(255) NULL,
+    app_domain_url VARCHAR(255) NULL,
+    status ENUM('prepare', 'sent', 'live', 'rejected', 'suspended') NOT NULL DEFAULT 'prepare',
+    ready_for_work TINYINT(1) NOT NULL DEFAULT 0,
+    console_id INT UNSIGNED NULL,
+    sent_at DATETIME NULL,
+    live_at DATETIME NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_production_apps_status (status),
+    INDEX idx_production_apps_console (console_id),
+    CONSTRAINT fk_production_apps_console
+        FOREIGN KEY (console_id)
+        REFERENCES consoles(id)
+        ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS production_checklist (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    app_id INT UNSIGNED NOT NULL,
+    item_key VARCHAR(50) NOT NULL,
+    is_done TINYINT(1) NOT NULL DEFAULT 0,
+    done_at DATETIME NULL,
+    UNIQUE KEY uq_checklist_app_item (app_id, item_key),
+    CONSTRAINT fk_checklist_app
+        FOREIGN KEY (app_id)
+        REFERENCES production_apps(id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS daily_tasks (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    task_date DATE NOT NULL,
+    app_id INT UNSIGNED NOT NULL,
+    console_id INT UNSIGNED NOT NULL,
+    is_done TINYINT(1) NOT NULL DEFAULT 0,
+    cycle_no INT UNSIGNED NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_daily_task (task_date, app_id, cycle_no),
+    INDEX idx_daily_tasks_date (task_date),
+    INDEX idx_daily_tasks_cycle (cycle_no),
+    CONSTRAINT fk_daily_tasks_app
+        FOREIGN KEY (app_id)
+        REFERENCES production_apps(id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_daily_tasks_console
+        FOREIGN KEY (console_id)
+        REFERENCES consoles(id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS workflow_settings (
+    setting_key VARCHAR(50) NOT NULL PRIMARY KEY,
+    setting_value VARCHAR(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO workflow_settings (setting_key, setting_value) VALUES
+('cycle_days', '5'),
+('current_cycle', '1')
+ON DUPLICATE KEY UPDATE setting_key = setting_key;
+
 INSERT INTO admins (username, password_hash)
 VALUES ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi')
 ON DUPLICATE KEY UPDATE username = username;
