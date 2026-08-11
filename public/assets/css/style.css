@@ -126,6 +126,57 @@ img {
     padding: 12px 14px;
 }
 
+.nav-group-toggle {
+    align-items: center;
+    background: none;
+    border: 0;
+    border-radius: 8px;
+    color: #8fa3bd;
+    cursor: pointer;
+    display: flex;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    justify-content: space-between;
+    letter-spacing: 0.5px;
+    padding: 12px 14px;
+    text-align: left;
+    text-transform: uppercase;
+    width: 100%;
+}
+
+.nav-group-toggle:hover {
+    background: #243044;
+    color: #fff;
+}
+
+.nav-chevron {
+    border-bottom: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+    display: inline-block;
+    height: 7px;
+    margin-right: 3px;
+    transform: rotate(-45deg);
+    transition: transform 0.15s ease;
+    width: 7px;
+}
+
+.nav-group.open .nav-chevron {
+    transform: rotate(45deg);
+}
+
+.nav-group-items {
+    display: none;
+}
+
+.nav-group.open .nav-group-items {
+    border-left: 1px solid #243044;
+    display: grid;
+    gap: 4px;
+    margin: 4px 0 4px 10px;
+    padding-left: 8px;
+}
+
 .sidebar nav a.active,
 .sidebar nav a:hover,
 .logout:hover {
@@ -574,7 +625,7 @@ select {
     max-width: none;
 }
 
-.stacked-form.wide > .btn {
+.stacked-form > .btn {
     justify-self: start;
     min-width: 220px;
 }
@@ -741,16 +792,26 @@ select {
     }
 
     .sidebar nav {
-        display: flex;
-        gap: 8px;
-        overflow-x: auto;
-        padding-bottom: 2px;
-        -webkit-overflow-scrolling: touch;
+        align-items: start;
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .sidebar nav a {
-        flex: 0 0 auto;
-        white-space: nowrap;
+    .nav-group-toggle {
+        pointer-events: none;
+    }
+
+    .nav-chevron {
+        display: none;
+    }
+
+    .nav-group-items {
+        border-left: 1px solid #243044;
+        display: grid;
+        gap: 4px;
+        margin: 4px 0 4px 10px;
+        padding-left: 8px;
     }
 
     .logout {
@@ -817,6 +878,7 @@ select {
     .sidebar nav {
         display: grid;
         gap: 8px;
+        grid-template-columns: 1fr;
         overflow: visible;
         padding-bottom: 0;
     }

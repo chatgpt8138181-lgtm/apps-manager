@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 page_start('Add App');
 ?>
 <section class="form-panel">
-    <form method="post" enctype="multipart/form-data" class="stacked-form">
+    <form method="post" enctype="multipart/form-data" class="stacked-form wide">
         <?= csrf_field() ?>
         <label>App Name
             <input type="text" name="app_name" maxlength="200" required>

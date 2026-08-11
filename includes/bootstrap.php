@@ -31,17 +31,21 @@ function asset_version(string $path): int
 
 function page_start(string $title): void
 {
-    $nav = [
-        'dashboard.php' => 'Dashboard',
-        'add-app.php' => 'Add App',
-        'search.php' => 'Search/Edit',
-        'categories.php' => 'Categories',
-        'production.php' => 'Production',
-        'sent-production.php' => 'Sent Apps',
-        'live-apps.php' => 'Live Apps',
-        'consoles.php' => 'Consoles',
-        'tasks.php' => 'Daily Tasks',
-        'admins.php' => 'Admins',
+    $navGroups = [
+        'Loading' => [
+            'dashboard.php' => 'Dashboard',
+            'add-app.php' => 'Add App',
+            'search.php' => 'Search/Edit',
+            'categories.php' => 'Categories',
+        ],
+        'Publishing' => [
+            'production.php' => 'Production',
+            'sent-production.php' => 'Sent Apps',
+            'live-apps.php' => 'Live Apps',
+            'consoles.php' => 'Consoles',
+            'tasks.php' => 'Daily Tasks',
+            'admins.php' => 'Admins',
+        ],
     ];
     $flash = flash();
     ?>
@@ -65,8 +69,19 @@ function page_start(string $title): void
             </div>
             <div class="menu-panel" id="mobile-menu">
                 <nav>
-                    <?php foreach ($nav as $file => $label): ?>
-                        <a class="<?= current_page() === $file ? 'active' : '' ?>" href="<?= h($file) ?>"><?= h($label) ?></a>
+                    <?php foreach ($navGroups as $group => $items): ?>
+                        <?php $isActiveGroup = array_key_exists(current_page(), $items); ?>
+                        <div class="nav-group <?= $isActiveGroup ? 'open' : '' ?>">
+                            <button class="nav-group-toggle" type="button" aria-expanded="<?= $isActiveGroup ? 'true' : 'false' ?>">
+                                <span><?= h($group) ?></span>
+                                <span class="nav-chevron" aria-hidden="true"></span>
+                            </button>
+                            <div class="nav-group-items">
+                                <?php foreach ($items as $file => $label): ?>
+                                    <a class="<?= current_page() === $file ? 'active' : '' ?>" href="<?= h($file) ?>"><?= h($label) ?></a>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
                     <?php endforeach; ?>
                 </nav>
                 <a class="logout" href="logout.php">Logout</a>
@@ -103,6 +118,14 @@ function page_end(): void
                 menuPanel.classList.toggle('open', !isOpen);
             });
         }
+
+        document.querySelectorAll('.nav-group-toggle').forEach((toggle) => {
+            toggle.addEventListener('click', () => {
+                const group = toggle.closest('.nav-group');
+                const isOpen = group.classList.toggle('open');
+                toggle.setAttribute('aria-expanded', String(isOpen));
+            });
+        });
     })();
     </script>
     </body>
