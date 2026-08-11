@@ -574,6 +574,11 @@ select {
     max-width: none;
 }
 
+.stacked-form.wide > .btn {
+    justify-self: start;
+    min-width: 220px;
+}
+
 .form-row,
 .search-form,
 .inline-form {
