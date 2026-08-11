@@ -61,7 +61,7 @@ page_start('Prepare Production');
 ?>
 <section class="form-panel">
     <h2>Add App to Prepare Production</h2>
-    <form method="post" class="stacked-form">
+    <form method="post" class="stacked-form wide">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="add">
         <label>App Name
@@ -129,7 +129,7 @@ page_start('Prepare Production');
 
     <section class="form-panel">
         <h2>Edit App Details</h2>
-        <form method="post" class="stacked-form">
+        <form method="post" class="stacked-form wide">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="update_details">
             <input type="hidden" name="app_id" value="<?= (int) $selected['id'] ?>">

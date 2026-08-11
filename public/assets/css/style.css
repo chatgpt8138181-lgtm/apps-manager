@@ -570,6 +570,10 @@ select {
     max-width: 760px;
 }
 
+.stacked-form.wide {
+    max-width: none;
+}
+
 .form-row,
 .search-form,
 .inline-form {
