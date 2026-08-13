@@ -7,9 +7,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $appId = (int) ($_POST['app_id'] ?? 0);
     $return = $appId > 0 ? 'production.php?app_id=' . $appId : 'production.php';
-    if (($_POST['action'] ?? '') === 'update_details' && $appId > 0) {
-        $return .= '&view=details';
-    }
 
     try {
         $action = $_POST['action'] ?? '';
@@ -48,7 +45,6 @@ $items = checklist_items();
 $totalItems = count($items);
 $prepareApps = production_apps_by_status('prepare');
 $selectedId = (int) ($_GET['app_id'] ?? 0);
-$selectedView = ($_GET['view'] ?? '') === 'details' ? 'details' : 'checklist';
 $selected = null;
 
 if ($selectedId > 0) {
@@ -91,7 +87,7 @@ page_start('Prepare Production');
     </form>
 </section>
 
-<?php if ($selected && $selectedView === 'checklist'): ?>
+<?php if ($selected): ?>
     <section class="panel">
         <div class="panel-heading">
             <h2>Checklist — <?= h($selected['name']) ?> (<?= $selectedDone ?>/<?= $totalItems ?>)</h2>
@@ -131,9 +127,6 @@ page_start('Prepare Production');
         </form>
     </section>
 
-<?php endif; ?>
-
-<?php if ($selected && $selectedView === 'details'): ?>
     <section class="form-panel">
         <div class="panel-heading">
             <h2>Verify App Details — <?= h($selected['name']) ?></h2>
@@ -198,8 +191,7 @@ page_start('Prepare Production');
                     </td>
                     <td><?= h($app['created_at']) ?></td>
                     <td class="actions">
-                        <a class="btn small" href="production.php?app_id=<?= (int) $app['id'] ?>">Checklist</a>
-                        <a class="btn small" href="production.php?app_id=<?= (int) $app['id'] ?>&view=details">Details</a>
+                        <a class="btn small" href="production.php?app_id=<?= (int) $app['id'] ?>">Manage</a>
                         <form method="post">
                             <?= csrf_field() ?>
                             <input type="hidden" name="action" value="send">
