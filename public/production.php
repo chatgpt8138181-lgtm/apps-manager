@@ -59,6 +59,7 @@ $selectedDone = $selected ? (int) $selected['checklist_done'] : 0;
 
 page_start('Prepare Production');
 ?>
+<?php if (!$selected): ?>
 <section class="form-panel">
     <h2>Add App to Prepare Production</h2>
     <form method="post" class="stacked-form wide">
@@ -86,6 +87,7 @@ page_start('Prepare Production');
         <button class="btn primary" type="submit">Add App</button>
     </form>
 </section>
+<?php endif; ?>
 
 <?php if ($selected): ?>
     <section class="panel">
@@ -160,6 +162,7 @@ page_start('Prepare Production');
     </section>
 <?php endif; ?>
 
+<?php if (!$selected): ?>
 <section class="panel">
     <div class="panel-heading">
         <h2>Prepare Production (<?= count($prepareApps) ?>)</h2>
@@ -211,4 +214,5 @@ page_start('Prepare Production');
         </table>
     </div>
 </section>
+<?php endif; ?>
 <?php page_end(); ?>
