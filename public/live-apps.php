@@ -116,18 +116,38 @@ page_start('Live Apps');
             continue;
         }
         ?>
-        <div class="task-group">
-            <h3><?= h($console['name']) ?> (<?= count($consoleApps) ?>)</h3>
-            <?php render_live_apps_table($consoleApps); ?>
+        <div class="app-group">
+            <button class="app-group-toggle" type="button" aria-expanded="false">
+                <span><?= h($console['name']) ?> (<?= count($consoleApps) ?>)</span>
+                <span class="nav-chevron" aria-hidden="true"></span>
+            </button>
+            <div class="app-group-body">
+                <?php render_live_apps_table($consoleApps); ?>
+            </div>
         </div>
     <?php endforeach; ?>
 
     <?php if ($unassigned): ?>
-        <div class="task-group">
-            <h3>No Console (<?= count($unassigned) ?>)</h3>
-            <p class="hint">Assign a Play Console from Production &rarr; Manage &rarr; Verify App Details to make these apps taggable.</p>
-            <?php render_live_apps_table($unassigned); ?>
+        <div class="app-group">
+            <button class="app-group-toggle" type="button" aria-expanded="false">
+                <span>No Console (<?= count($unassigned) ?>)</span>
+                <span class="nav-chevron" aria-hidden="true"></span>
+            </button>
+            <div class="app-group-body">
+                <p class="hint">Assign a Play Console from Production &rarr; Manage &rarr; Verify App Details to make these apps taggable.</p>
+                <?php render_live_apps_table($unassigned); ?>
+            </div>
         </div>
     <?php endif; ?>
 </section>
+
+<script>
+document.querySelectorAll('.app-group-toggle').forEach((toggle) => {
+    toggle.addEventListener('click', () => {
+        const group = toggle.closest('.app-group');
+        const isOpen = group.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', String(isOpen));
+    });
+});
+</script>
 <?php page_end(); ?>

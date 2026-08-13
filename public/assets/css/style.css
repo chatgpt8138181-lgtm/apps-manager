@@ -597,6 +597,50 @@ th {
     margin-bottom: 20px;
 }
 
+.app-group {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+
+.app-group-toggle {
+    align-items: center;
+    background: #f8fafc;
+    border: 0;
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    justify-content: space-between;
+    padding: 14px 16px;
+    text-align: left;
+    width: 100%;
+}
+
+.app-group-toggle:hover {
+    background: #eef2f7;
+}
+
+.app-group-toggle .nav-chevron {
+    margin-right: 2px;
+}
+
+.app-group.open .nav-chevron {
+    transform: rotate(45deg);
+}
+
+.app-group-body {
+    display: none;
+    padding: 12px;
+}
+
+.app-group.open .app-group-body {
+    display: block;
+}
+
 .task-group h3 {
     font-size: 16px;
     margin: 0 0 10px;
