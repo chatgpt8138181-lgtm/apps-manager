@@ -90,13 +90,30 @@ function validate_production_fields(array $data): array
     return [$name, $optional];
 }
 
+function validate_console_choice(array $data): ?int
+{
+    $consoleId = (int) ($data['console_id'] ?? 0);
+    if ($consoleId <= 0) {
+        return null;
+    }
+
+    $stmt = db()->prepare('SELECT id FROM consoles WHERE id = ? LIMIT 1');
+    $stmt->execute([$consoleId]);
+    if (!$stmt->fetch()) {
+        throw new RuntimeException('Console was not found.');
+    }
+
+    return $consoleId;
+}
+
 function add_production_app(array $data): int
 {
     [$name, $optional] = validate_production_fields($data);
+    $consoleId = validate_console_choice($data);
 
     $stmt = db()->prepare(
-        'INSERT INTO production_apps (name, package_name, application_id, privacy_policy_url, app_domain_url)
-         VALUES (?, ?, ?, ?, ?)'
+        'INSERT INTO production_apps (name, package_name, application_id, privacy_policy_url, app_domain_url, console_id)
+         VALUES (?, ?, ?, ?, ?, ?)'
     );
     $stmt->execute([
         $name,
@@ -104,6 +121,7 @@ function add_production_app(array $data): int
         $optional['application_id'],
         $optional['privacy_policy_url'],
         $optional['app_domain_url'],
+        $consoleId,
     ]);
 
     return (int) db()->lastInsertId();
@@ -116,10 +134,12 @@ function update_production_app_details(int $appId, array $data): void
     }
 
     [$name, $optional] = validate_production_fields($data);
+    $consoleId = validate_console_choice($data);
 
     $stmt = db()->prepare(
         'UPDATE production_apps
-         SET name = ?, package_name = ?, application_id = ?, privacy_policy_url = ?, app_domain_url = ?
+         SET name = ?, package_name = ?, application_id = ?, privacy_policy_url = ?, app_domain_url = ?,
+             console_id = ?, ready_for_work = IF(? IS NULL, 0, ready_for_work)
          WHERE id = ?'
     );
     $stmt->execute([
@@ -128,6 +148,8 @@ function update_production_app_details(int $appId, array $data): void
         $optional['application_id'],
         $optional['privacy_policy_url'],
         $optional['app_domain_url'],
+        $consoleId,
+        $consoleId,
         $appId,
     ]);
 }

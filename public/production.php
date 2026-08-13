@@ -43,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $items = checklist_items();
 $totalItems = count($items);
+$consoles = all_consoles();
 $prepareApps = production_apps_by_status('prepare');
 $selectedId = (int) ($_GET['app_id'] ?? 0);
 $selected = null;
@@ -84,6 +85,14 @@ page_start('Prepare Production');
                 <input type="text" name="app_domain_url" maxlength="255" placeholder="https://">
             </label>
         </div>
+        <label>Play Console
+            <select name="console_id">
+                <option value="0">No console</option>
+                <?php foreach ($consoles as $console): ?>
+                    <option value="<?= (int) $console['id'] ?>"><?= h($console['name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </label>
         <button class="btn primary" type="submit">Add App</button>
     </form>
 </section>
@@ -157,6 +166,16 @@ page_start('Prepare Production');
                     <input type="text" name="app_domain_url" value="<?= h($selected['app_domain_url']) ?>" maxlength="255">
                 </label>
             </div>
+            <label>Play Console
+                <select name="console_id">
+                    <option value="0">No console</option>
+                    <?php foreach ($consoles as $console): ?>
+                        <option value="<?= (int) $console['id'] ?>" <?= (int) $selected['console_id'] === (int) $console['id'] ? 'selected' : '' ?>>
+                            <?= h($console['name']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
             <button class="btn primary" type="submit">Save Details</button>
         </form>
     </section>
