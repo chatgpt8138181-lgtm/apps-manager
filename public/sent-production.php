@@ -18,6 +18,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             set_production_result((int) ($_POST['app_id'] ?? 0), $result);
             redirect_with($return, 'success', 'App marked as ' . ucfirst($result) . '.');
         }
+
+        if (($_POST['action'] ?? '') === 'delete') {
+            delete_production_app((int) ($_POST['app_id'] ?? 0));
+            redirect_with($return, 'success', 'App deleted.');
+        }
     } catch (Throwable $e) {
         redirect_with($return, 'error', $e->getMessage());
     }
@@ -88,6 +93,13 @@ page_start('Sent for Production');
                                 </button>
                             </form>
                         <?php endforeach; ?>
+                        <form method="post" onsubmit="return confirm('Delete this app? Its checklist and task history will also be removed.');">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
+                            <input type="hidden" name="return_status" value="<?= h($status) ?>">
+                            <button class="btn danger small" type="submit">Delete</button>
+                        </form>
                     </td>
                 </tr>
             <?php endforeach; ?>
