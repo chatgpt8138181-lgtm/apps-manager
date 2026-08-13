@@ -103,8 +103,13 @@ page_start($view === 'history' ? 'Task History' : "Today's Task");
         <?php endif; ?>
 
         <?php foreach ($todayGroups as $consoleName => $tasks): ?>
-            <div class="task-group">
-                <h3><?= h($consoleName) ?> (<?= count($tasks) ?>)</h3>
+            <?php $doneCount = count(array_filter($tasks, fn($task) => (int) $task['is_done'] === 1)); ?>
+            <div class="app-group">
+                <button class="app-group-toggle" type="button" aria-expanded="false">
+                    <span><?= h($consoleName) ?> (<?= $doneCount ?>/<?= count($tasks) ?> done)</span>
+                    <span class="nav-chevron" aria-hidden="true"></span>
+                </button>
+                <div class="app-group-body">
                 <div class="table-wrap">
                     <table>
                         <thead>
@@ -141,9 +146,20 @@ page_start($view === 'history' ? 'Task History' : "Today's Task");
                         </tbody>
                     </table>
                 </div>
+                </div>
             </div>
         <?php endforeach; ?>
     </section>
+
+    <script>
+    document.querySelectorAll('.app-group-toggle').forEach((toggle) => {
+        toggle.addEventListener('click', () => {
+            const group = toggle.closest('.app-group');
+            const isOpen = group.classList.toggle('open');
+            toggle.setAttribute('aria-expanded', String(isOpen));
+        });
+    });
+    </script>
 <?php else: ?>
     <section class="panel">
         <div class="panel-heading">
