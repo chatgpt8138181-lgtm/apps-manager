@@ -44,7 +44,6 @@ function page_start(string $title): void
             'live-apps.php' => 'Live Apps',
             'consoles.php' => 'Consoles',
             'tasks.php' => 'Daily Tasks',
-            'admins.php' => 'Admins',
         ],
     ];
     $flash = flash();
@@ -83,6 +82,7 @@ function page_start(string $title): void
                             </div>
                         </div>
                     <?php endforeach; ?>
+                    <a class="nav-single <?= current_page() === 'admins.php' ? 'active' : '' ?>" href="admins.php">Admins</a>
                 </nav>
                 <a class="logout" href="logout.php">Logout</a>
             </div>

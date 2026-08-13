@@ -177,6 +177,20 @@ img {
     padding-left: 8px;
 }
 
+.sidebar nav a.nav-single {
+    color: #8fa3bd;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.sidebar nav a.nav-single.active,
+.sidebar nav a.nav-single:hover {
+    background: #243044;
+    color: #fff;
+}
+
 .sidebar nav a.active,
 .sidebar nav a:hover,
 .logout:hover {
