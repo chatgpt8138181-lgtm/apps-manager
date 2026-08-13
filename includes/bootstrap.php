@@ -126,6 +126,50 @@ function page_end(): void
                 toggle.setAttribute('aria-expanded', String(isOpen));
             });
         });
+
+        const groupStore = 'openGroups:' + location.pathname + location.search;
+        let openKeys = new Set();
+        try {
+            openKeys = new Set(JSON.parse(sessionStorage.getItem(groupStore) || '[]'));
+        } catch (error) {
+            openKeys = new Set();
+        }
+
+        document.querySelectorAll('.app-group').forEach((group) => {
+            const key = group.dataset.groupKey || '';
+            if (key && openKeys.has(key)) {
+                group.classList.add('open');
+                const toggle = group.querySelector('.app-group-toggle');
+                if (toggle) {
+                    toggle.setAttribute('aria-expanded', 'true');
+                }
+            }
+        });
+
+        document.querySelectorAll('.app-group-toggle').forEach((toggle) => {
+            toggle.addEventListener('click', () => {
+                const group = toggle.closest('.app-group');
+                const isOpen = group.classList.toggle('open');
+                toggle.setAttribute('aria-expanded', String(isOpen));
+
+                const key = group.dataset.groupKey || '';
+                if (!key) {
+                    return;
+                }
+
+                if (isOpen) {
+                    openKeys.add(key);
+                } else {
+                    openKeys.delete(key);
+                }
+
+                try {
+                    sessionStorage.setItem(groupStore, JSON.stringify([...openKeys]));
+                } catch (error) {
+                    /* storage unavailable */
+                }
+            });
+        });
     })();
     </script>
     </body>

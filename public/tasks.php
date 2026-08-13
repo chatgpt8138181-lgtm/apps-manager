@@ -104,7 +104,7 @@ page_start($view === 'history' ? 'Task History' : "Today's Task");
 
         <?php foreach ($todayGroups as $consoleName => $tasks): ?>
             <?php $doneCount = count(array_filter($tasks, fn($task) => (int) $task['is_done'] === 1)); ?>
-            <div class="app-group">
+            <div class="app-group" data-group-key="console-<?= h($consoleName) ?>">
                 <button class="app-group-toggle" type="button" aria-expanded="false">
                     <span><?= h($consoleName) ?> (<?= $doneCount ?>/<?= count($tasks) ?> done)</span>
                     <span class="nav-chevron" aria-hidden="true"></span>
@@ -163,7 +163,7 @@ page_start($view === 'history' ? 'Task History' : "Today's Task");
 
         <?php foreach ($historyGroups as $date => $tasks): ?>
             <?php $doneCount = count(array_filter($tasks, fn($task) => (int) $task['is_done'] === 1)); ?>
-            <div class="app-group">
+            <div class="app-group" data-group-key="date-<?= h((string) $date) ?>">
                 <button class="app-group-toggle" type="button" aria-expanded="false">
                     <span><?= h(date('d M Y', strtotime((string) $date))) ?> — Cycle <?= (int) $tasks[0]['cycle_no'] ?> (<?= $doneCount ?>/<?= count($tasks) ?> done)</span>
                     <span class="nav-chevron" aria-hidden="true"></span>
@@ -198,14 +198,4 @@ page_start($view === 'history' ? 'Task History' : "Today's Task");
         <?php endforeach; ?>
     </section>
 <?php endif; ?>
-
-<script>
-document.querySelectorAll('.app-group-toggle').forEach((toggle) => {
-    toggle.addEventListener('click', () => {
-        const group = toggle.closest('.app-group');
-        const isOpen = group.classList.toggle('open');
-        toggle.setAttribute('aria-expanded', String(isOpen));
-    });
-});
-</script>
 <?php page_end(); ?>
