@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $categories = all_categories();
 $counts = category_counts();
 
-page_start('Categories');
+page_start('Console Names');
 ?>
 <section class="form-panel">
     <form method="post" class="inline-form">

@@ -10,16 +10,17 @@ declare(strict_types=1);
 function checklist_items(): array
 {
     return [
-        'package_name' => ['label' => 'Package name changed', 'description' => 'New unique package name set'],
-        'application_id' => ['label' => 'Application ID changed', 'description' => 'applicationId updated in Gradle'],
-        'app_icon' => ['label' => 'App icon changed', 'description' => 'New launcher icon added'],
-        'new_data' => ['label' => 'New data updated', 'description' => "App's new content/data (JSON, assets, config) updated"],
-        'build_deleted' => ['label' => 'Build folder deleted', 'description' => 'Old build/ folder removed'],
-        'cache_invalidated' => ['label' => 'Cache invalidated', 'description' => 'Invalidate Caches / Restart done'],
-        'project_rebuilt' => ['label' => 'Project rebuilt', 'description' => 'Clean + Rebuild completed successfully'],
-        'app_name_strings' => ['label' => 'App name changed in strings', 'description' => 'app_name updated in strings.xml'],
-        'privacy_policy_url' => ['label' => 'Privacy policy URL added', 'description' => 'Working privacy policy URL saved'],
-        'app_domain_url' => ['label' => 'App domain URL added', 'description' => "App's domain URL saved"],
+        'package_name' => ['label' => 'Package Name Change', 'description' => 'New unique package name set'],
+        'application_id' => ['label' => 'Application ID Change', 'description' => 'applicationId updated in Gradle'],
+        'app_name_strings' => ['label' => 'App Name Change', 'description' => 'app_name updated in strings.xml'],
+        'app_icon' => ['label' => 'App Icon Change', 'description' => 'New launcher icon added'],
+        'splash_image' => ['label' => 'Splash Image Change', 'description' => 'New splash image added'],
+        'new_data' => ['label' => 'New Data Updated', 'description' => "App's new content/data (JSON, assets, config) updated"],
+        'privacy_policy_url' => ['label' => 'Privacy Policy URL Change', 'description' => 'Working privacy policy URL saved'],
+        'app_domain_url' => ['label' => 'App Domain URL Change', 'description' => "App's domain URL saved"],
+        'build_deleted' => ['label' => 'Build/Idea Folder Delete', 'description' => 'Old build/ and .idea/ folders removed'],
+        'cache_invalidated' => ['label' => 'Invalidate Cache', 'description' => 'Invalidate Caches / Restart done'],
+        'project_rebuilt' => ['label' => 'Compile All Sources/Project Rebuild', 'description' => 'Clean + Rebuild completed successfully'],
     ];
 }
 

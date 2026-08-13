@@ -15,7 +15,7 @@ A cPanel-compatible PHP 8.x and MySQL/MariaDB version of the Google Sheets App M
 - Active apps sort above Inactive apps, then older apps first
 - Ready/Not Ready and Active/Inactive status badges
 - Single result update and bulk update for visible search results
-- App production workflow: Prepare Production with a mandatory 10-item checklist, Sent for Production, and Live/Rejected/Suspended results
+- App production workflow: Prepare Production with a mandatory 11-item checklist, Sent for Production, and Live/Rejected/Suspended results
 - Live Apps section with a Ready for Work tag and Play Console assignment
 - Play Console management with per-console totals, shown, and remaining counts
 - Daily task distribution: balanced per-console quotas, no repeats within a cycle, Today's Task view, and full task history
@@ -148,7 +148,7 @@ After signing in, open **Admins** from the sidebar.
 
 The production module tracks every app from preparation to daily work tasks:
 
-1. **Production** (`production.php`) — add a new app and complete the mandatory 10-item checklist (package name, application ID, icon, data, build folder, cache, rebuild, strings.xml name, privacy policy URL, domain URL). "Send for Production" stays disabled until 10/10.
+1. **Production** (`production.php`) — add a new app and complete the mandatory 11-item checklist (package name, application ID, app name, icon, splash image, data, privacy policy URL, domain URL, build/idea folders, cache, rebuild). "Send for Production" stays disabled until 11/11.
 2. **Sent Apps** (`sent-production.php`) — set the Play Console review result: Live, Rejected, or Suspended. Each status has its own tab.
 3. **Live Apps** (`live-apps.php`) — assign each live app to a Play Console, then tag it **Ready for Work**. Only tagged apps enter the task system.
 4. **Consoles** (`consoles.php`) — register Play Consoles and see per-console live totals, shown, and remaining counts.
