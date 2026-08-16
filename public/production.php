@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($action === 'save_checklist') {
             $done = array_keys((array) ($_POST['items'] ?? []));
-            save_checklist($appId, $done);
+            save_checklist($appId, $done, (array) ($_POST['fields'] ?? []));
             redirect_with($return, 'success', 'Checklist saved.');
         }
 
@@ -74,22 +74,6 @@ page_start('Prepare Production');
         <label>App Name
             <input type="text" name="name" maxlength="200" required>
         </label>
-        <div class="form-row">
-            <label>Package Name
-                <input type="text" name="package_name" maxlength="200" placeholder="com.example.app">
-            </label>
-            <label>Application ID
-                <input type="text" name="application_id" maxlength="200" placeholder="com.example.app">
-            </label>
-        </div>
-        <div class="form-row">
-            <label>Privacy Policy URL
-                <input type="text" name="privacy_policy_url" maxlength="255" placeholder="https://">
-            </label>
-            <label>App Domain URL
-                <input type="text" name="app_domain_url" maxlength="255" placeholder="https://">
-            </label>
-        </div>
         <label>Play Console
             <select name="console_id">
                 <option value="0">No console</option>
@@ -117,13 +101,28 @@ page_start('Prepare Production');
             <input type="hidden" name="action" value="save_checklist">
             <input type="hidden" name="app_id" value="<?= (int) $selected['id'] ?>">
             <?php foreach ($items as $key => $item): ?>
-                <label class="checklist-item <?= !empty($selectedState[$key]) ? 'done' : '' ?>">
-                    <input type="checkbox" name="items[<?= h($key) ?>]" value="1" <?= !empty($selectedState[$key]) ? 'checked' : '' ?>>
-                    <span>
-                        <strong><?= h($item['label']) ?></strong>
-                        <small><?= h($item['description']) ?></small>
-                    </span>
-                </label>
+                <?php
+                $fieldName = $item['field'] ?? null;
+                $isDone = !empty($selectedState[$key]);
+                ?>
+                <div class="checklist-item <?= $isDone ? 'done' : '' ?><?= $fieldName && $isDone ? ' field-open' : '' ?>">
+                    <label class="checklist-item-main">
+                        <input type="checkbox" name="items[<?= h($key) ?>]" value="1" <?= $isDone ? 'checked' : '' ?>>
+                        <span>
+                            <strong><?= h($item['label']) ?></strong>
+                            <small><?= h($item['description']) ?></small>
+                        </span>
+                    </label>
+                    <?php if ($fieldName): ?>
+                        <div class="checklist-field">
+                            <input type="text"
+                                   name="fields[<?= h($fieldName) ?>]"
+                                   value="<?= h($selected[$fieldName]) ?>"
+                                   maxlength="<?= in_array($fieldName, ['package_name', 'application_id'], true) ? 200 : 255 ?>"
+                                   placeholder="<?= h($item['placeholder'] ?? '') ?>">
+                        </div>
+                    <?php endif; ?>
+                </div>
             <?php endforeach; ?>
             <div class="inline-actions">
                 <button class="btn primary" type="submit">Save Checklist</button>
@@ -255,4 +254,23 @@ page_start('Prepare Production');
     </div>
 </section>
 <?php endif; ?>
+
+<script>
+document.querySelectorAll('.checklist-item').forEach((item) => {
+    const checkbox = item.querySelector('input[type="checkbox"]');
+    if (!checkbox) {
+        return;
+    }
+
+    const sync = () => {
+        item.classList.toggle('done', checkbox.checked);
+        if (item.querySelector('.checklist-field')) {
+            item.classList.toggle('field-open', checkbox.checked);
+        }
+    };
+
+    checkbox.addEventListener('change', sync);
+    sync();
+});
+</script>
 <?php page_end(); ?>

@@ -537,20 +537,33 @@ th {
 }
 
 .checklist-item {
-    align-items: center;
     border: 1px solid var(--line);
     border-radius: 8px;
+    padding: 10px 12px;
+}
+
+.checklist-item-main {
+    align-items: center;
     cursor: pointer;
     display: grid;
     gap: 12px;
     grid-template-columns: auto 1fr;
-    padding: 10px 12px;
+    width: 100%;
 }
 
 .checklist-item input[type="checkbox"] {
     height: 18px;
     min-height: 0;
     width: 18px;
+}
+
+.checklist-field {
+    display: none;
+    margin-top: 10px;
+}
+
+.checklist-item.field-open .checklist-field {
+    display: block;
 }
 
 .checklist-item strong {

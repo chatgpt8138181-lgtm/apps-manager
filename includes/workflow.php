@@ -10,14 +10,14 @@ declare(strict_types=1);
 function checklist_items(): array
 {
     return [
-        'package_name' => ['label' => 'Package Name Change', 'description' => 'New unique package name set'],
-        'application_id' => ['label' => 'Application ID Change', 'description' => 'applicationId updated in Gradle'],
+        'package_name' => ['label' => 'Package Name Change', 'description' => 'New unique package name set', 'field' => 'package_name', 'placeholder' => 'com.example.app'],
+        'application_id' => ['label' => 'Application ID Change', 'description' => 'applicationId updated in Gradle', 'field' => 'application_id', 'placeholder' => 'com.example.app'],
         'app_name_strings' => ['label' => 'App Name Change', 'description' => 'app_name updated in strings.xml'],
         'app_icon' => ['label' => 'App Icon Change', 'description' => 'New launcher icon added'],
         'splash_image' => ['label' => 'Splash Image Change', 'description' => 'New splash image added'],
         'new_data' => ['label' => 'New Data Updated', 'description' => "App's new content/data (JSON, assets, config) updated"],
-        'privacy_policy_url' => ['label' => 'Privacy Policy URL Change', 'description' => 'Working privacy policy URL saved'],
-        'app_domain_url' => ['label' => 'App Domain URL Change', 'description' => "App's domain URL saved"],
+        'privacy_policy_url' => ['label' => 'Privacy Policy URL Change', 'description' => 'Working privacy policy URL saved', 'field' => 'privacy_policy_url', 'placeholder' => 'https://'],
+        'app_domain_url' => ['label' => 'App Domain URL Change', 'description' => "App's domain URL saved", 'field' => 'app_domain_url', 'placeholder' => 'https://'],
         'save_folder' => ['label' => 'Save Folder Change', 'description' => "App's save folder updated"],
         'build_deleted' => ['label' => 'Build/Idea Folder Delete', 'description' => 'Old build/ and .idea/ folders removed'],
         'cache_invalidated' => ['label' => 'Invalidate Cache', 'description' => 'Invalidate Caches / Restart done'],
@@ -218,7 +218,7 @@ function checklist_state(int $appId): array
     return $state;
 }
 
-function save_checklist(int $appId, array $doneKeys): void
+function save_checklist(int $appId, array $doneKeys, array $fieldValues = []): void
 {
     $app = get_production_app($appId);
     if (!$app) {
@@ -238,6 +238,30 @@ function save_checklist(int $appId, array $doneKeys): void
     foreach (array_keys(checklist_items()) as $key) {
         $isDone = in_array($key, $doneKeys, true);
         $stmt->execute([$appId, $key, $isDone ? 1 : 0, $isDone ? date('Y-m-d H:i:s') : null]);
+    }
+
+    $allowed = ['package_name' => 200, 'application_id' => 200, 'privacy_policy_url' => 255, 'app_domain_url' => 255];
+    $updates = [];
+    $params = [];
+
+    foreach ($allowed as $field => $max) {
+        if (!array_key_exists($field, $fieldValues)) {
+            continue;
+        }
+
+        $value = trim((string) $fieldValues[$field]);
+        if (text_length($value) > $max) {
+            throw new RuntimeException(ucfirst(str_replace('_', ' ', $field)) . " must be {$max} characters or fewer.");
+        }
+
+        $updates[] = $field . ' = ?';
+        $params[] = $value === '' ? null : $value;
+    }
+
+    if ($updates) {
+        $params[] = $appId;
+        $update = db()->prepare('UPDATE production_apps SET ' . implode(', ', $updates) . ' WHERE id = ?');
+        $update->execute($params);
     }
 }
 
