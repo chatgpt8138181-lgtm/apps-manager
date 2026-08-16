@@ -28,34 +28,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$counts = production_status_counts();
-$apps = production_apps_by_status($status);
-$tabs = [
-    'sent' => 'Sent for Production',
-    'live' => 'Live',
-    'rejected' => 'Rejected',
-    'suspended' => 'Suspended',
-];
-
-page_start('Sent for Production');
-?>
-<div class="tabs">
-    <?php foreach ($tabs as $key => $label): ?>
-        <a class="<?= $status === $key ? 'active' : '' ?>" href="sent-production.php?status=<?= h($key) ?>">
-            <?= h($label) ?> (<?= (int) $counts[$key] ?>)
-        </a>
-    <?php endforeach; ?>
-</div>
-
-<section class="panel">
-    <div class="panel-heading">
-        <h2><?= h($tabs[$status]) ?> (<?= count($apps) ?>)</h2>
-        <?php if ($status === 'sent'): ?>
-            <span class="hint">Set the Play Console review result for each app.</span>
-        <?php elseif ($status === 'live'): ?>
-            <a class="btn small" href="live-apps.php">Manage in Live Apps</a>
-        <?php endif; ?>
-    </div>
+function render_sent_apps_table(array $apps, string $status): void
+{
+    ?>
     <div class="table-wrap">
         <table>
             <thead>
@@ -69,9 +44,6 @@ page_start('Sent for Production');
             </tr>
             </thead>
             <tbody>
-            <?php if (!$apps): ?>
-                <tr><td colspan="6" class="empty">No apps in this list.</td></tr>
-            <?php endif; ?>
             <?php foreach ($apps as $app): ?>
                 <tr>
                     <td><?= h($app['name']) ?></td>
@@ -106,5 +78,76 @@ page_start('Sent for Production');
             </tbody>
         </table>
     </div>
+    <?php
+}
+
+$counts = production_status_counts();
+$consoles = all_consoles();
+$apps = production_apps_by_status($status);
+$unassigned = array_values(array_filter($apps, fn($app) => empty($app['console_id'])));
+$tabs = [
+    'sent' => 'Sent for Production',
+    'live' => 'Live',
+    'rejected' => 'Rejected',
+    'suspended' => 'Suspended',
+];
+
+page_start('Sent for Production');
+?>
+<div class="tabs">
+    <?php foreach ($tabs as $key => $label): ?>
+        <a class="<?= $status === $key ? 'active' : '' ?>" href="sent-production.php?status=<?= h($key) ?>">
+            <?= h($label) ?> (<?= (int) $counts[$key] ?>)
+        </a>
+    <?php endforeach; ?>
+</div>
+
+<section class="panel">
+    <div class="panel-heading">
+        <h2><?= h($tabs[$status]) ?> (<?= count($apps) ?>)</h2>
+        <?php if ($status === 'sent'): ?>
+            <span class="hint">Set the Play Console review result for each app.</span>
+        <?php elseif ($status === 'live'): ?>
+            <a class="btn small" href="live-apps.php">Manage in Live Apps</a>
+        <?php endif; ?>
+    </div>
+
+    <?php if (!$apps): ?>
+        <p class="empty block">No apps in this list.</p>
+    <?php endif; ?>
+
+    <?php foreach ($consoles as $console): ?>
+        <?php
+        $consoleApps = array_values(array_filter(
+            $apps,
+            fn($app) => (int) $app['console_id'] === (int) $console['id']
+        ));
+        if (!$consoleApps) {
+            continue;
+        }
+        ?>
+        <div class="app-group" data-group-key="console-<?= (int) $console['id'] ?>">
+            <button class="app-group-toggle" type="button" aria-expanded="false">
+                <span><?= h($console['name']) ?> (<?= count($consoleApps) ?>)</span>
+                <span class="nav-chevron" aria-hidden="true"></span>
+            </button>
+            <div class="app-group-body">
+                <?php render_sent_apps_table($consoleApps, $status); ?>
+            </div>
+        </div>
+    <?php endforeach; ?>
+
+    <?php if ($unassigned): ?>
+        <div class="app-group" data-group-key="no-console">
+            <button class="app-group-toggle" type="button" aria-expanded="false">
+                <span>No Console (<?= count($unassigned) ?>)</span>
+                <span class="nav-chevron" aria-hidden="true"></span>
+            </button>
+            <div class="app-group-body">
+                <p class="hint">Assign a Play Console from Production &rarr; Manage &rarr; Verify App Details.</p>
+                <?php render_sent_apps_table($unassigned, $status); ?>
+            </div>
+        </div>
+    <?php endif; ?>
 </section>
 <?php page_end(); ?>
