@@ -18,6 +18,7 @@ function checklist_items(): array
         'new_data' => ['label' => 'New Data Updated', 'description' => "App's new content/data (JSON, assets, config) updated"],
         'privacy_policy_url' => ['label' => 'Privacy Policy URL Change', 'description' => 'Working privacy policy URL saved'],
         'app_domain_url' => ['label' => 'App Domain URL Change', 'description' => "App's domain URL saved"],
+        'save_folder' => ['label' => 'Save Folder Change', 'description' => "App's save folder updated"],
         'build_deleted' => ['label' => 'Build/Idea Folder Delete', 'description' => 'Old build/ and .idea/ folders removed'],
         'cache_invalidated' => ['label' => 'Invalidate Cache', 'description' => 'Invalidate Caches / Restart done'],
         'project_rebuilt' => ['label' => 'Compile All Sources/Project Rebuild', 'description' => 'Clean + Rebuild completed successfully'],
