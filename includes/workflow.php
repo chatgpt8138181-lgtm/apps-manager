@@ -26,13 +26,14 @@ function checklist_items(): array
 
 function production_statuses(): array
 {
-    return ['prepare', 'sent', 'live', 'rejected', 'suspended'];
+    return ['prepare', 'ready', 'sent', 'live', 'rejected', 'suspended'];
 }
 
 function render_production_badge(string $status): string
 {
     $map = [
         'prepare' => ['badge badge-gray', 'Prepare'],
+        'ready' => ['badge badge-amber', 'Ready'],
         'sent' => ['badge badge-blue', 'Sent'],
         'live' => ['badge badge-green', 'Live'],
         'rejected' => ['badge badge-red', 'Rejected'],
@@ -254,8 +255,8 @@ function send_app_to_production(int $appId): void
         throw new RuntimeException('App was not found.');
     }
 
-    if ($app['status'] !== 'prepare') {
-        throw new RuntimeException('Only apps in Prepare Production can be sent.');
+    if (!in_array($app['status'], ['prepare', 'ready'], true)) {
+        throw new RuntimeException('Only Prepare or Ready apps can be sent for production.');
     }
 
     if (!checklist_is_complete($appId)) {
@@ -263,6 +264,25 @@ function send_app_to_production(int $appId): void
     }
 
     $stmt = db()->prepare("UPDATE production_apps SET status = 'sent', sent_at = NOW() WHERE id = ?");
+    $stmt->execute([$appId]);
+}
+
+function mark_app_ready(int $appId): void
+{
+    $app = get_production_app($appId);
+    if (!$app) {
+        throw new RuntimeException('App was not found.');
+    }
+
+    if ($app['status'] !== 'prepare') {
+        throw new RuntimeException('Only apps in Prepare Production can be marked Ready.');
+    }
+
+    if (!checklist_is_complete($appId)) {
+        throw new RuntimeException('Checklist must be 100% complete before marking Ready for Production.');
+    }
+
+    $stmt = db()->prepare("UPDATE production_apps SET status = 'ready' WHERE id = ?");
     $stmt->execute([$appId]);
 }
 

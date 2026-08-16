@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS production_apps (
     application_id VARCHAR(200) NULL,
     privacy_policy_url VARCHAR(255) NULL,
     app_domain_url VARCHAR(255) NULL,
-    status ENUM('prepare', 'sent', 'live', 'rejected', 'suspended') NOT NULL DEFAULT 'prepare',
+    status ENUM('prepare', 'ready', 'sent', 'live', 'rejected', 'suspended') NOT NULL DEFAULT 'prepare',
     ready_for_work TINYINT(1) NOT NULL DEFAULT 0,
     console_id INT UNSIGNED NULL,
     sent_at DATETIME NULL,

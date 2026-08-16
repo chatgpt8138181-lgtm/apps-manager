@@ -32,6 +32,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect_with('sent-production.php', 'success', 'App sent for production.');
         }
 
+        if ($action === 'ready') {
+            mark_app_ready($appId);
+            redirect_with('ready-apps.php', 'success', 'App marked Ready for Production.');
+        }
+
         if ($action === 'delete') {
             delete_production_app($appId);
             redirect_with('production.php', 'success', 'App deleted.');
@@ -125,17 +130,27 @@ page_start('Prepare Production');
             </div>
         </form>
 
-        <form method="post" class="inline-actions">
-            <?= csrf_field() ?>
-            <input type="hidden" name="action" value="send">
-            <input type="hidden" name="app_id" value="<?= (int) $selected['id'] ?>">
-            <button class="btn primary" type="submit" <?= $selectedDone >= $totalItems ? '' : 'disabled' ?>>
-                Send for Production
-            </button>
+        <div class="inline-actions">
+            <form method="post">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="ready">
+                <input type="hidden" name="app_id" value="<?= (int) $selected['id'] ?>">
+                <button class="btn" type="submit" <?= $selectedDone >= $totalItems ? '' : 'disabled' ?>>
+                    Ready for Production
+                </button>
+            </form>
+            <form method="post">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="send">
+                <input type="hidden" name="app_id" value="<?= (int) $selected['id'] ?>">
+                <button class="btn primary" type="submit" <?= $selectedDone >= $totalItems ? '' : 'disabled' ?>>
+                    Send for Production
+                </button>
+            </form>
             <?php if ($selectedDone < $totalItems): ?>
-                <span class="hint">Complete all <?= $totalItems ?> checklist items to enable this button.</span>
+                <span class="hint">Complete all <?= $totalItems ?> checklist items to enable these buttons.</span>
             <?php endif; ?>
-        </form>
+        </div>
     </section>
 
     <section class="form-panel">
@@ -214,6 +229,12 @@ page_start('Prepare Production');
                     <td><?= h($app['created_at']) ?></td>
                     <td class="actions">
                         <a class="btn small" href="production.php?app_id=<?= (int) $app['id'] ?>">Manage</a>
+                        <form method="post">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="ready">
+                            <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
+                            <button class="btn small" type="submit" <?= $done >= $totalItems ? '' : 'disabled' ?>>Ready</button>
+                        </form>
                         <form method="post">
                             <?= csrf_field() ?>
                             <input type="hidden" name="action" value="send">
