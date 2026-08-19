@@ -10,6 +10,7 @@ declare(strict_types=1);
 function checklist_items(): array
 {
     return [
+        'clone_files_rename' => ['label' => 'Clone Files Name Replace', 'description' => 'Cloned project file names replaced'],
         'package_name' => ['label' => 'Package Name Change', 'description' => 'New unique package name set', 'field' => 'package_name', 'placeholder' => 'com.example.app'],
         'application_id' => ['label' => 'Application ID Change', 'description' => 'applicationId updated in Gradle', 'field' => 'application_id', 'placeholder' => 'com.example.app'],
         'app_name_strings' => ['label' => 'App Name Change', 'description' => 'app_name updated in strings.xml'],
@@ -19,6 +20,7 @@ function checklist_items(): array
         'privacy_policy_url' => ['label' => 'Privacy Policy URL Change', 'description' => 'Working privacy policy URL saved', 'field' => 'privacy_policy_url', 'placeholder' => 'https://'],
         'app_domain_url' => ['label' => 'App Domain URL Change', 'description' => "App's domain URL saved", 'field' => 'app_domain_url', 'placeholder' => 'https://'],
         'save_folder' => ['label' => 'Save Folder Change', 'description' => "App's save folder updated"],
+        'random_words' => ['label' => 'Random Words Change', 'description' => 'Random words/strings replaced in project'],
         'build_deleted' => ['label' => 'Build/Idea Folder Delete', 'description' => 'Old build/ and .idea/ folders removed'],
         'cache_invalidated' => ['label' => 'Invalidate Cache', 'description' => 'Invalidate Caches / Restart done'],
         'project_rebuilt' => ['label' => 'Compile All Sources/Project Rebuild', 'description' => 'Clean + Rebuild completed successfully'],
