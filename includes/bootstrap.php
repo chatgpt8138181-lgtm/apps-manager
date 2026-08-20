@@ -110,6 +110,15 @@ function page_end(): void
     </div>
     <script>
     (() => {
+        document.querySelectorAll('.app-group-body, .nav-group-items, .checklist-field').forEach((body) => {
+            const inner = document.createElement('div');
+            inner.className = 'collapse-inner';
+            while (body.firstChild) {
+                inner.appendChild(body.firstChild);
+            }
+            body.appendChild(inner);
+        });
+
         const menuToggle = document.querySelector('.menu-toggle');
         const menuPanel = document.querySelector('.menu-panel');
 
