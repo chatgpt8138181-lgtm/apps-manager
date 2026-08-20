@@ -14,6 +14,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect_with('consoles.php', 'success', 'Console added.');
         }
 
+        if ($action === 'rename') {
+            rename_console((int) ($_POST['console_id'] ?? 0), (string) ($_POST['name'] ?? ''));
+            redirect_with('consoles.php', 'success', 'Console updated.');
+        }
+
         if ($action === 'delete') {
             delete_console((int) ($_POST['console_id'] ?? 0));
             redirect_with('consoles.php', 'success', 'Console deleted.');
@@ -62,7 +67,15 @@ page_start('Play Consoles');
             <?php endif; ?>
             <?php foreach ($consoles as $console): ?>
                 <tr>
-                    <td><?= h($console['name']) ?></td>
+                    <td>
+                        <form method="post" class="console-assign-form">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="rename">
+                            <input type="hidden" name="console_id" value="<?= (int) $console['id'] ?>">
+                            <input type="text" name="name" value="<?= h($console['name']) ?>" maxlength="150" required>
+                            <button class="btn small" type="submit">Save</button>
+                        </form>
+                    </td>
                     <td><?= (int) $console['live_total'] ?></td>
                     <td><?= (int) $console['ready_total'] ?></td>
                     <td><?= (int) $console['shown_total'] ?></td>

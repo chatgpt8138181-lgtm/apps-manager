@@ -398,6 +398,29 @@ function add_console(string $name): void
     $stmt->execute([$name]);
 }
 
+function rename_console(int $consoleId, string $name): void
+{
+    $name = trim($name);
+    if ($name === '' || text_length($name) > 150) {
+        throw new RuntimeException('Console name must be 1 to 150 characters.');
+    }
+
+    $check = db()->prepare('SELECT id FROM consoles WHERE id = ? LIMIT 1');
+    $check->execute([$consoleId]);
+    if (!$check->fetch()) {
+        throw new RuntimeException('Console was not found.');
+    }
+
+    $existing = db()->prepare('SELECT id FROM consoles WHERE name = ? AND id != ? LIMIT 1');
+    $existing->execute([$name, $consoleId]);
+    if ($existing->fetch()) {
+        throw new RuntimeException('That console name already exists.');
+    }
+
+    $stmt = db()->prepare('UPDATE consoles SET name = ? WHERE id = ?');
+    $stmt->execute([$name, $consoleId]);
+}
+
 function delete_console(int $consoleId): void
 {
     $stmt = db()->prepare('DELETE FROM consoles WHERE id = ?');
