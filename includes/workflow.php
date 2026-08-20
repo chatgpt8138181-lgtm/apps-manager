@@ -384,6 +384,44 @@ function set_ready_for_work(int $appId, bool $ready): void
     $stmt->execute([$ready ? 1 : 0, $appId]);
 }
 
+function app_slug(string $name): string
+{
+    $slug = strtolower(trim($name));
+    $slug = (string) preg_replace('/[^a-z0-9]+/', '_', $slug);
+
+    return trim($slug, '_');
+}
+
+/*
+ * Console domain URL is a base; each app gets base/app_name_slug.
+ * Duplicate app names in the same console get a number suffix in
+ * creation order: car_wallpaper, car_wallpaper1, car_wallpaper2.
+ */
+function app_domain_url_for(array $app): ?string
+{
+    $base = $app['console_app_domain_url'] ?? null;
+    if (!$base || empty($app['console_id'])) {
+        return null;
+    }
+
+    $slug = app_slug((string) $app['name']);
+    if ($slug === '') {
+        return rtrim((string) $base, '/');
+    }
+
+    $stmt = db()->prepare('SELECT name FROM production_apps WHERE console_id = ? AND id < ? ORDER BY id ASC');
+    $stmt->execute([(int) $app['console_id'], (int) $app['id']]);
+
+    $earlier = 0;
+    foreach ($stmt->fetchAll() as $row) {
+        if (app_slug((string) $row['name']) === $slug) {
+            $earlier++;
+        }
+    }
+
+    return rtrim((string) $base, '/') . '/' . $slug . ($earlier > 0 ? $earlier : '');
+}
+
 function all_consoles(): array
 {
     $stmt = db()->query('SELECT id, name, privacy_policy_url, app_domain_url, created_at FROM consoles ORDER BY created_at ASC, id ASC');

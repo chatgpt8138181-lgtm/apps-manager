@@ -62,6 +62,7 @@ if ($selectedId > 0) {
 
 $selectedState = $selected ? checklist_state((int) $selected['id']) : [];
 $selectedDone = $selected ? (int) $selected['checklist_done'] : 0;
+$selectedDomainUrl = $selected ? app_domain_url_for($selected) : null;
 
 page_start('Prepare Production');
 ?>
@@ -124,7 +125,11 @@ page_start('Prepare Production');
                                    placeholder="<?= h($item['placeholder'] ?? '') ?>">
                         </div>
                     <?php elseif ($consoleUrlKey): ?>
-                        <?php $consoleUrl = $selected['console_' . $consoleUrlKey] ?? null; ?>
+                        <?php
+                        $consoleUrl = $consoleUrlKey === 'app_domain_url'
+                            ? $selectedDomainUrl
+                            : ($selected['console_' . $consoleUrlKey] ?? null);
+                        ?>
                         <div class="checklist-field">
                             <?php if (empty($selected['console_id'])): ?>
                                 <span class="hint">Assign a Play Console first (Verify App Details below).</span>
@@ -193,7 +198,7 @@ page_start('Prepare Production');
                     <input type="text" value="<?= h($selected['console_privacy_policy_url'] ?? '') ?>" placeholder="Set on Consoles page" readonly>
                 </label>
                 <label>App Domain URL (from console)
-                    <input type="text" value="<?= h($selected['console_app_domain_url'] ?? '') ?>" placeholder="Set on Consoles page" readonly>
+                    <input type="text" value="<?= h($selectedDomainUrl ?? '') ?>" placeholder="Set on Consoles page" readonly>
                 </label>
             </div>
             <label>Play Console
