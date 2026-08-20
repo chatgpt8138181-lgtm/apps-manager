@@ -17,8 +17,8 @@ function checklist_items(): array
         'app_icon' => ['label' => 'App Icon Change', 'description' => 'New launcher icon added'],
         'splash_image' => ['label' => 'Splash Image Change', 'description' => 'New splash image added'],
         'new_data' => ['label' => 'New Data Updated', 'description' => "App's new content/data (JSON, assets, config) updated"],
-        'privacy_policy_url' => ['label' => 'Privacy Policy URL Change', 'description' => 'Working privacy policy URL saved', 'field' => 'privacy_policy_url', 'placeholder' => 'https://'],
-        'app_domain_url' => ['label' => 'App Domain URL Change', 'description' => "App's domain URL saved", 'field' => 'app_domain_url', 'placeholder' => 'https://'],
+        'privacy_policy_url' => ['label' => 'Privacy Policy URL Change', 'description' => "Console's privacy policy URL applied", 'console_url' => 'privacy_policy_url'],
+        'app_domain_url' => ['label' => 'App Domain URL Change', 'description' => "Console's domain URL applied", 'console_url' => 'app_domain_url'],
         'save_folder' => ['label' => 'Save Folder Change', 'description' => "App's save folder updated"],
         'random_words' => ['label' => 'Random Words Change', 'description' => 'Random words/strings replaced in project'],
         'build_deleted' => ['label' => 'Build/Idea Folder Delete', 'description' => 'Old build/ and .idea/ folders removed'],
@@ -168,6 +168,8 @@ function get_production_app(int $appId): ?array
 {
     $stmt = db()->prepare(
         'SELECT pa.*, c.name AS console_name,
+            c.privacy_policy_url AS console_privacy_policy_url,
+            c.app_domain_url AS console_app_domain_url,
             (SELECT COUNT(*) FROM production_checklist pc WHERE pc.app_id = pa.id AND pc.is_done = 1) AS checklist_done
          FROM production_apps pa
          LEFT JOIN consoles c ON c.id = pa.console_id
@@ -184,6 +186,8 @@ function production_apps_by_status(string $status): array
 {
     $stmt = db()->prepare(
         'SELECT pa.*, c.name AS console_name,
+            c.privacy_policy_url AS console_privacy_policy_url,
+            c.app_domain_url AS console_app_domain_url,
             (SELECT COUNT(*) FROM production_checklist pc WHERE pc.app_id = pa.id AND pc.is_done = 1) AS checklist_done
          FROM production_apps pa
          LEFT JOIN consoles c ON c.id = pa.console_id
@@ -242,7 +246,7 @@ function save_checklist(int $appId, array $doneKeys, array $fieldValues = []): v
         $stmt->execute([$appId, $key, $isDone ? 1 : 0, $isDone ? date('Y-m-d H:i:s') : null]);
     }
 
-    $allowed = ['package_name' => 200, 'application_id' => 200, 'privacy_policy_url' => 255, 'app_domain_url' => 255];
+    $allowed = ['package_name' => 200, 'application_id' => 200];
     $updates = [];
     $params = [];
 
@@ -382,23 +386,40 @@ function set_ready_for_work(int $appId, bool $ready): void
 
 function all_consoles(): array
 {
-    $stmt = db()->query('SELECT id, name, created_at FROM consoles ORDER BY created_at ASC, id ASC');
+    $stmt = db()->query('SELECT id, name, privacy_policy_url, app_domain_url, created_at FROM consoles ORDER BY created_at ASC, id ASC');
 
     return $stmt->fetchAll();
 }
 
-function add_console(string $name): void
+function validate_console_urls(array $data): array
+{
+    $urls = [];
+
+    foreach (['privacy_policy_url', 'app_domain_url'] as $field) {
+        $value = trim((string) ($data[$field] ?? ''));
+        if (text_length($value) > 255) {
+            throw new RuntimeException(ucfirst(str_replace('_', ' ', $field)) . ' must be 255 characters or fewer.');
+        }
+        $urls[$field] = $value === '' ? null : $value;
+    }
+
+    return $urls;
+}
+
+function add_console(string $name, array $data = []): void
 {
     $name = trim($name);
     if ($name === '' || text_length($name) > 150) {
         throw new RuntimeException('Console name must be 1 to 150 characters.');
     }
 
-    $stmt = db()->prepare('INSERT INTO consoles (name) VALUES (?)');
-    $stmt->execute([$name]);
+    $urls = validate_console_urls($data);
+
+    $stmt = db()->prepare('INSERT INTO consoles (name, privacy_policy_url, app_domain_url) VALUES (?, ?, ?)');
+    $stmt->execute([$name, $urls['privacy_policy_url'], $urls['app_domain_url']]);
 }
 
-function rename_console(int $consoleId, string $name): void
+function update_console(int $consoleId, string $name, array $data = []): void
 {
     $name = trim($name);
     if ($name === '' || text_length($name) > 150) {
@@ -417,8 +438,10 @@ function rename_console(int $consoleId, string $name): void
         throw new RuntimeException('That console name already exists.');
     }
 
-    $stmt = db()->prepare('UPDATE consoles SET name = ? WHERE id = ?');
-    $stmt->execute([$name, $consoleId]);
+    $urls = validate_console_urls($data);
+
+    $stmt = db()->prepare('UPDATE consoles SET name = ?, privacy_policy_url = ?, app_domain_url = ? WHERE id = ?');
+    $stmt->execute([$name, $urls['privacy_policy_url'], $urls['app_domain_url'], $consoleId]);
 }
 
 function delete_console(int $consoleId): void
@@ -431,7 +454,7 @@ function console_overview(): array
 {
     $cycle = current_cycle();
     $stmt = db()->prepare(
-        "SELECT c.id, c.name, c.created_at,
+        "SELECT c.id, c.name, c.privacy_policy_url, c.app_domain_url, c.created_at,
             (SELECT COUNT(*) FROM production_apps pa
              WHERE pa.console_id = c.id AND pa.status = 'live') AS live_total,
             (SELECT COUNT(*) FROM production_apps pa

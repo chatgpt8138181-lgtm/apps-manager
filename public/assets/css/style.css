@@ -566,6 +566,29 @@ th {
     display: block;
 }
 
+.console-url {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.console-url code {
+    background: #eef2f7;
+    border-radius: 6px;
+    padding: 6px 10px;
+    word-break: break-all;
+}
+
+.console-table {
+    min-width: 1200px;
+}
+
+input[readonly] {
+    background: var(--bg);
+    color: var(--muted);
+}
+
 .checklist-item strong {
     color: var(--text);
     display: block;

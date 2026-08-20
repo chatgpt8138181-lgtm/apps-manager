@@ -103,9 +103,11 @@ page_start('Prepare Production');
             <?php foreach ($items as $key => $item): ?>
                 <?php
                 $fieldName = $item['field'] ?? null;
+                $consoleUrlKey = $item['console_url'] ?? null;
                 $isDone = !empty($selectedState[$key]);
+                $hasField = $fieldName || $consoleUrlKey;
                 ?>
-                <div class="checklist-item <?= $isDone ? 'done' : '' ?><?= $fieldName && $isDone ? ' field-open' : '' ?>">
+                <div class="checklist-item <?= $isDone ? 'done' : '' ?><?= $hasField && $isDone ? ' field-open' : '' ?>">
                     <label class="checklist-item-main">
                         <input type="checkbox" name="items[<?= h($key) ?>]" value="1" <?= $isDone ? 'checked' : '' ?>>
                         <span>
@@ -118,8 +120,22 @@ page_start('Prepare Production');
                             <input type="text"
                                    name="fields[<?= h($fieldName) ?>]"
                                    value="<?= h($selected[$fieldName]) ?>"
-                                   maxlength="<?= in_array($fieldName, ['package_name', 'application_id'], true) ? 200 : 255 ?>"
+                                   maxlength="200"
                                    placeholder="<?= h($item['placeholder'] ?? '') ?>">
+                        </div>
+                    <?php elseif ($consoleUrlKey): ?>
+                        <?php $consoleUrl = $selected['console_' . $consoleUrlKey] ?? null; ?>
+                        <div class="checklist-field">
+                            <?php if (empty($selected['console_id'])): ?>
+                                <span class="hint">Assign a Play Console first (Verify App Details below).</span>
+                            <?php elseif (!$consoleUrl): ?>
+                                <span class="hint">This console has no URL set yet. <a href="consoles.php"><strong>Add it on Consoles</strong></a>.</span>
+                            <?php else: ?>
+                                <div class="console-url">
+                                    <code><?= h($consoleUrl) ?></code>
+                                    <button class="btn small copy-url" type="button" data-url="<?= h($consoleUrl) ?>">Copy</button>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -173,11 +189,11 @@ page_start('Prepare Production');
                 </label>
             </div>
             <div class="form-row">
-                <label>Privacy Policy URL
-                    <input type="text" name="privacy_policy_url" value="<?= h($selected['privacy_policy_url']) ?>" maxlength="255">
+                <label>Privacy Policy URL (from console)
+                    <input type="text" value="<?= h($selected['console_privacy_policy_url'] ?? '') ?>" placeholder="Set on Consoles page" readonly>
                 </label>
-                <label>App Domain URL
-                    <input type="text" name="app_domain_url" value="<?= h($selected['app_domain_url']) ?>" maxlength="255">
+                <label>App Domain URL (from console)
+                    <input type="text" value="<?= h($selected['console_app_domain_url'] ?? '') ?>" placeholder="Set on Consoles page" readonly>
                 </label>
             </div>
             <label>Play Console
@@ -315,6 +331,15 @@ document.querySelectorAll('.checklist-item').forEach((item) => {
 
     checkbox.addEventListener('change', sync);
     sync();
+});
+
+document.querySelectorAll('.copy-url').forEach((button) => {
+    button.addEventListener('click', () => {
+        navigator.clipboard.writeText(button.dataset.url).then(() => {
+            button.textContent = 'Copied!';
+            setTimeout(() => { button.textContent = 'Copy'; }, 1500);
+        });
+    });
 });
 </script>
 <?php page_end(); ?>
