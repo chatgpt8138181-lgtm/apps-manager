@@ -428,7 +428,7 @@ function app_domain_url_for(array $app): ?string
  */
 function console_app_url_names(int $consoleId, ?string $baseUrl): array
 {
-    $stmt = db()->prepare('SELECT id, name, status FROM production_apps WHERE console_id = ? ORDER BY id ASC');
+    $stmt = db()->prepare('SELECT id, name, status, url_checked FROM production_apps WHERE console_id = ? ORDER BY id ASC');
     $stmt->execute([$consoleId]);
     $rows = $stmt->fetchAll();
 
@@ -445,6 +445,32 @@ function console_app_url_names(int $consoleId, ?string $baseUrl): array
     unset($row);
 
     return $rows;
+}
+
+function set_url_checked(int $appId, bool $checked): void
+{
+    $stmt = db()->prepare('UPDATE production_apps SET url_checked = ? WHERE id = ?');
+    $stmt->execute([$checked ? 1 : 0, $appId]);
+
+    if ($stmt->rowCount() < 1 && !get_production_app($appId)) {
+        throw new RuntimeException('App was not found.');
+    }
+}
+
+function url_checked_counts(): array
+{
+    $stmt = db()->query(
+        'SELECT url_checked, COUNT(*) AS total FROM production_apps
+         WHERE console_id IS NOT NULL
+         GROUP BY url_checked'
+    );
+
+    $counts = ['pending' => 0, 'checked' => 0];
+    foreach ($stmt->fetchAll() as $row) {
+        $counts[(int) $row['url_checked'] === 1 ? 'checked' : 'pending'] = (int) $row['total'];
+    }
+
+    return $counts;
 }
 
 function all_consoles(): array

@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS production_apps (
     app_domain_url VARCHAR(255) NULL,
     status ENUM('prepare', 'ready', 'sent', 'live', 'rejected', 'suspended') NOT NULL DEFAULT 'prepare',
     ready_for_work TINYINT(1) NOT NULL DEFAULT 0,
+    url_checked TINYINT(1) NOT NULL DEFAULT 0,
     console_id INT UNSIGNED NULL,
     sent_at DATETIME NULL,
     live_at DATETIME NULL,
