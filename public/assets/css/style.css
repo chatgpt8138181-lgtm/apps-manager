@@ -580,8 +580,25 @@ th {
     word-break: break-all;
 }
 
-.console-table {
-    min-width: 1200px;
+.console-stats {
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+    margin-bottom: 16px;
+}
+
+.console-stats strong {
+    color: var(--text);
+    font-size: 16px;
+}
+
+.console-actions {
+    margin-top: 14px;
+}
+
+.app-group-toggle .badge {
+    margin-left: 10px;
 }
 
 input[readonly] {
