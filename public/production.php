@@ -196,11 +196,10 @@ page_start('Prepare Production');
 <?php endif; ?>
 
 <?php if (!$selected): ?>
-<section class="panel">
-    <div class="panel-heading">
-        <h2>Prepare Production (<?= count($prepareApps) ?>)</h2>
-        <span class="hint">Send for Production unlocks at <?= $totalItems ?>/<?= $totalItems ?>.</span>
-    </div>
+<?php
+function render_prepare_apps_table(array $apps, int $totalItems): void
+{
+    ?>
     <div class="table-wrap">
         <table>
             <thead>
@@ -213,10 +212,7 @@ page_start('Prepare Production');
             </tr>
             </thead>
             <tbody>
-            <?php if (!$prepareApps): ?>
-                <tr><td colspan="5" class="empty">No apps in Prepare Production.</td></tr>
-            <?php endif; ?>
-            <?php foreach ($prepareApps as $app): ?>
+            <?php foreach ($apps as $app): ?>
                 <?php $done = (int) $app['checklist_done']; ?>
                 <tr>
                     <td><?= h($app['name']) ?></td>
@@ -252,6 +248,54 @@ page_start('Prepare Production');
             </tbody>
         </table>
     </div>
+    <?php
+}
+
+$unassignedPrepare = array_values(array_filter($prepareApps, fn($app) => empty($app['console_id'])));
+?>
+<section class="panel">
+    <div class="panel-heading">
+        <h2>Prepare Production (<?= count($prepareApps) ?>)</h2>
+        <span class="hint">Send for Production unlocks at <?= $totalItems ?>/<?= $totalItems ?>.</span>
+    </div>
+
+    <?php if (!$prepareApps): ?>
+        <p class="empty block">No apps in Prepare Production.</p>
+    <?php endif; ?>
+
+    <?php foreach ($consoles as $console): ?>
+        <?php
+        $consoleApps = array_values(array_filter(
+            $prepareApps,
+            fn($app) => (int) $app['console_id'] === (int) $console['id']
+        ));
+        if (!$consoleApps) {
+            continue;
+        }
+        ?>
+        <div class="app-group" data-group-key="console-<?= (int) $console['id'] ?>">
+            <button class="app-group-toggle" type="button" aria-expanded="false">
+                <span><?= h($console['name']) ?> (<?= count($consoleApps) ?>)</span>
+                <span class="nav-chevron" aria-hidden="true"></span>
+            </button>
+            <div class="app-group-body">
+                <?php render_prepare_apps_table($consoleApps, $totalItems); ?>
+            </div>
+        </div>
+    <?php endforeach; ?>
+
+    <?php if ($unassignedPrepare): ?>
+        <div class="app-group" data-group-key="no-console">
+            <button class="app-group-toggle" type="button" aria-expanded="false">
+                <span>No Console (<?= count($unassignedPrepare) ?>)</span>
+                <span class="nav-chevron" aria-hidden="true"></span>
+            </button>
+            <div class="app-group-body">
+                <p class="hint">Assign a Play Console from Manage &rarr; Verify App Details.</p>
+                <?php render_prepare_apps_table($unassignedPrepare, $totalItems); ?>
+            </div>
+        </div>
+    <?php endif; ?>
 </section>
 <?php endif; ?>
 
