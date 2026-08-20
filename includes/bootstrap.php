@@ -44,6 +44,7 @@ function page_start(string $title): void
             'sent-production.php' => 'Sent Apps',
             'live-apps.php' => 'Live Apps',
             'consoles.php' => 'Consoles',
+            'app-urls.php' => 'App URLs',
             'tasks.php' => 'Daily Tasks',
         ],
     ];

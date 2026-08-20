@@ -422,6 +422,31 @@ function app_domain_url_for(array $app): ?string
     return rtrim((string) $base, '/') . '/' . $slug . ($earlier > 0 ? $earlier : '');
 }
 
+/*
+ * All apps of a console with their generated URL names, in creation
+ * order — the same numbering app_domain_url_for() produces.
+ */
+function console_app_url_names(int $consoleId, ?string $baseUrl): array
+{
+    $stmt = db()->prepare('SELECT id, name, status FROM production_apps WHERE console_id = ? ORDER BY id ASC');
+    $stmt->execute([$consoleId]);
+    $rows = $stmt->fetchAll();
+
+    $counts = [];
+    foreach ($rows as &$row) {
+        $slug = app_slug((string) $row['name']);
+        $seen = $counts[$slug] ?? 0;
+        $counts[$slug] = $seen + 1;
+
+        $urlName = $slug === '' ? '' : $slug . ($seen > 0 ? $seen : '');
+        $row['url_name'] = $urlName;
+        $row['full_url'] = ($baseUrl && $urlName !== '') ? rtrim($baseUrl, '/') . '/' . $urlName : null;
+    }
+    unset($row);
+
+    return $rows;
+}
+
 function all_consoles(): array
 {
     $stmt = db()->query('SELECT id, name, privacy_policy_url, app_domain_url, created_at FROM consoles ORDER BY created_at ASC, id ASC');
