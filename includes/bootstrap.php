@@ -126,6 +126,15 @@ function page_end(): void
                 const group = toggle.closest('.nav-group');
                 const isOpen = group.classList.toggle('open');
                 toggle.setAttribute('aria-expanded', String(isOpen));
+
+                if (isOpen) {
+                    document.querySelectorAll('.nav-group.open').forEach((other) => {
+                        if (other !== group) {
+                            other.classList.remove('open');
+                            other.querySelector('.nav-group-toggle')?.setAttribute('aria-expanded', 'false');
+                        }
+                    });
+                }
             });
         });
 
@@ -137,16 +146,26 @@ function page_end(): void
             openKeys = new Set();
         }
 
+        let restoredOne = false;
         document.querySelectorAll('.app-group').forEach((group) => {
             const key = group.dataset.groupKey || '';
-            if (key && openKeys.has(key)) {
+            if (!restoredOne && key && openKeys.has(key)) {
                 group.classList.add('open');
                 const toggle = group.querySelector('.app-group-toggle');
                 if (toggle) {
                     toggle.setAttribute('aria-expanded', 'true');
                 }
+                restoredOne = true;
             }
         });
+
+        const saveOpenKeys = () => {
+            try {
+                sessionStorage.setItem(groupStore, JSON.stringify([...openKeys]));
+            } catch (error) {
+                /* storage unavailable */
+            }
+        };
 
         document.querySelectorAll('.app-group-toggle').forEach((toggle) => {
             toggle.addEventListener('click', () => {
@@ -154,22 +173,21 @@ function page_end(): void
                 const isOpen = group.classList.toggle('open');
                 toggle.setAttribute('aria-expanded', String(isOpen));
 
-                const key = group.dataset.groupKey || '';
-                if (!key) {
-                    return;
-                }
-
                 if (isOpen) {
-                    openKeys.add(key);
-                } else {
-                    openKeys.delete(key);
+                    document.querySelectorAll('.app-group.open').forEach((other) => {
+                        if (other !== group) {
+                            other.classList.remove('open');
+                            other.querySelector('.app-group-toggle')?.setAttribute('aria-expanded', 'false');
+                        }
+                    });
                 }
 
-                try {
-                    sessionStorage.setItem(groupStore, JSON.stringify([...openKeys]));
-                } catch (error) {
-                    /* storage unavailable */
+                openKeys.clear();
+                const key = group.dataset.groupKey || '';
+                if (isOpen && key) {
+                    openKeys.add(key);
                 }
+                saveOpenKeys();
             });
         });
     })();
