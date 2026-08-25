@@ -504,6 +504,24 @@ function todays_loading_apps(): array
     return $grouped;
 }
 
+function loading_history(): array
+{
+    $stmt = db()->query(
+        'SELECT ld.task_date, ld.is_done, ld.cycle_no, a.app_name, a.icon_path, c.name AS category_name
+         FROM loading_daily ld
+         JOIN apps a ON a.id = ld.app_id
+         JOIN categories c ON c.id = ld.category_id
+         ORDER BY ld.task_date DESC, c.created_at ASC, c.id ASC, ld.id ASC'
+    );
+
+    $grouped = [];
+    foreach ($stmt->fetchAll() as $task) {
+        $grouped[$task['task_date']][] = $task;
+    }
+
+    return $grouped;
+}
+
 function toggle_loading_done(int $taskId): void
 {
     $stmt = db()->prepare('UPDATE loading_daily SET is_done = 1 - is_done WHERE id = ?');

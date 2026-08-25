@@ -3,11 +3,11 @@ $root = is_file(__DIR__ . '/../includes/bootstrap.php') ? dirname(__DIR__) : __D
 require_once $root . '/includes/bootstrap.php';
 require_login();
 
-$view = ($_GET['view'] ?? '') === 'all' ? 'all' : 'today';
+$view = in_array($_GET['view'] ?? '', ['all', 'history'], true) ? $_GET['view'] : 'today';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
-    $return = 'active-apps.php' . ($view === 'all' ? '?view=all' : '');
+    $return = 'active-apps.php' . ($view !== 'today' ? '?view=' . urlencode($view) : '');
 
     try {
         $action = $_POST['action'] ?? '';
@@ -46,12 +46,14 @@ $categories = all_categories();
 $allActive = $view === 'all'
     ? array_values(array_filter(sorted_apps(), fn($app) => $app['loading_status'] === 'Active'))
     : [];
+$historyGroups = $view === 'history' ? loading_history() : [];
 
-page_start($view === 'all' ? 'All Active Apps' : 'Active Apps');
+page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading History' : 'Active Apps'));
 ?>
 <div class="tabs">
     <a class="<?= $view === 'today' ? 'active' : '' ?>" href="active-apps.php">Today's Apps</a>
     <a class="<?= $view === 'all' ? 'active' : '' ?>" href="active-apps.php?view=all">All Active</a>
+    <a class="<?= $view === 'history' ? 'active' : '' ?>" href="active-apps.php?view=history">History</a>
 </div>
 
 <?php if ($view === 'today'): ?>
@@ -156,7 +158,7 @@ page_start($view === 'all' ? 'All Active Apps' : 'Active Apps');
             </div>
         <?php endforeach; ?>
     </section>
-<?php else: ?>
+<?php elseif ($view === 'all'): ?>
     <section class="panel">
         <div class="panel-heading">
             <h2>All Active Apps (<?= count($allActive) ?>)</h2>
@@ -202,6 +204,55 @@ page_start($view === 'all' ? 'All Active Apps' : 'Active Apps');
                                     <td><?= h($app['app_name']) ?></td>
                                     <td><?= render_status_badge($app['ready_loading_status']) ?></td>
                                     <td><?= h($app['created_at']) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </section>
+<?php else: ?>
+    <section class="panel">
+        <div class="panel-heading">
+            <h2>Loading History</h2>
+            <span class="hint">Day-wise record of every rotated app, so already-shown apps stay traceable.</span>
+        </div>
+
+        <?php if (!$historyGroups): ?>
+            <p class="empty block">No history yet.</p>
+        <?php endif; ?>
+
+        <?php foreach ($historyGroups as $date => $tasks): ?>
+            <?php $doneCount = count(array_filter($tasks, fn($task) => (int) $task['is_done'] === 1)); ?>
+            <div class="app-group" data-group-key="date-<?= h((string) $date) ?>">
+                <button class="app-group-toggle" type="button" aria-expanded="false">
+                    <span><?= h(date('d M Y', strtotime((string) $date))) ?> — Cycle <?= (int) $tasks[0]['cycle_no'] ?> (<?= $doneCount ?>/<?= count($tasks) ?> done)</span>
+                    <span class="nav-chevron" aria-hidden="true"></span>
+                </button>
+                <div class="app-group-body">
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                            <tr>
+                                <th>Console</th>
+                                <th>App Icon</th>
+                                <th>App Name</th>
+                                <th>Status</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php foreach ($tasks as $task): ?>
+                                <tr>
+                                    <td><?= h($task['category_name']) ?></td>
+                                    <td><img class="app-icon" src="<?= h(app_icon_url($task['icon_path'])) ?>" alt=""></td>
+                                    <td><?= h($task['app_name']) ?></td>
+                                    <td>
+                                        <?= (int) $task['is_done'] === 1
+                                            ? '<span class="badge badge-green">Done</span>'
+                                            : '<span class="badge badge-amber">Pending</span>' ?>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                             </tbody>
