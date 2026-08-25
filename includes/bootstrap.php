@@ -150,6 +150,30 @@ function page_end(): void
         });
 
         const groupStore = 'openGroups:' + location.pathname + location.search;
+
+        /*
+         * Open-group state survives same-page actions (form posts,
+         * reloads, tab switches) but resets when arriving from a
+         * different page, so every page shift starts fresh.
+         */
+        let cameFromSamePage = false;
+        try {
+            const ref = document.referrer ? new URL(document.referrer) : null;
+            cameFromSamePage = !!ref && ref.host === location.host && ref.pathname === location.pathname;
+        } catch (error) {
+            cameFromSamePage = false;
+        }
+
+        if (!cameFromSamePage) {
+            try {
+                Object.keys(sessionStorage)
+                    .filter((key) => key.startsWith('openGroups:'))
+                    .forEach((key) => sessionStorage.removeItem(key));
+            } catch (error) {
+                /* storage unavailable */
+            }
+        }
+
         let openKeys = new Set();
         try {
             openKeys = new Set(JSON.parse(sessionStorage.getItem(groupStore) || '[]'));
