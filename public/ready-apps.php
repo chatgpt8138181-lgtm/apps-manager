@@ -47,7 +47,16 @@ function render_ready_apps_table(array $apps): void
             <?php foreach ($apps as $app): ?>
                 <tr>
                     <td><?= h($app['name']) ?></td>
-                    <td><?= h($app['package_name'] ?? '—') ?></td>
+                    <td>
+                        <?php if (!empty($app['package_name'])): ?>
+                            <div class="console-url">
+                                <code><?= h($app['package_name']) ?></code>
+                                <button class="btn small copy-url" type="button" data-url="<?= h($app['package_name']) ?>">Copy</button>
+                            </div>
+                        <?php else: ?>
+                            —
+                        <?php endif; ?>
+                    </td>
                     <td><?= render_production_badge($app['status']) ?></td>
                     <td><?= h($app['created_at']) ?></td>
                     <td class="actions">
@@ -137,4 +146,15 @@ page_start('Ready for Production');
     <?php endif; ?>
 </section>
 <?php endif; ?>
+
+<script>
+document.querySelectorAll('.copy-url').forEach((button) => {
+    button.addEventListener('click', () => {
+        navigator.clipboard.writeText(button.dataset.url).then(() => {
+            button.textContent = 'Copied!';
+            setTimeout(() => { button.textContent = 'Copy'; }, 1500);
+        });
+    });
+});
+</script>
 <?php page_end(); ?>
