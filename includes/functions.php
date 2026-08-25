@@ -372,6 +372,129 @@ function app_icon_url(?string $path): string
     return $path ?: 'assets/css/default-icon.svg';
 }
 
+/*
+ * Daily rotation for the Loading module: every day each console
+ * (category) shows N active apps, no repeats within a cycle.
+ */
+function loading_apps_per_day(): int
+{
+    return max(1, (int) workflow_setting('loading_apps_per_day', '2'));
+}
+
+function loading_current_cycle(): int
+{
+    return max(1, (int) workflow_setting('loading_current_cycle', '1'));
+}
+
+function update_loading_apps_per_day(int $count): void
+{
+    if ($count < 1 || $count > 100) {
+        throw new RuntimeException('Apps per day must be between 1 and 100.');
+    }
+
+    set_workflow_setting('loading_apps_per_day', (string) $count);
+}
+
+function start_new_loading_cycle(): void
+{
+    set_workflow_setting('loading_current_cycle', (string) (loading_current_cycle() + 1));
+}
+
+function loading_cycle_progress(): array
+{
+    $cycle = loading_current_cycle();
+
+    $eligible = (int) db()->query("SELECT COUNT(*) FROM apps WHERE loading_status = 'Active'")->fetchColumn();
+
+    $shownStmt = db()->prepare(
+        "SELECT COUNT(DISTINCT ld.app_id) FROM loading_daily ld
+         JOIN apps a ON a.id = ld.app_id
+         WHERE ld.cycle_no = ? AND a.loading_status = 'Active'"
+    );
+    $shownStmt->execute([$cycle]);
+    $shown = (int) $shownStmt->fetchColumn();
+
+    return [
+        'cycle_no' => $cycle,
+        'apps_per_day' => loading_apps_per_day(),
+        'eligible' => $eligible,
+        'shown' => $shown,
+        'remaining' => max(0, $eligible - $shown),
+        'complete' => $eligible > 0 && $shown >= $eligible,
+    ];
+}
+
+function generate_loading_daily(): int
+{
+    $today = date('Y-m-d');
+    $cycle = loading_current_cycle();
+
+    $exists = db()->prepare('SELECT COUNT(*) FROM loading_daily WHERE task_date = ? AND cycle_no = ?');
+    $exists->execute([$today, $cycle]);
+    if ((int) $exists->fetchColumn() > 0) {
+        return 0;
+    }
+
+    $quota = loading_apps_per_day();
+    $inserted = 0;
+
+    $insert = db()->prepare(
+        'INSERT IGNORE INTO loading_daily (task_date, app_id, category_id, cycle_no) VALUES (?, ?, ?, ?)'
+    );
+
+    foreach (all_categories() as $category) {
+        $categoryId = (int) $category['id'];
+
+        $pick = db()->prepare(
+            "SELECT id FROM apps
+             WHERE category_id = ? AND loading_status = 'Active'
+               AND id NOT IN (SELECT app_id FROM loading_daily WHERE cycle_no = ?)
+             ORDER BY created_at ASC, id ASC
+             LIMIT " . $quota
+        );
+        $pick->execute([$categoryId, $cycle]);
+
+        foreach ($pick->fetchAll() as $row) {
+            $insert->execute([$today, (int) $row['id'], $categoryId, $cycle]);
+            $inserted++;
+        }
+    }
+
+    return $inserted;
+}
+
+function todays_loading_apps(): array
+{
+    $stmt = db()->prepare(
+        'SELECT ld.id, ld.is_done, c.id AS category_id, c.name AS category_name,
+                a.app_name, a.icon_path, a.ready_loading_status
+         FROM loading_daily ld
+         JOIN apps a ON a.id = ld.app_id
+         JOIN categories c ON c.id = ld.category_id
+         WHERE ld.task_date = ? AND ld.cycle_no = ?
+         ORDER BY c.created_at ASC, c.id ASC, ld.id ASC'
+    );
+    $stmt->execute([date('Y-m-d'), loading_current_cycle()]);
+
+    $grouped = [];
+    foreach ($stmt->fetchAll() as $row) {
+        $grouped[(int) $row['category_id']]['name'] = $row['category_name'];
+        $grouped[(int) $row['category_id']]['apps'][] = $row;
+    }
+
+    return $grouped;
+}
+
+function toggle_loading_done(int $taskId): void
+{
+    $stmt = db()->prepare('UPDATE loading_daily SET is_done = 1 - is_done WHERE id = ?');
+    $stmt->execute([$taskId]);
+
+    if ($stmt->rowCount() < 1) {
+        throw new RuntimeException('Task was not found.');
+    }
+}
+
 function render_status_badge(string $status): string
 {
     $class = $status === 'Active' || $status === 'Ready' ? 'badge badge-green' : 'badge badge-red';

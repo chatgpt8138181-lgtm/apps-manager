@@ -35,6 +35,7 @@ function page_start(string $title): void
     $navGroups = [
         'Loading' => [
             'dashboard.php' => 'Dashboard',
+            'active-apps.php' => 'Active Apps',
             'add-app.php' => 'Add App',
             'search.php' => 'Search/Edit',
             'categories.php' => 'Console Names',

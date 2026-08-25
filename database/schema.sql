@@ -97,9 +97,32 @@ CREATE TABLE IF NOT EXISTS workflow_settings (
     setting_value VARCHAR(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS loading_daily (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    task_date DATE NOT NULL,
+    app_id INT UNSIGNED NOT NULL,
+    category_id INT UNSIGNED NOT NULL,
+    is_done TINYINT(1) NOT NULL DEFAULT 0,
+    cycle_no INT UNSIGNED NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_loading_daily (task_date, app_id, cycle_no),
+    INDEX idx_loading_daily_date (task_date),
+    INDEX idx_loading_daily_cycle (cycle_no),
+    CONSTRAINT fk_loading_daily_app
+        FOREIGN KEY (app_id)
+        REFERENCES apps(id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_loading_daily_category
+        FOREIGN KEY (category_id)
+        REFERENCES categories(id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 INSERT INTO workflow_settings (setting_key, setting_value) VALUES
 ('cycle_days', '5'),
-('current_cycle', '1')
+('current_cycle', '1'),
+('loading_apps_per_day', '2'),
+('loading_current_cycle', '1')
 ON DUPLICATE KEY UPDATE setting_key = setting_key;
 
 INSERT INTO admins (username, password_hash)
