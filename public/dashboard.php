@@ -7,6 +7,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 
     try {
+        if (($_POST['action'] ?? '') === 'bulk_status') {
+            bulk_update_category_status(
+                (int) ($_POST['category_id'] ?? 0),
+                (string) ($_POST['field'] ?? ''),
+                (string) ($_POST['value'] ?? '')
+            );
+            redirect_with('dashboard.php', 'success', 'Console apps updated.');
+        }
+
         if (($_POST['action'] ?? '') === 'update_group') {
             $apps = $_POST['apps'] ?? [];
             if (!is_array($apps)) {
@@ -70,6 +79,42 @@ page_start('Dashboard');
                 <?php if (!$categoryApps): ?>
                     <p class="empty block">No apps found in this console.</p>
                 <?php else: ?>
+                    <div class="inline-actions bulk-status-row">
+                        <span class="hint">Loading:</span>
+                        <form method="post">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="bulk_status">
+                            <input type="hidden" name="category_id" value="<?= $categoryId ?>">
+                            <input type="hidden" name="field" value="loading">
+                            <input type="hidden" name="value" value="Active">
+                            <button class="btn small primary" type="submit">Active All</button>
+                        </form>
+                        <form method="post">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="bulk_status">
+                            <input type="hidden" name="category_id" value="<?= $categoryId ?>">
+                            <input type="hidden" name="field" value="loading">
+                            <input type="hidden" name="value" value="Inactive">
+                            <button class="btn danger small" type="submit">Inactive All</button>
+                        </form>
+                        <span class="hint">Ready:</span>
+                        <form method="post">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="bulk_status">
+                            <input type="hidden" name="category_id" value="<?= $categoryId ?>">
+                            <input type="hidden" name="field" value="ready">
+                            <input type="hidden" name="value" value="Ready">
+                            <button class="btn small primary" type="submit">Ready All</button>
+                        </form>
+                        <form method="post">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="bulk_status">
+                            <input type="hidden" name="category_id" value="<?= $categoryId ?>">
+                            <input type="hidden" name="field" value="ready">
+                            <input type="hidden" name="value" value="Not Ready">
+                            <button class="btn danger small" type="submit">Not Ready All</button>
+                        </form>
+                    </div>
                     <form method="post">
                         <?= csrf_field() ?>
                         <input type="hidden" name="action" value="update_group">

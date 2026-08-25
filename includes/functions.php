@@ -361,6 +361,23 @@ function update_app(int $appId, array $data): void
     ]);
 }
 
+function bulk_update_category_status(int $categoryId, string $field, string $value): void
+{
+    if ($categoryId <= 0) {
+        throw new RuntimeException('Console was not found.');
+    }
+
+    if ($field === 'loading') {
+        $stmt = db()->prepare('UPDATE apps SET loading_status = ?, updated_at = NOW() WHERE category_id = ?');
+        $stmt->execute([normalize_status($value), $categoryId]);
+    } elseif ($field === 'ready') {
+        $stmt = db()->prepare('UPDATE apps SET ready_loading_status = ?, updated_at = NOW() WHERE category_id = ?');
+        $stmt->execute([normalize_ready_status($value), $categoryId]);
+    } else {
+        throw new RuntimeException('Invalid bulk update.');
+    }
+}
+
 function update_app_statuses(int $appId, string $loading, string $ready): void
 {
     $stmt = db()->prepare(

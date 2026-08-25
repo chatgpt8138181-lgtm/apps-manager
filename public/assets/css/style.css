@@ -484,6 +484,10 @@ th {
     padding: 6px 10px;
 }
 
+.bulk-status-row {
+    margin-bottom: 12px;
+}
+
 .done-toggle {
     align-items: center;
     cursor: pointer;
