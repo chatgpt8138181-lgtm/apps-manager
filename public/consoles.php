@@ -93,10 +93,16 @@ page_start('Play Consoles');
                         <input type="text" name="name" value="<?= h($console['name']) ?>" maxlength="150" required>
                     </label>
                     <label>Privacy Policy URL
-                        <input type="text" name="privacy_policy_url" value="<?= h($console['privacy_policy_url'] ?? '') ?>" maxlength="255" placeholder="https://">
+                        <span class="input-with-copy">
+                            <input type="text" name="privacy_policy_url" value="<?= h($console['privacy_policy_url'] ?? '') ?>" maxlength="255" placeholder="https://">
+                            <button class="btn small copy-input" type="button">Copy</button>
+                        </span>
                     </label>
                     <label>App Domain URL
-                        <input type="text" name="app_domain_url" value="<?= h($console['app_domain_url'] ?? '') ?>" maxlength="255" placeholder="https://">
+                        <span class="input-with-copy">
+                            <input type="text" name="app_domain_url" value="<?= h($console['app_domain_url'] ?? '') ?>" maxlength="255" placeholder="https://">
+                            <button class="btn small copy-input" type="button">Copy</button>
+                        </span>
                     </label>
                 </form>
 
@@ -113,4 +119,19 @@ page_start('Play Consoles');
         </div>
     <?php endforeach; ?>
 </section>
+
+<script>
+document.querySelectorAll('.copy-input').forEach((button) => {
+    button.addEventListener('click', () => {
+        const input = button.closest('.input-with-copy').querySelector('input');
+        if (!input.value) {
+            return;
+        }
+        navigator.clipboard.writeText(input.value).then(() => {
+            button.textContent = 'Copied!';
+            setTimeout(() => { button.textContent = 'Copy'; }, 1500);
+        });
+    });
+});
+</script>
 <?php page_end(); ?>

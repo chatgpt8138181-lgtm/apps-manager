@@ -606,6 +606,16 @@ th {
     word-break: break-all;
 }
 
+.input-with-copy {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+}
+
+.input-with-copy input {
+    flex: 1;
+}
+
 .console-stats {
     color: var(--muted);
     display: flex;
