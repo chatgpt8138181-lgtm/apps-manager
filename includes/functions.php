@@ -502,13 +502,13 @@ function generate_loading_daily(): int
 function todays_loading_apps(): array
 {
     $stmt = db()->prepare(
-        'SELECT ld.id, ld.is_done, c.id AS category_id, c.name AS category_name,
+        "SELECT ld.id, ld.is_done, c.id AS category_id, c.name AS category_name,
                 a.app_name, a.icon_path, a.ready_loading_status
          FROM loading_daily ld
          JOIN apps a ON a.id = ld.app_id
          JOIN categories c ON c.id = ld.category_id
-         WHERE ld.task_date = ? AND ld.cycle_no = ?
-         ORDER BY c.created_at ASC, c.id ASC, ld.id ASC'
+         WHERE ld.task_date = ? AND ld.cycle_no = ? AND a.loading_status = 'Active'
+         ORDER BY c.created_at ASC, c.id ASC, ld.id ASC"
     );
     $stmt->execute([date('Y-m-d'), loading_current_cycle()]);
 
