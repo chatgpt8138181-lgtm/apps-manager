@@ -337,6 +337,17 @@ function update_app(int $appId, array $data): void
         throw new RuntimeException('Invalid app update.');
     }
 
+    if (!isset($data['loading_status']) || !isset($data['ready_loading_status'])) {
+        $current = db()->prepare('SELECT loading_status, ready_loading_status FROM apps WHERE id = ? LIMIT 1');
+        $current->execute([$appId]);
+        $row = $current->fetch();
+        if (!$row) {
+            throw new RuntimeException('App was not found.');
+        }
+        $data['loading_status'] = $data['loading_status'] ?? $row['loading_status'];
+        $data['ready_loading_status'] = $data['ready_loading_status'] ?? $row['ready_loading_status'];
+    }
+
     $stmt = db()->prepare(
         'UPDATE apps
          SET app_name = ?, loading_status = ?, ready_loading_status = ?, updated_at = NOW()
@@ -344,10 +355,18 @@ function update_app(int $appId, array $data): void
     );
     $stmt->execute([
         $name,
-        normalize_status((string) ($data['loading_status'] ?? 'Active')),
-        normalize_ready_status((string) ($data['ready_loading_status'] ?? 'Ready')),
+        normalize_status((string) $data['loading_status']),
+        normalize_ready_status((string) $data['ready_loading_status']),
         $appId,
     ]);
+}
+
+function update_app_statuses(int $appId, string $loading, string $ready): void
+{
+    $stmt = db()->prepare(
+        'UPDATE apps SET loading_status = ?, ready_loading_status = ?, updated_at = NOW() WHERE id = ?'
+    );
+    $stmt->execute([normalize_status($loading), normalize_ready_status($ready), $appId]);
 }
 
 function delete_app(int $appId): void

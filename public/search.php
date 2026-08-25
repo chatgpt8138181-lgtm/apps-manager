@@ -73,36 +73,33 @@ page_start('Search/Edit');
     <?php if (!$results): ?>
         <p class="empty block">No matching apps found.</p>
     <?php else: ?>
-        <form method="post">
-            <?= csrf_field() ?>
-            <input type="hidden" name="return_q" value="<?= h($query) ?>">
-            <input type="hidden" name="return_category_id" value="<?= (int) $categoryId ?>">
-
-            <?php foreach ($categories as $category): ?>
-                <?php
-                $categoryResults = array_values(array_filter(
-                    $results,
-                    fn($app) => (int) $app['category_id'] === (int) $category['id']
-                ));
-                if (!$categoryResults) {
-                    continue;
-                }
-                ?>
-                <div class="app-group" data-group-key="cat-<?= (int) $category['id'] ?>">
-                    <button class="app-group-toggle" type="button" aria-expanded="false">
-                        <span><?= h($category['name']) ?> (<?= count($categoryResults) ?>)</span>
-                        <span class="nav-chevron" aria-hidden="true"></span>
-                    </button>
-                    <div class="app-group-body">
+        <?php foreach ($categories as $category): ?>
+            <?php
+            $categoryResults = array_values(array_filter(
+                $results,
+                fn($app) => (int) $app['category_id'] === (int) $category['id']
+            ));
+            if (!$categoryResults) {
+                continue;
+            }
+            ?>
+            <div class="app-group" data-group-key="cat-<?= (int) $category['id'] ?>">
+                <button class="app-group-toggle" type="button" aria-expanded="false">
+                    <span><?= h($category['name']) ?> (<?= count($categoryResults) ?>)</span>
+                    <span class="nav-chevron" aria-hidden="true"></span>
+                </button>
+                <div class="app-group-body">
+                    <form method="post">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="return_q" value="<?= h($query) ?>">
+                        <input type="hidden" name="return_category_id" value="<?= (int) $categoryId ?>">
                         <div class="table-wrap">
-                            <table class="edit-table">
+                            <table>
                                 <thead>
                                 <tr>
                                     <th>Icon</th>
                                     <th>ID</th>
                                     <th>App Name</th>
-                                    <th>Loading</th>
-                                    <th>Ready Loading</th>
                                     <th>Actions</th>
                                 </tr>
                                 </thead>
@@ -114,28 +111,12 @@ page_start('Search/Edit');
                                         <td>
                                             <input type="text" name="apps[<?= (int) $app['id'] ?>][app_name]" value="<?= h($app['app_name']) ?>" maxlength="200" required>
                                         </td>
-                                        <td>
-                                            <select name="apps[<?= (int) $app['id'] ?>][loading_status]">
-                                                <option <?= $app['loading_status'] === 'Active' ? 'selected' : '' ?>>Active</option>
-                                                <option <?= $app['loading_status'] === 'Inactive' ? 'selected' : '' ?>>Inactive</option>
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <select name="apps[<?= (int) $app['id'] ?>][ready_loading_status]">
-                                                <option <?= $app['ready_loading_status'] === 'Ready' ? 'selected' : '' ?>>Ready</option>
-                                                <option <?= $app['ready_loading_status'] === 'Not Ready' ? 'selected' : '' ?>>Not Ready</option>
-                                            </select>
-                                        </td>
                                         <td class="actions">
                                             <button class="btn small" type="submit"
-                                                    formaction="search.php"
-                                                    formmethod="post"
                                                     name="action"
                                                     value="update"
                                                     onclick="copyRowToSingle(this, <?= (int) $app['id'] ?>)">Update</button>
                                             <button class="btn danger small" type="submit"
-                                                    formaction="search.php"
-                                                    formmethod="post"
                                                     name="action"
                                                     value="delete"
                                                     onclick="return prepareDelete(this, <?= (int) $app['id'] ?>)">Delete</button>
@@ -145,34 +126,30 @@ page_start('Search/Edit');
                                 </tbody>
                             </table>
                         </div>
-                    </div>
+                        <input type="hidden" name="app_id" class="single-app-id">
+                        <input type="hidden" name="app_name" class="single-app-name">
+                        <?php if (count($categoryResults) > 1): ?>
+                            <div class="bulk-actions">
+                                <button class="btn primary" type="submit" name="action" value="update_all">Update All</button>
+                            </div>
+                        <?php endif; ?>
+                    </form>
                 </div>
-            <?php endforeach; ?>
-
-            <input type="hidden" name="app_id" id="single_app_id">
-            <input type="hidden" name="app_name" id="single_app_name">
-            <input type="hidden" name="loading_status" id="single_loading_status">
-            <input type="hidden" name="ready_loading_status" id="single_ready_status">
-            <?php if (count($results) > 1): ?>
-                <div class="bulk-actions">
-                    <button class="btn primary" type="submit" name="action" value="update_all">Update All</button>
-                </div>
-            <?php endif; ?>
-        </form>
+            </div>
+        <?php endforeach; ?>
     <?php endif; ?>
 </section>
 
 <script>
 function copyRowToSingle(button, id) {
+    const form = button.closest('form');
     const row = button.closest('tr');
-    document.getElementById('single_app_id').value = id;
-    document.getElementById('single_app_name').value = row.querySelector('[name$="[app_name]"]').value;
-    document.getElementById('single_loading_status').value = row.querySelector('[name$="[loading_status]"]').value;
-    document.getElementById('single_ready_status').value = row.querySelector('[name$="[ready_loading_status]"]').value;
+    form.querySelector('.single-app-id').value = id;
+    form.querySelector('.single-app-name').value = row.querySelector('[name$="[app_name]"]').value;
 }
 
 function prepareDelete(button, id) {
-    document.getElementById('single_app_id').value = id;
+    button.closest('form').querySelector('.single-app-id').value = id;
     return confirm('Delete this app?');
 }
 
