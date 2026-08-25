@@ -484,6 +484,21 @@ th {
     padding: 6px 10px;
 }
 
+.done-toggle {
+    align-items: center;
+    cursor: pointer;
+    display: flex;
+    gap: 10px;
+    width: fit-content;
+}
+
+.done-toggle input[type="checkbox"] {
+    cursor: pointer;
+    height: 18px;
+    min-height: 0;
+    width: 18px;
+}
+
 select.status-select {
     border-radius: 999px;
     font-size: 13px;

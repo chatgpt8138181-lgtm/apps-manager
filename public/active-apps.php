@@ -125,7 +125,6 @@ page_start($view === 'all' ? 'All Active Apps' : 'Active Apps');
                                 <th>App Name</th>
                                 <th>Ready Loading</th>
                                 <th>Status</th>
-                                <th>Action</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -136,18 +135,16 @@ page_start($view === 'all' ? 'All Active Apps' : 'Active Apps');
                                     <td><?= h($task['app_name']) ?></td>
                                     <td><?= render_status_badge($task['ready_loading_status']) ?></td>
                                     <td>
-                                        <?= $isDone
-                                            ? '<span class="badge badge-green">Done</span>'
-                                            : '<span class="badge badge-amber">Pending</span>' ?>
-                                    </td>
-                                    <td>
                                         <form method="post">
                                             <?= csrf_field() ?>
                                             <input type="hidden" name="action" value="toggle_done">
                                             <input type="hidden" name="task_id" value="<?= (int) $task['id'] ?>">
-                                            <button class="btn small <?= $isDone ? '' : 'primary' ?>" type="submit">
-                                                <?= $isDone ? 'Mark Pending' : 'Mark Done' ?>
-                                            </button>
+                                            <label class="done-toggle">
+                                                <input type="checkbox" <?= $isDone ? 'checked' : '' ?> onchange="this.closest('form').submit()">
+                                                <?= $isDone
+                                                    ? '<span class="badge badge-green">Done</span>'
+                                                    : '<span class="badge badge-amber">Pending</span>' ?>
+                                            </label>
                                         </form>
                                     </td>
                                 </tr>
