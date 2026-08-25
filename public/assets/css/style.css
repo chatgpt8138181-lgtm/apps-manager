@@ -995,23 +995,6 @@ select {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .nav-group-toggle {
-        pointer-events: none;
-    }
-
-    .nav-chevron {
-        display: none;
-    }
-
-    .nav-group-items {
-        grid-template-rows: 1fr;
-        margin: 4px 0 4px 10px;
-    }
-
-    .nav-group-items > .collapse-inner {
-        padding: 4px 0 4px 8px;
-    }
-
     .logout {
         margin-top: 0;
         width: fit-content;
