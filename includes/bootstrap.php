@@ -8,6 +8,7 @@ require_once $appRoot . '/includes/functions.php';
 require_once $appRoot . '/includes/auth.php';
 require_once $appRoot . '/includes/csrf.php';
 require_once $appRoot . '/includes/workflow.php';
+require_once $appRoot . '/includes/app-panels.php';
 
 function app_root_path(): string
 {

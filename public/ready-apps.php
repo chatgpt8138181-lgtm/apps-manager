@@ -19,6 +19,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             delete_production_app($appId);
             redirect_with('ready-apps.php', 'success', 'App deleted.');
         }
+
+        if ($action === 'update_details') {
+            update_production_app_details($appId, $_POST);
+            redirect_with('ready-apps.php?app_id=' . $appId, 'success', 'App details updated.');
+        }
     } catch (Throwable $e) {
         redirect_with('ready-apps.php', 'error', $e->getMessage());
     }
@@ -46,6 +51,7 @@ function render_ready_apps_table(array $apps): void
                     <td><?= render_production_badge($app['status']) ?></td>
                     <td><?= h($app['created_at']) ?></td>
                     <td class="actions">
+                        <a class="btn small" href="ready-apps.php?app_id=<?= (int) $app['id'] ?>">Manage</a>
                         <form method="post">
                             <?= csrf_field() ?>
                             <input type="hidden" name="action" value="send">
@@ -71,8 +77,21 @@ $consoles = all_consoles();
 $apps = production_apps_by_status('ready');
 $unassigned = array_values(array_filter($apps, fn($app) => empty($app['console_id'])));
 
+$selectedId = (int) ($_GET['app_id'] ?? 0);
+$selected = null;
+if ($selectedId > 0) {
+    $selected = get_production_app($selectedId);
+    if (!$selected || $selected['status'] !== 'ready') {
+        $selected = null;
+    }
+}
+
 page_start('Ready for Production');
 ?>
+<?php if ($selected): ?>
+    <?php render_app_details_panel($selected, $consoles, 'ready-apps.php'); ?>
+    <?php render_checklist_summary_panel($selected); ?>
+<?php else: ?>
 <section class="panel">
     <div class="panel-heading">
         <h2>Ready for Production (<?= count($apps) ?>)</h2>
@@ -117,4 +136,5 @@ page_start('Ready for Production');
         </div>
     <?php endif; ?>
 </section>
+<?php endif; ?>
 <?php page_end(); ?>

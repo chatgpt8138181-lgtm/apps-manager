@@ -20,6 +20,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             delete_production_app($appId);
             redirect_with('live-apps.php', 'success', 'App deleted.');
         }
+
+        if ($action === 'update_details') {
+            update_production_app_details($appId, $_POST);
+            redirect_with('live-apps.php?app_id=' . $appId, 'success', 'App details updated.');
+        }
     } catch (Throwable $e) {
         redirect_with('live-apps.php', 'error', $e->getMessage());
     }
@@ -52,6 +57,7 @@ function render_live_apps_table(array $apps): void
                             : '<span class="badge badge-gray">Not Tagged</span>' ?>
                     </td>
                     <td class="actions">
+                        <a class="btn small" href="live-apps.php?app_id=<?= (int) $app['id'] ?>">Manage</a>
                         <form method="post">
                             <?= csrf_field() ?>
                             <input type="hidden" name="action" value="toggle_ready">
@@ -81,8 +87,21 @@ $apps = production_apps_by_status('live');
 $readyCount = count(array_filter($apps, fn($app) => (int) $app['ready_for_work'] === 1));
 $unassigned = array_values(array_filter($apps, fn($app) => empty($app['console_id'])));
 
+$selectedId = (int) ($_GET['app_id'] ?? 0);
+$selected = null;
+if ($selectedId > 0) {
+    $selected = get_production_app($selectedId);
+    if (!$selected || $selected['status'] !== 'live') {
+        $selected = null;
+    }
+}
+
 page_start('Live Apps');
 ?>
+<?php if ($selected): ?>
+    <?php render_app_details_panel($selected, $consoles, 'live-apps.php'); ?>
+    <?php render_checklist_summary_panel($selected); ?>
+<?php else: ?>
 <section class="stats-grid">
     <div class="stat"><span><?= count($apps) ?></span><p>Live Apps</p></div>
     <div class="stat"><span><?= $readyCount ?></span><p>Ready for Work</p></div>
@@ -140,4 +159,5 @@ page_start('Live Apps');
         </div>
     <?php endif; ?>
 </section>
+<?php endif; ?>
 <?php page_end(); ?>

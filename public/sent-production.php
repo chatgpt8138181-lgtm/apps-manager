@@ -23,6 +23,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             delete_production_app((int) ($_POST['app_id'] ?? 0));
             redirect_with($return, 'success', 'App deleted.');
         }
+
+        if (($_POST['action'] ?? '') === 'update_details') {
+            $appId = (int) ($_POST['app_id'] ?? 0);
+            update_production_app_details($appId, $_POST);
+            redirect_with('sent-production.php?status=' . urlencode($status) . '&app_id=' . $appId, 'success', 'App details updated.');
+        }
     } catch (Throwable $e) {
         redirect_with($return, 'error', $e->getMessage());
     }
@@ -52,6 +58,7 @@ function render_sent_apps_table(array $apps, string $status): void
                     <td><?= h($app['sent_at'] ?? '—') ?></td>
                     <td><?= h($app['live_at'] ?? '—') ?></td>
                     <td class="actions">
+                        <a class="btn small" href="sent-production.php?status=<?= h($status) ?>&app_id=<?= (int) $app['id'] ?>">Manage</a>
                         <?php foreach (['live' => 'Mark Live', 'rejected' => 'Reject', 'suspended' => 'Suspend'] as $result => $label): ?>
                             <?php if ($app['status'] === $result) continue; ?>
                             <form method="post">
@@ -92,8 +99,21 @@ $tabs = [
     'suspended' => 'Suspended',
 ];
 
+$selectedId = (int) ($_GET['app_id'] ?? 0);
+$selected = null;
+if ($selectedId > 0) {
+    $selected = get_production_app($selectedId);
+    if (!$selected || !in_array($selected['status'], ['sent', 'live', 'rejected', 'suspended'], true)) {
+        $selected = null;
+    }
+}
+
 page_start('Sent for Production');
 ?>
+<?php if ($selected): ?>
+    <?php render_app_details_panel($selected, $consoles, 'sent-production.php?status=' . urlencode($status)); ?>
+    <?php render_checklist_summary_panel($selected); ?>
+<?php else: ?>
 <div class="tabs">
     <?php foreach ($tabs as $key => $label): ?>
         <a class="<?= $status === $key ? 'active' : '' ?>" href="sent-production.php?status=<?= h($key) ?>">
@@ -150,4 +170,5 @@ page_start('Sent for Production');
         </div>
     <?php endif; ?>
 </section>
+<?php endif; ?>
 <?php page_end(); ?>
