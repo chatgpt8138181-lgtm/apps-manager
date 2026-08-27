@@ -228,8 +228,9 @@ function page_end(): void
                     let top = rect.bottom + gap;
                     if (top + menuH > window.innerHeight - edge) {
                         const above = rect.top - menuH - gap;
-                        top = above >= edge ? above : Math.max(edge, window.innerHeight - menuH - edge);
+                        top = above >= edge ? above : window.innerHeight - menuH - edge;
                     }
+                    top = Math.max(edge, Math.min(top, window.innerHeight - menuH - edge));
 
                     let left = rect.right - menuW;
                     left = Math.min(left, window.innerWidth - menuW - edge);
