@@ -72,18 +72,23 @@ function render_live_apps_table(array $apps): void
                                 <?= $isReady ? 'Remove Tag' : 'Tag Ready' ?>
                             </button>
                         </form>
-                        <form method="post">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="action" value="to_sent">
-                            <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
-                            <button class="btn small" type="submit">Back to Sent</button>
-                        </form>
-                        <form method="post" onsubmit="return confirm('Delete this app? Its checklist and task history will also be removed.');">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="action" value="delete">
-                            <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
-                            <button class="btn danger small" type="submit">Delete</button>
-                        </form>
+                        <div class="action-menu-wrap">
+                            <button class="btn small action-menu-btn" type="button" aria-label="More actions">&#8942;</button>
+                            <div class="action-menu">
+                                <form method="post">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="action" value="to_sent">
+                                    <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
+                                    <button class="menu-item" type="submit">Back to Sent</button>
+                                </form>
+                                <form method="post" onsubmit="return confirm('Delete this app? Its checklist and task history will also be removed.');">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
+                                    <button class="menu-item danger" type="submit">Delete</button>
+                                </form>
+                            </div>
+                        </div>
                     </td>
                 </tr>
             <?php endforeach; ?>

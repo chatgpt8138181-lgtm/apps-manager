@@ -68,22 +68,27 @@ function render_ready_apps_table(array $apps): void
                         <a class="btn small" href="ready-apps.php?app_id=<?= (int) $app['id'] ?>">Manage</a>
                         <form method="post">
                             <?= csrf_field() ?>
-                            <input type="hidden" name="action" value="to_prepare">
-                            <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
-                            <button class="btn small" type="submit">Back to Prepare</button>
-                        </form>
-                        <form method="post">
-                            <?= csrf_field() ?>
                             <input type="hidden" name="action" value="send">
                             <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
                             <button class="btn small primary" type="submit">Send for Production</button>
                         </form>
-                        <form method="post" onsubmit="return confirm('Delete this app? Its checklist will also be removed.');">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="action" value="delete">
-                            <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
-                            <button class="btn danger small" type="submit">Delete</button>
-                        </form>
+                        <div class="action-menu-wrap">
+                            <button class="btn small action-menu-btn" type="button" aria-label="More actions">&#8942;</button>
+                            <div class="action-menu">
+                                <form method="post">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="action" value="to_prepare">
+                                    <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
+                                    <button class="menu-item" type="submit">Back to Prepare</button>
+                                </form>
+                                <form method="post" onsubmit="return confirm('Delete this app? Its checklist will also be removed.');">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
+                                    <button class="menu-item danger" type="submit">Delete</button>
+                                </form>
+                            </div>
+                        </div>
                     </td>
                 </tr>
             <?php endforeach; ?>

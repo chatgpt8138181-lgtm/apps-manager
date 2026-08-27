@@ -83,50 +83,64 @@ function render_sent_apps_table(array $apps, string $status): void
                     <td><?= h($app['live_at'] ?? '—') ?></td>
                     <td class="actions">
                         <a class="btn small" href="sent-production.php?status=<?= h($status) ?>&app_id=<?= (int) $app['id'] ?>">Manage</a>
-                        <?php foreach (['live' => 'Mark Live', 'rejected' => 'Reject', 'suspended' => 'Suspend'] as $result => $label): ?>
-                            <?php if ($app['status'] === $result) continue; ?>
+                        <?php if ($app['status'] === 'sent'): ?>
                             <form method="post">
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="action" value="set_result">
                                 <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
-                                <input type="hidden" name="result" value="<?= h($result) ?>">
+                                <input type="hidden" name="result" value="live">
                                 <input type="hidden" name="return_status" value="<?= h($status) ?>">
-                                <button class="btn small <?= $result === 'live' ? 'primary' : ($result === 'rejected' ? 'danger' : '') ?>" type="submit">
-                                    <?= h($label) ?>
-                                </button>
-                            </form>
-                        <?php endforeach; ?>
-                        <?php if ($app['status'] === 'sent'): ?>
-                            <form method="post">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="action" value="to_ready">
-                                <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
-                                <input type="hidden" name="return_status" value="<?= h($status) ?>">
-                                <button class="btn small" type="submit">Back to Ready</button>
-                            </form>
-                            <form method="post">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="action" value="to_prepare">
-                                <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
-                                <input type="hidden" name="return_status" value="<?= h($status) ?>">
-                                <button class="btn small" type="submit">Back to Prepare</button>
-                            </form>
-                        <?php else: ?>
-                            <form method="post">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="action" value="to_sent">
-                                <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
-                                <input type="hidden" name="return_status" value="<?= h($status) ?>">
-                                <button class="btn small" type="submit">Back to Sent</button>
+                                <button class="btn small primary" type="submit">Mark Live</button>
                             </form>
                         <?php endif; ?>
-                        <form method="post" onsubmit="return confirm('Delete this app? Its checklist and task history will also be removed.');">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="action" value="delete">
-                            <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
-                            <input type="hidden" name="return_status" value="<?= h($status) ?>">
-                            <button class="btn danger small" type="submit">Delete</button>
-                        </form>
+                        <div class="action-menu-wrap">
+                            <button class="btn small action-menu-btn" type="button" aria-label="More actions">&#8942;</button>
+                            <div class="action-menu">
+                                <?php foreach (['live' => 'Mark Live', 'rejected' => 'Reject', 'suspended' => 'Suspend'] as $result => $label): ?>
+                                    <?php if ($app['status'] === $result) continue; ?>
+                                    <?php if ($app['status'] === 'sent' && $result === 'live') continue; ?>
+                                    <form method="post">
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="action" value="set_result">
+                                        <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
+                                        <input type="hidden" name="result" value="<?= h($result) ?>">
+                                        <input type="hidden" name="return_status" value="<?= h($status) ?>">
+                                        <button class="menu-item" type="submit"><?= h($label) ?></button>
+                                    </form>
+                                <?php endforeach; ?>
+                                <?php if ($app['status'] === 'sent'): ?>
+                                    <form method="post">
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="action" value="to_ready">
+                                        <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
+                                        <input type="hidden" name="return_status" value="<?= h($status) ?>">
+                                        <button class="menu-item" type="submit">Back to Ready</button>
+                                    </form>
+                                    <form method="post">
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="action" value="to_prepare">
+                                        <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
+                                        <input type="hidden" name="return_status" value="<?= h($status) ?>">
+                                        <button class="menu-item" type="submit">Back to Prepare</button>
+                                    </form>
+                                <?php else: ?>
+                                    <form method="post">
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="action" value="to_sent">
+                                        <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
+                                        <input type="hidden" name="return_status" value="<?= h($status) ?>">
+                                        <button class="menu-item" type="submit">Back to Sent</button>
+                                    </form>
+                                <?php endif; ?>
+                                <form method="post" onsubmit="return confirm('Delete this app? Its checklist and task history will also be removed.');">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
+                                    <input type="hidden" name="return_status" value="<?= h($status) ?>">
+                                    <button class="menu-item danger" type="submit">Delete</button>
+                                </form>
+                            </div>
+                        </div>
                     </td>
                 </tr>
             <?php endforeach; ?>
