@@ -24,6 +24,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect_with($return, 'success', 'App deleted.');
         }
 
+        if (($_POST['action'] ?? '') === 'to_ready') {
+            revert_app_to_ready((int) ($_POST['app_id'] ?? 0));
+            redirect_with($return, 'success', 'App moved back to Ready.');
+        }
+
+        if (($_POST['action'] ?? '') === 'to_prepare') {
+            revert_app_to_prepare((int) ($_POST['app_id'] ?? 0));
+            redirect_with($return, 'success', 'App moved back to Prepare Production.');
+        }
+
+        if (($_POST['action'] ?? '') === 'to_sent') {
+            revert_app_to_sent((int) ($_POST['app_id'] ?? 0));
+            redirect_with($return, 'success', 'App moved back to Sent.');
+        }
+
         if (($_POST['action'] ?? '') === 'update_details') {
             $appId = (int) ($_POST['app_id'] ?? 0);
             update_production_app_details($appId, $_POST);
@@ -81,6 +96,30 @@ function render_sent_apps_table(array $apps, string $status): void
                                 </button>
                             </form>
                         <?php endforeach; ?>
+                        <?php if ($app['status'] === 'sent'): ?>
+                            <form method="post">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="action" value="to_ready">
+                                <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
+                                <input type="hidden" name="return_status" value="<?= h($status) ?>">
+                                <button class="btn small" type="submit">Back to Ready</button>
+                            </form>
+                            <form method="post">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="action" value="to_prepare">
+                                <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
+                                <input type="hidden" name="return_status" value="<?= h($status) ?>">
+                                <button class="btn small" type="submit">Back to Prepare</button>
+                            </form>
+                        <?php else: ?>
+                            <form method="post">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="action" value="to_sent">
+                                <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
+                                <input type="hidden" name="return_status" value="<?= h($status) ?>">
+                                <button class="btn small" type="submit">Back to Sent</button>
+                            </form>
+                        <?php endif; ?>
                         <form method="post" onsubmit="return confirm('Delete this app? Its checklist and task history will also be removed.');">
                             <?= csrf_field() ?>
                             <input type="hidden" name="action" value="delete">

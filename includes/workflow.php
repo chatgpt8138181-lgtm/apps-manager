@@ -317,6 +317,55 @@ function mark_app_ready(int $appId): void
     $stmt->execute([$appId]);
 }
 
+/*
+ * Reverse actions for mistaken stage moves:
+ * ready/sent -> prepare, sent -> ready, live/rejected/suspended -> sent.
+ */
+function revert_app_to_prepare(int $appId): void
+{
+    $app = get_production_app($appId);
+    if (!$app) {
+        throw new RuntimeException('App was not found.');
+    }
+
+    if (!in_array($app['status'], ['ready', 'sent'], true)) {
+        throw new RuntimeException('Only Ready or Sent apps can move back to Prepare.');
+    }
+
+    $stmt = db()->prepare("UPDATE production_apps SET status = 'prepare', sent_at = NULL WHERE id = ?");
+    $stmt->execute([$appId]);
+}
+
+function revert_app_to_ready(int $appId): void
+{
+    $app = get_production_app($appId);
+    if (!$app) {
+        throw new RuntimeException('App was not found.');
+    }
+
+    if ($app['status'] !== 'sent') {
+        throw new RuntimeException('Only Sent apps can move back to Ready.');
+    }
+
+    $stmt = db()->prepare("UPDATE production_apps SET status = 'ready', sent_at = NULL WHERE id = ?");
+    $stmt->execute([$appId]);
+}
+
+function revert_app_to_sent(int $appId): void
+{
+    $app = get_production_app($appId);
+    if (!$app) {
+        throw new RuntimeException('App was not found.');
+    }
+
+    if (!in_array($app['status'], ['live', 'rejected', 'suspended'], true)) {
+        throw new RuntimeException('Only Live, Rejected, or Suspended apps can move back to Sent.');
+    }
+
+    $stmt = db()->prepare("UPDATE production_apps SET status = 'sent', live_at = NULL, ready_for_work = 0 WHERE id = ?");
+    $stmt->execute([$appId]);
+}
+
 function set_production_result(int $appId, string $result): void
 {
     if (!in_array($result, ['live', 'rejected', 'suspended'], true)) {

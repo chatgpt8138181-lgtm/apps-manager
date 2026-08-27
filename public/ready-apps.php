@@ -24,6 +24,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             update_production_app_details($appId, $_POST);
             redirect_with('ready-apps.php?app_id=' . $appId, 'success', 'App details updated.');
         }
+
+        if ($action === 'to_prepare') {
+            revert_app_to_prepare($appId);
+            redirect_with('ready-apps.php', 'success', 'App moved back to Prepare Production.');
+        }
     } catch (Throwable $e) {
         redirect_with('ready-apps.php', 'error', $e->getMessage());
     }
@@ -61,6 +66,12 @@ function render_ready_apps_table(array $apps): void
                     <td><?= h($app['created_at']) ?></td>
                     <td class="actions">
                         <a class="btn small" href="ready-apps.php?app_id=<?= (int) $app['id'] ?>">Manage</a>
+                        <form method="post">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="to_prepare">
+                            <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
+                            <button class="btn small" type="submit">Back to Prepare</button>
+                        </form>
                         <form method="post">
                             <?= csrf_field() ?>
                             <input type="hidden" name="action" value="send">

@@ -25,6 +25,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             update_production_app_details($appId, $_POST);
             redirect_with('live-apps.php?app_id=' . $appId, 'success', 'App details updated.');
         }
+
+        if ($action === 'to_sent') {
+            revert_app_to_sent($appId);
+            redirect_with('live-apps.php', 'success', 'App moved back to Sent.');
+        }
     } catch (Throwable $e) {
         redirect_with('live-apps.php', 'error', $e->getMessage());
     }
@@ -66,6 +71,12 @@ function render_live_apps_table(array $apps): void
                             <button class="btn small <?= $isReady ? '' : 'primary' ?>" type="submit">
                                 <?= $isReady ? 'Remove Tag' : 'Tag Ready' ?>
                             </button>
+                        </form>
+                        <form method="post">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="to_sent">
+                            <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
+                            <button class="btn small" type="submit">Back to Sent</button>
                         </form>
                         <form method="post" onsubmit="return confirm('Delete this app? Its checklist and task history will also be removed.');">
                             <?= csrf_field() ?>
