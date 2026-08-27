@@ -170,7 +170,7 @@ if ($selectedId > 0) {
     }
 }
 
-page_start('Sent for Production');
+page_start('Production Apps');
 ?>
 <?php if ($selected): ?>
     <?php render_app_details_panel($selected, $consoles, 'sent-production.php?status=' . urlencode($status)); ?>
