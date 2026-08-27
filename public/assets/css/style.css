@@ -485,7 +485,18 @@ th {
 }
 
 .bulk-status-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 20px;
     margin-bottom: 12px;
+}
+
+/* Each label stays on the same line as the buttons it controls. */
+.bulk-status-set {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .action-menu-wrap {
