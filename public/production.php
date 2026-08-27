@@ -247,18 +247,18 @@ function render_prepare_apps_table(array $apps, int $totalItems): void
                         <a class="btn small" href="production.php?app_id=<?= (int) $app['id'] ?>">Manage</a>
                         <form method="post">
                             <?= csrf_field() ?>
-                            <input type="hidden" name="action" value="send">
+                            <input type="hidden" name="action" value="ready">
                             <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
-                            <button class="btn small primary" type="submit" <?= $done >= $totalItems ? '' : 'disabled' ?>>Send</button>
+                            <button class="btn small primary" type="submit" <?= $done >= $totalItems ? '' : 'disabled' ?>>Ready</button>
                         </form>
                         <div class="action-menu-wrap">
                             <button class="btn small action-menu-btn" type="button" aria-label="More actions">&#8942;</button>
                             <div class="action-menu">
                                 <form method="post">
                                     <?= csrf_field() ?>
-                                    <input type="hidden" name="action" value="ready">
+                                    <input type="hidden" name="action" value="send">
                                     <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
-                                    <button class="menu-item" type="submit" <?= $done >= $totalItems ? '' : 'disabled' ?>>Ready for Production</button>
+                                    <button class="menu-item" type="submit" <?= $done >= $totalItems ? '' : 'disabled' ?>>Send for Production</button>
                                 </form>
                                 <form method="post" onsubmit="return confirm('Delete this app and its checklist?');">
                                     <?= csrf_field() ?>
