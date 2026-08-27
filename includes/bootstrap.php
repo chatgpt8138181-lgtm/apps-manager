@@ -215,9 +215,28 @@ function page_end(): void
                 closeActionMenus();
                 if (!wasOpen) {
                     menu.classList.add('open');
+
+                    /* Keep the menu inside the viewport: flip above the
+                       button when there is no room below, and clamp
+                       horizontally on narrow screens. */
                     const rect = menuBtn.getBoundingClientRect();
-                    menu.style.top = (rect.bottom + 4) + 'px';
-                    menu.style.left = Math.max(8, rect.right - menu.offsetWidth) + 'px';
+                    const gap = 6;
+                    const edge = 8;
+                    const menuW = menu.offsetWidth;
+                    const menuH = menu.offsetHeight;
+
+                    let top = rect.bottom + gap;
+                    if (top + menuH > window.innerHeight - edge) {
+                        const above = rect.top - menuH - gap;
+                        top = above >= edge ? above : Math.max(edge, window.innerHeight - menuH - edge);
+                    }
+
+                    let left = rect.right - menuW;
+                    left = Math.min(left, window.innerWidth - menuW - edge);
+                    left = Math.max(edge, left);
+
+                    menu.style.top = top + 'px';
+                    menu.style.left = left + 'px';
                 }
                 return;
             }
