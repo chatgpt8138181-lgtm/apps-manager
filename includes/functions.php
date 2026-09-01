@@ -496,17 +496,44 @@ function start_new_loading_cycle(): void
     set_workflow_setting('loading_cycle_base', (string) $next);
 }
 
-/* Manual restart for one console only. */
-function restart_category_cycle(int $categoryId): void
+/*
+ * Move one console between rounds. 'restart' replays the current cycle,
+ * 'next' and 'previous' step the cycle number; either way that console
+ * starts again from its first app.
+ */
+function shift_category_cycle(int $categoryId, string $direction): void
 {
     if ($categoryId <= 0) {
         throw new RuntimeException('Console was not found.');
     }
 
-    $stmt = db()->prepare('DELETE FROM loading_daily WHERE task_date = ? AND category_id = ?');
-    $stmt->execute([date('Y-m-d'), $categoryId]);
+    $current = category_cycle($categoryId);
+    $target = $current;
 
-    set_category_cycle($categoryId, category_cycle($categoryId) + 1);
+    if ($direction === 'next') {
+        $target = $current + 1;
+    } elseif ($direction === 'previous') {
+        $target = $current - 1;
+    } elseif ($direction !== 'restart') {
+        throw new RuntimeException('Invalid cycle action.');
+    }
+
+    if ($target < loading_cycle_base()) {
+        throw new RuntimeException('This console is already on Cycle 1.');
+    }
+
+    $today = db()->prepare('DELETE FROM loading_daily WHERE task_date = ? AND category_id = ?');
+    $today->execute([date('Y-m-d'), $categoryId]);
+
+    $round = db()->prepare('DELETE FROM loading_daily WHERE category_id = ? AND cycle_no = ?');
+    $round->execute([$categoryId, $target]);
+
+    set_category_cycle($categoryId, $target);
+}
+
+function restart_category_cycle(int $categoryId): void
+{
+    shift_category_cycle($categoryId, 'restart');
 }
 
 function loading_cycle_progress(): array

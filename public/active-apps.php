@@ -22,9 +22,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect_with('active-apps.php', 'success', 'Settings saved. New quota applies from the next generated day.');
         }
 
-        if ($action === 'restart_console') {
-            restart_category_cycle((int) ($_POST['category_id'] ?? 0));
-            redirect_with('active-apps.php', 'success', 'Console restarted from its first app.');
+        if ($action === 'cycle_step') {
+            $direction = (string) ($_POST['direction'] ?? 'restart');
+            shift_category_cycle((int) ($_POST['category_id'] ?? 0), $direction);
+            $messages = [
+                'next' => 'Console moved to the next cycle.',
+                'previous' => 'Console moved back to the previous cycle.',
+                'restart' => 'Console restarted from its first app.',
+            ];
+            redirect_with('active-apps.php', 'success', $messages[$direction] ?? $messages['restart']);
         }
 
         if ($action === 'new_cycle') {
@@ -118,11 +124,27 @@ page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading
                 </button>
                 <div class="app-group-body">
                     <div class="inline-actions bulk-status-row">
+                        <span class="hint">This console:</span>
+                        <form method="post" onsubmit="return confirm('Move this console to the previous cycle? It will start again from its first app.');">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="cycle_step">
+                            <input type="hidden" name="direction" value="previous">
+                            <input type="hidden" name="category_id" value="<?= (int) $categoryId ?>">
+                            <button class="btn small" type="submit">&laquo; Previous Cycle</button>
+                        </form>
                         <form method="post" onsubmit="return confirm('Restart this console from its first app? Today will be generated again for it.');">
                             <?= csrf_field() ?>
-                            <input type="hidden" name="action" value="restart_console">
+                            <input type="hidden" name="action" value="cycle_step">
+                            <input type="hidden" name="direction" value="restart">
                             <input type="hidden" name="category_id" value="<?= (int) $categoryId ?>">
-                            <button class="btn small" type="submit">Restart This Console</button>
+                            <button class="btn small" type="submit">Restart</button>
+                        </form>
+                        <form method="post" onsubmit="return confirm('Move this console to the next cycle? It will start again from its first app.');">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="cycle_step">
+                            <input type="hidden" name="direction" value="next">
+                            <input type="hidden" name="category_id" value="<?= (int) $categoryId ?>">
+                            <button class="btn small" type="submit">Next Cycle &raquo;</button>
                         </form>
                     </div>
                     <div class="table-wrap">

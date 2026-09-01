@@ -27,9 +27,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect_with('tasks.php', 'success', 'Every console restarted from its first app.');
         }
 
-        if ($action === 'restart_console') {
-            restart_console_cycle((int) ($_POST['console_id'] ?? 0));
-            redirect_with('tasks.php', 'success', 'Console restarted from its first app.');
+        if ($action === 'cycle_step') {
+            $direction = (string) ($_POST['direction'] ?? 'restart');
+            shift_console_cycle((int) ($_POST['console_id'] ?? 0), $direction);
+            $messages = [
+                'next' => 'Console moved to the next cycle.',
+                'previous' => 'Console moved back to the previous cycle.',
+                'restart' => 'Console restarted from its first app.',
+            ];
+            redirect_with('tasks.php', 'success', $messages[$direction] ?? $messages['restart']);
         }
     } catch (Throwable $e) {
         redirect_with($return, 'error', $e->getMessage());
@@ -114,14 +120,30 @@ page_start($view === 'history' ? 'Task History' : "Today's Task");
                     <span class="nav-chevron" aria-hidden="true"></span>
                 </button>
                 <div class="app-group-body">
-                <div class="inline-actions bulk-status-row">
-                    <form method="post" onsubmit="return confirm('Restart this console from its first app? Today will be generated again for it.');">
-                        <?= csrf_field() ?>
-                        <input type="hidden" name="action" value="restart_console">
-                        <input type="hidden" name="console_id" value="<?= (int) $consoleId ?>">
-                        <button class="btn small" type="submit">Restart This Console</button>
-                    </form>
-                </div>
+                    <div class="inline-actions bulk-status-row">
+                        <span class="hint">This console:</span>
+                        <form method="post" onsubmit="return confirm('Move this console to the previous cycle? It will start again from its first app.');">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="cycle_step">
+                            <input type="hidden" name="direction" value="previous">
+                            <input type="hidden" name="console_id" value="<?= (int) $consoleId ?>">
+                            <button class="btn small" type="submit">&laquo; Previous Cycle</button>
+                        </form>
+                        <form method="post" onsubmit="return confirm('Restart this console from its first app? Today will be generated again for it.');">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="cycle_step">
+                            <input type="hidden" name="direction" value="restart">
+                            <input type="hidden" name="console_id" value="<?= (int) $consoleId ?>">
+                            <button class="btn small" type="submit">Restart</button>
+                        </form>
+                        <form method="post" onsubmit="return confirm('Move this console to the next cycle? It will start again from its first app.');">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="cycle_step">
+                            <input type="hidden" name="direction" value="next">
+                            <input type="hidden" name="console_id" value="<?= (int) $consoleId ?>">
+                            <button class="btn small" type="submit">Next Cycle &raquo;</button>
+                        </form>
+                    </div>
                 <div class="table-wrap">
                     <table>
                         <thead>

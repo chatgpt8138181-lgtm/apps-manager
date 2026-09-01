@@ -823,15 +823,42 @@ function start_new_cycle(): void
     set_workflow_setting('task_cycle_base', (string) $next);
 }
 
-/* Manual restart for one console only. */
-function restart_console_cycle(int $consoleId): void
+/*
+ * Move one console between rounds. 'restart' replays the current cycle,
+ * 'next' and 'previous' step the cycle number; either way that console
+ * starts again from its first app.
+ */
+function shift_console_cycle(int $consoleId, string $direction): void
 {
     if ($consoleId <= 0) {
         throw new RuntimeException('Console was not found.');
     }
 
-    $stmt = db()->prepare('DELETE FROM daily_tasks WHERE task_date = ? AND console_id = ?');
-    $stmt->execute([date('Y-m-d'), $consoleId]);
+    $current = console_cycle($consoleId);
+    $target = $current;
 
-    set_console_cycle($consoleId, console_cycle($consoleId) + 1);
+    if ($direction === 'next') {
+        $target = $current + 1;
+    } elseif ($direction === 'previous') {
+        $target = $current - 1;
+    } elseif ($direction !== 'restart') {
+        throw new RuntimeException('Invalid cycle action.');
+    }
+
+    if ($target < task_cycle_base()) {
+        throw new RuntimeException('This console is already on Cycle 1.');
+    }
+
+    $today = db()->prepare('DELETE FROM daily_tasks WHERE task_date = ? AND console_id = ?');
+    $today->execute([date('Y-m-d'), $consoleId]);
+
+    $round = db()->prepare('DELETE FROM daily_tasks WHERE console_id = ? AND cycle_no = ?');
+    $round->execute([$consoleId, $target]);
+
+    set_console_cycle($consoleId, $target);
+}
+
+function restart_console_cycle(int $consoleId): void
+{
+    shift_console_cycle($consoleId, 'restart');
 }
