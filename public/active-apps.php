@@ -89,7 +89,7 @@ page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading
                 </label>
                 <button class="btn primary" type="submit">Save</button>
             </form>
-            <form method="post" onsubmit="return confirm('Restart the rotation from the first app of every console? Today will be generated again.');">
+            <form method="post">
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="new_cycle">
                 <button class="btn" type="submit">Restart All Consoles</button>
@@ -125,21 +125,21 @@ page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading
                 <div class="app-group-body">
                     <div class="inline-actions bulk-status-row">
                         <span class="hint">This console:</span>
-                        <form method="post" onsubmit="return confirm('Move this console to the previous cycle? It will start again from its first app.');">
+                        <form method="post">
                             <?= csrf_field() ?>
                             <input type="hidden" name="action" value="cycle_step">
                             <input type="hidden" name="direction" value="previous">
                             <input type="hidden" name="category_id" value="<?= (int) $categoryId ?>">
                             <button class="btn small" type="submit">&laquo; Previous Cycle</button>
                         </form>
-                        <form method="post" onsubmit="return confirm('Restart this console from its first app and back to Cycle 1?');">
+                        <form method="post">
                             <?= csrf_field() ?>
                             <input type="hidden" name="action" value="cycle_step">
                             <input type="hidden" name="direction" value="restart">
                             <input type="hidden" name="category_id" value="<?= (int) $categoryId ?>">
                             <button class="btn small" type="submit">Restart</button>
                         </form>
-                        <form method="post" onsubmit="return confirm('Move this console to the next cycle? It will start again from its first app.');">
+                        <form method="post">
                             <?= csrf_field() ?>
                             <input type="hidden" name="action" value="cycle_step">
                             <input type="hidden" name="direction" value="next">
