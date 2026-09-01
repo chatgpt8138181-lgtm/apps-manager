@@ -417,9 +417,39 @@ function loading_apps_per_day(): int
     return max(1, (int) workflow_setting('loading_apps_per_day', '2'));
 }
 
-function loading_current_cycle(): int
+/*
+ * Each console runs its own cycle: when a console has shown all of its
+ * active apps, that console starts again from its first app without
+ * waiting for the other consoles.
+ */
+function category_cycle(int $categoryId): int
 {
-    return max(1, (int) workflow_setting('loading_current_cycle', '1'));
+    return max(1, (int) workflow_setting('loading_cycle_c' . $categoryId, '1'));
+}
+
+function set_category_cycle(int $categoryId, int $cycle): void
+{
+    set_workflow_setting('loading_cycle_c' . $categoryId, (string) $cycle);
+}
+
+function category_active_count(int $categoryId): int
+{
+    $stmt = db()->prepare("SELECT COUNT(*) FROM apps WHERE category_id = ? AND loading_status = 'Active'");
+    $stmt->execute([$categoryId]);
+
+    return (int) $stmt->fetchColumn();
+}
+
+function category_shown_count(int $categoryId, int $cycle): int
+{
+    $stmt = db()->prepare(
+        "SELECT COUNT(DISTINCT ld.app_id) FROM loading_daily ld
+         JOIN apps a ON a.id = ld.app_id
+         WHERE ld.category_id = ? AND ld.cycle_no = ? AND a.loading_status = 'Active'"
+    );
+    $stmt->execute([$categoryId, $cycle]);
+
+    return (int) $stmt->fetchColumn();
 }
 
 function update_loading_apps_per_day(int $count): void
@@ -431,49 +461,49 @@ function update_loading_apps_per_day(int $count): void
     set_workflow_setting('loading_apps_per_day', (string) $count);
 }
 
+/* Manual restart: every console starts again from its first app today. */
 function start_new_loading_cycle(): void
 {
-    set_workflow_setting('loading_current_cycle', (string) (loading_current_cycle() + 1));
+    $stmt = db()->prepare('DELETE FROM loading_daily WHERE task_date = ?');
+    $stmt->execute([date('Y-m-d')]);
+
+    foreach (all_categories() as $category) {
+        $categoryId = (int) $category['id'];
+        set_category_cycle($categoryId, category_cycle($categoryId) + 1);
+    }
 }
 
 function loading_cycle_progress(): array
 {
-    $cycle = loading_current_cycle();
+    $eligible = 0;
+    $shown = 0;
 
-    $eligible = (int) db()->query("SELECT COUNT(*) FROM apps WHERE loading_status = 'Active'")->fetchColumn();
+    foreach (all_categories() as $category) {
+        $categoryId = (int) $category['id'];
+        $total = category_active_count($categoryId);
+        if ($total === 0) {
+            continue;
+        }
 
-    $shownStmt = db()->prepare(
-        "SELECT COUNT(DISTINCT ld.app_id) FROM loading_daily ld
-         JOIN apps a ON a.id = ld.app_id
-         WHERE ld.cycle_no = ? AND a.loading_status = 'Active'"
-    );
-    $shownStmt->execute([$cycle]);
-    $shown = (int) $shownStmt->fetchColumn();
+        $eligible += $total;
+        $shown += min($total, category_shown_count($categoryId, category_cycle($categoryId)));
+    }
 
     return [
-        'cycle_no' => $cycle,
         'apps_per_day' => loading_apps_per_day(),
         'eligible' => $eligible,
         'shown' => $shown,
         'remaining' => max(0, $eligible - $shown),
-        'complete' => $eligible > 0 && $shown >= $eligible,
     ];
 }
 
 function generate_loading_daily(): int
 {
     $today = date('Y-m-d');
-    $cycle = loading_current_cycle();
-
-    $exists = db()->prepare('SELECT COUNT(*) FROM loading_daily WHERE task_date = ? AND cycle_no = ?');
-    $exists->execute([$today, $cycle]);
-    if ((int) $exists->fetchColumn() > 0) {
-        return 0;
-    }
-
     $quota = loading_apps_per_day();
     $inserted = 0;
 
+    $done = db()->prepare('SELECT COUNT(*) FROM loading_daily WHERE task_date = ? AND category_id = ?');
     $insert = db()->prepare(
         'INSERT IGNORE INTO loading_daily (task_date, app_id, category_id, cycle_no) VALUES (?, ?, ?, ?)'
     );
@@ -481,14 +511,34 @@ function generate_loading_daily(): int
     foreach (all_categories() as $category) {
         $categoryId = (int) $category['id'];
 
+        $done->execute([$today, $categoryId]);
+        if ((int) $done->fetchColumn() > 0) {
+            continue;
+        }
+
+        $total = category_active_count($categoryId);
+        if ($total === 0) {
+            continue;
+        }
+
+        $cycle = category_cycle($categoryId);
+
+        /* This console finished its list, so start it over. */
+        if (category_shown_count($categoryId, $cycle) >= $total) {
+            $cycle++;
+            set_category_cycle($categoryId, $cycle);
+        }
+
         $pick = db()->prepare(
             "SELECT id FROM apps
              WHERE category_id = ? AND loading_status = 'Active'
-               AND id NOT IN (SELECT app_id FROM loading_daily WHERE cycle_no = ?)
+               AND id NOT IN (
+                   SELECT app_id FROM loading_daily WHERE category_id = ? AND cycle_no = ?
+               )
              ORDER BY created_at ASC, id ASC
              LIMIT " . $quota
         );
-        $pick->execute([$categoryId, $cycle]);
+        $pick->execute([$categoryId, $categoryId, $cycle]);
 
         foreach ($pick->fetchAll() as $row) {
             $insert->execute([$today, (int) $row['id'], $categoryId, $cycle]);
@@ -502,20 +552,22 @@ function generate_loading_daily(): int
 function todays_loading_apps(): array
 {
     $stmt = db()->prepare(
-        "SELECT ld.id, ld.is_done, c.id AS category_id, c.name AS category_name,
+        "SELECT ld.id, ld.is_done, ld.cycle_no, c.id AS category_id, c.name AS category_name,
                 a.app_name, a.icon_path, a.ready_loading_status
          FROM loading_daily ld
          JOIN apps a ON a.id = ld.app_id
          JOIN categories c ON c.id = ld.category_id
-         WHERE ld.task_date = ? AND ld.cycle_no = ? AND a.loading_status = 'Active'
+         WHERE ld.task_date = ? AND a.loading_status = 'Active'
          ORDER BY c.created_at ASC, c.id ASC, ld.id ASC"
     );
-    $stmt->execute([date('Y-m-d'), loading_current_cycle()]);
+    $stmt->execute([date('Y-m-d')]);
 
     $grouped = [];
     foreach ($stmt->fetchAll() as $row) {
-        $grouped[(int) $row['category_id']]['name'] = $row['category_name'];
-        $grouped[(int) $row['category_id']]['apps'][] = $row;
+        $categoryId = (int) $row['category_id'];
+        $grouped[$categoryId]['name'] = $row['category_name'];
+        $grouped[$categoryId]['cycle_no'] = (int) $row['cycle_no'];
+        $grouped[$categoryId]['apps'][] = $row;
     }
 
     return $grouped;

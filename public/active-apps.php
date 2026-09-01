@@ -57,8 +57,7 @@ page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading
 </div>
 
 <?php if ($view === 'today'): ?>
-    <section class="stats-grid cycle-grid">
-        <div class="stat"><span><?= (int) $progress['cycle_no'] ?></span><p>Current Cycle</p></div>
+    <section class="stats-grid">
         <div class="stat"><span><?= (int) $progress['apps_per_day'] ?></span><p>Apps per Day</p></div>
         <div class="stat"><span><?= (int) $progress['eligible'] ?></span><p>Active Apps</p></div>
         <div class="stat"><span><?= (int) $progress['shown'] ?></span><p>Shown This Cycle</p></div>
@@ -68,9 +67,7 @@ page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading
     <section class="form-panel">
         <div class="panel-heading">
             <h2>Rotation Settings</h2>
-            <?php if ($progress['complete']): ?>
-                <span class="badge badge-green">Cycle Complete</span>
-            <?php endif; ?>
+            <span class="hint">Each console runs its own cycle.</span>
         </div>
         <div class="inline-actions cycle-controls">
             <form method="post" class="inline-form cycle-days-form">
@@ -84,12 +81,10 @@ page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading
             <form method="post" onsubmit="return confirm('Restart the rotation from the first app of every console? Today will be generated again.');">
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="new_cycle">
-                <button class="btn <?= $progress['complete'] ? 'primary' : '' ?>" type="submit">
-                    <?= $progress['complete'] ? 'Start New Cycle' : 'Restart from First App' ?>
-                </button>
+                <button class="btn" type="submit">Restart All Consoles</button>
             </form>
         </div>
-        <p class="hint">Every day each console shows the next <?= (int) $progress['apps_per_day'] ?> active app(s). Apps never repeat within a cycle. Use Restart to begin again from each console's first app.</p>
+        <p class="hint">Every day each console shows the next <?= (int) $progress['apps_per_day'] ?> active app(s). Apps never repeat within a cycle. When a console has shown all of its apps it starts again from its first app automatically, and Restart All Consoles does that for every console right away.</p>
     </section>
 
     <section class="panel">
@@ -104,9 +99,7 @@ page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading
             <p class="empty block">
                 No apps for today.
                 <?php if ($progress['eligible'] === 0): ?>
-                    Set apps to Active in Search/Edit to start the rotation.
-                <?php elseif ($progress['complete']): ?>
-                    The cycle is complete — start a new cycle to continue.
+                    Set apps to Active on the Dashboard to start the rotation.
                 <?php endif; ?>
             </p>
         <?php endif; ?>
@@ -115,7 +108,7 @@ page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading
             <?php $doneCount = count(array_filter($group['apps'], fn($app) => (int) $app['is_done'] === 1)); ?>
             <div class="app-group" data-group-key="cat-<?= (int) $categoryId ?>">
                 <button class="app-group-toggle" type="button" aria-expanded="false">
-                    <span><?= h($group['name']) ?> (<?= $doneCount ?>/<?= count($group['apps']) ?> done)</span>
+                    <span><?= h($group['name']) ?> (<?= $doneCount ?>/<?= count($group['apps']) ?> done) &middot; Cycle <?= (int) $group['cycle_no'] ?></span>
                     <span class="nav-chevron" aria-hidden="true"></span>
                 </button>
                 <div class="app-group-body">
@@ -228,7 +221,7 @@ page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading
             <?php $doneCount = count(array_filter($tasks, fn($task) => (int) $task['is_done'] === 1)); ?>
             <div class="app-group" data-group-key="date-<?= h((string) $date) ?>">
                 <button class="app-group-toggle" type="button" aria-expanded="false">
-                    <span><?= h(date('d M Y', strtotime((string) $date))) ?> — Cycle <?= (int) $tasks[0]['cycle_no'] ?> (<?= $doneCount ?>/<?= count($tasks) ?> done)</span>
+                    <span><?= h(date('d M Y', strtotime((string) $date))) ?> (<?= $doneCount ?>/<?= count($tasks) ?> done)</span>
                     <span class="nav-chevron" aria-hidden="true"></span>
                 </button>
                 <div class="app-group-body">
