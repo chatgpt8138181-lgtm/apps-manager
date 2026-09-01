@@ -836,7 +836,7 @@ input[readonly] {
     margin-right: 2px;
 }
 
-.app-group.open .nav-chevron {
+.app-group.open > .app-group-toggle .nav-chevron {
     transform: rotate(45deg);
 }
 
@@ -846,7 +846,7 @@ input[readonly] {
     transition: grid-template-rows 0.3s ease;
 }
 
-.app-group.open .app-group-body {
+.app-group.open > .app-group-body {
     grid-template-rows: 1fr;
 }
 
@@ -855,26 +855,26 @@ input[readonly] {
     transition: padding 0.3s ease;
 }
 
-.app-group.open .app-group-body > .collapse-inner {
+.app-group.open > .app-group-body > .collapse-inner {
     padding: 12px;
 }
 
 /* Nested groups (month > day) sit flush inside their parent. */
-.app-group .app-group {
+.app-group .app-group-body .app-group {
     background: #fff;
 }
 
-.app-group .app-group-toggle {
+.app-group .app-group-body .app-group-toggle {
     background: #fff;
     font-size: 14px;
     padding: 12px 14px;
 }
 
-.app-group .app-group-toggle:hover {
+.app-group .app-group-body .app-group-toggle:hover {
     background: #f4f7fb;
 }
 
-.app-group .app-group:last-child {
+.app-group .app-group-body .app-group:last-child {
     margin-bottom: 0;
 }
 
