@@ -859,6 +859,25 @@ input[readonly] {
     padding: 12px;
 }
 
+/* Nested groups (month > day) sit flush inside their parent. */
+.app-group .app-group {
+    background: #fff;
+}
+
+.app-group .app-group-toggle {
+    background: #fff;
+    font-size: 14px;
+    padding: 12px 14px;
+}
+
+.app-group .app-group-toggle:hover {
+    background: #f4f7fb;
+}
+
+.app-group .app-group:last-child {
+    margin-bottom: 0;
+}
+
 .task-group h3 {
     font-size: 16px;
     margin: 0 0 10px;

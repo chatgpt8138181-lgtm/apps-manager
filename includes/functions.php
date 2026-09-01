@@ -646,12 +646,47 @@ function loading_history(): array
          ORDER BY ld.task_date DESC, c.created_at ASC, c.id ASC, ld.id ASC'
     );
 
-    $grouped = [];
-    foreach ($stmt->fetchAll() as $task) {
-        $grouped[$task['task_date']][] = $task;
+    return group_history_by_month($stmt->fetchAll());
+}
+
+/* History is grouped month-wise, and each month keeps its own day list. */
+function group_history_by_month(array $rows): array
+{
+    $months = [];
+    foreach ($rows as $row) {
+        $date = (string) $row['task_date'];
+        $monthKey = substr($date, 0, 7);
+        $done = (int) $row['is_done'] === 1;
+
+        if (!isset($months[$monthKey])) {
+            $months[$monthKey] = [
+                'key' => $monthKey,
+                'label' => date('F Y', strtotime($date)),
+                'total' => 0,
+                'done' => 0,
+                'days' => [],
+            ];
+        }
+        if (!isset($months[$monthKey]['days'][$date])) {
+            $months[$monthKey]['days'][$date] = [
+                'date' => $date,
+                'label' => date('d M Y', strtotime($date)),
+                'total' => 0,
+                'done' => 0,
+                'rows' => [],
+            ];
+        }
+
+        $months[$monthKey]['total']++;
+        $months[$monthKey]['days'][$date]['total']++;
+        if ($done) {
+            $months[$monthKey]['done']++;
+            $months[$monthKey]['days'][$date]['done']++;
+        }
+        $months[$monthKey]['days'][$date]['rows'][] = $row;
     }
 
-    return $grouped;
+    return $months;
 }
 
 function toggle_loading_done(int $taskId): void

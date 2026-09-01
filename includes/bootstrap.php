@@ -181,16 +181,19 @@ function page_end(): void
             openKeys = new Set();
         }
 
-        let restoredOne = false;
+        /* Groups can nest (month > day), so one group stays open per level. */
+        const restoredScopes = new Set();
         document.querySelectorAll('.app-group').forEach((group) => {
             const key = group.dataset.groupKey || '';
-            if (!restoredOne && key && openKeys.has(key)) {
-                group.classList.add('open');
-                const toggle = group.querySelector('.app-group-toggle');
-                if (toggle) {
-                    toggle.setAttribute('aria-expanded', 'true');
-                }
-                restoredOne = true;
+            const scope = group.parentElement;
+            if (!key || !openKeys.has(key) || restoredScopes.has(scope)) {
+                return;
+            }
+            restoredScopes.add(scope);
+            group.classList.add('open');
+            const toggle = group.querySelector(':scope > .app-group-toggle');
+            if (toggle) {
+                toggle.setAttribute('aria-expanded', 'true');
             }
         });
 
@@ -256,18 +259,23 @@ function page_end(): void
                 toggle.setAttribute('aria-expanded', String(isOpen));
 
                 if (isOpen) {
-                    document.querySelectorAll('.app-group.open').forEach((other) => {
+                    /* Close only the siblings at this level, never the parent. */
+                    group.parentElement?.querySelectorAll(':scope > .app-group.open').forEach((other) => {
                         if (other !== group) {
                             other.classList.remove('open');
-                            other.querySelector('.app-group-toggle')?.setAttribute('aria-expanded', 'false');
+                            other.querySelector(':scope > .app-group-toggle')?.setAttribute('aria-expanded', 'false');
                         }
                     });
                 }
 
                 openKeys.clear();
-                const key = group.dataset.groupKey || '';
-                if (isOpen && key) {
-                    openKeys.add(key);
+                let node = isOpen ? group : group.parentElement?.closest('.app-group');
+                while (node) {
+                    const parentKey = node.dataset.groupKey || '';
+                    if (parentKey) {
+                        openKeys.add(parentKey);
+                    }
+                    node = node.parentElement?.closest('.app-group');
                 }
                 saveOpenKeys();
             });

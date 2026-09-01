@@ -775,12 +775,7 @@ function task_history(): array
          ORDER BY dt.task_date DESC, c.created_at ASC, c.id ASC, dt.id ASC'
     );
 
-    $grouped = [];
-    foreach ($stmt->fetchAll() as $task) {
-        $grouped[$task['task_date']][] = $task;
-    }
-
-    return $grouped;
+    return group_history_by_month($stmt->fetchAll());
 }
 
 function toggle_task_done(int $taskId): void

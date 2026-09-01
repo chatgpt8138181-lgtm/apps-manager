@@ -245,47 +245,56 @@ page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading
     <section class="panel">
         <div class="panel-heading">
             <h2>Loading History</h2>
-            <span class="hint">Day-wise record of every rotated app, so already-shown apps stay traceable.</span>
+            <span class="hint">Month-wise record of every rotated app, open a month to see its days.</span>
         </div>
 
         <?php if (!$historyGroups): ?>
             <p class="empty block">No history yet.</p>
         <?php endif; ?>
 
-        <?php foreach ($historyGroups as $date => $tasks): ?>
-            <?php $doneCount = count(array_filter($tasks, fn($task) => (int) $task['is_done'] === 1)); ?>
-            <div class="app-group" data-group-key="date-<?= h((string) $date) ?>">
+        <?php foreach ($historyGroups as $month): ?>
+            <div class="app-group" data-group-key="month-<?= h((string) $month['key']) ?>">
                 <button class="app-group-toggle" type="button" aria-expanded="false">
-                    <span><?= h(date('d M Y', strtotime((string) $date))) ?> (<?= $doneCount ?>/<?= count($tasks) ?> done)</span>
+                    <span><?= h($month['label']) ?> (<?= (int) $month['done'] ?>/<?= (int) $month['total'] ?> done)</span>
                     <span class="nav-chevron" aria-hidden="true"></span>
                 </button>
                 <div class="app-group-body">
-                    <div class="table-wrap">
-                        <table>
-                            <thead>
-                            <tr>
-                                <th>Console</th>
-                                <th>App Icon</th>
-                                <th>App Name</th>
-                                <th>Status</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <?php foreach ($tasks as $task): ?>
-                                <tr>
-                                    <td><?= h($task['category_name']) ?></td>
-                                    <td><img class="app-icon" src="<?= h(app_icon_url($task['icon_path'])) ?>" alt=""></td>
-                                    <td><?= h($task['app_name']) ?></td>
-                                    <td>
-                                        <?= (int) $task['is_done'] === 1
-                                            ? '<span class="badge badge-green">Done</span>'
-                                            : '<span class="badge badge-amber">Pending</span>' ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
+                    <?php foreach ($month['days'] as $day): ?>
+                        <div class="app-group" data-group-key="date-<?= h((string) $day['date']) ?>">
+                            <button class="app-group-toggle" type="button" aria-expanded="false">
+                                <span><?= h($day['label']) ?> (<?= (int) $day['done'] ?>/<?= (int) $day['total'] ?> done)</span>
+                                <span class="nav-chevron" aria-hidden="true"></span>
+                            </button>
+                            <div class="app-group-body">
+                                <div class="table-wrap">
+                                    <table>
+                                        <thead>
+                                        <tr>
+                                            <th>Console</th>
+                                            <th>App Icon</th>
+                                            <th>App Name</th>
+                                            <th>Status</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <?php foreach ($day['rows'] as $task): ?>
+                                            <tr>
+                                                <td><?= h($task['category_name']) ?></td>
+                                                <td><img class="app-icon" src="<?= h(app_icon_url($task['icon_path'])) ?>" alt=""></td>
+                                                <td><?= h($task['app_name']) ?></td>
+                                                <td>
+                                                    <?= (int) $task['is_done'] === 1
+                                                        ? '<span class="badge badge-green">Done</span>'
+                                                        : '<span class="badge badge-amber">Pending</span>' ?>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
         <?php endforeach; ?>
