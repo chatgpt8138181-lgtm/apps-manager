@@ -663,6 +663,49 @@ function console_task_shown_count(int $consoleId, int $cycle): int
     return (int) $stmt->fetchColumn();
 }
 
+/* Quota is per console, so the window size can differ per console. */
+function console_task_quota(int $consoleId): int
+{
+    $total = console_ready_count($consoleId);
+    if ($total === 0) {
+        return 0;
+    }
+
+    return max(1, (int) ceil($total / cycle_days()));
+}
+
+/* Where the console's rotation currently sits: the list position that the
+   next generated day starts from. Older installs fall back to what the
+   current cycle already showed, so nothing jumps back to the first app. */
+function console_position(int $consoleId): int
+{
+    $stored = workflow_setting('task_pos_c' . $consoleId, '');
+    if ($stored === '') {
+        return console_task_shown_count($consoleId, console_cycle($consoleId));
+    }
+
+    return max(0, (int) $stored);
+}
+
+function set_console_position(int $consoleId, int $position): void
+{
+    set_workflow_setting('task_pos_c' . $consoleId, (string) max(0, $position));
+}
+
+/* Start of the window that today's tasks were taken from. */
+function console_today_start(int $consoleId): int
+{
+    $stmt = db()->prepare('SELECT COUNT(*) FROM daily_tasks WHERE task_date = ? AND console_id = ?');
+    $stmt->execute([date('Y-m-d'), $consoleId]);
+    $position = console_position($consoleId);
+
+    if ((int) $stmt->fetchColumn() < 1) {
+        return $position;
+    }
+
+    return max(0, $position - console_task_quota($consoleId));
+}
+
 function cycle_progress(): array
 {
     $eligible = 0;
@@ -676,7 +719,7 @@ function cycle_progress(): array
         }
 
         $eligible += $total;
-        $shown += min($total, console_task_shown_count($consoleId, console_cycle($consoleId)));
+        $shown += min($total, console_position($consoleId));
     }
 
     return [
@@ -712,30 +755,31 @@ function generate_daily_tasks(): int
         }
 
         $cycle = console_cycle($consoleId);
+        $position = console_position($consoleId);
 
         /* This console finished its list, so start it over. */
-        if (console_task_shown_count($consoleId, $cycle) >= $total) {
+        if ($position >= $total) {
             $cycle++;
             set_console_cycle($consoleId, $cycle);
+            $position = 0;
         }
 
-        $quota = (int) ceil($total / $days);
+        $quota = max(1, (int) ceil($total / $days));
 
         $pick = db()->prepare(
             "SELECT id FROM production_apps
              WHERE console_id = ? AND status = 'live' AND ready_for_work = 1
-               AND id NOT IN (
-                   SELECT app_id FROM daily_tasks WHERE console_id = ? AND cycle_no = ?
-               )
              ORDER BY created_at ASC, id ASC
-             LIMIT " . $quota
+             LIMIT " . $quota . " OFFSET " . $position
         );
-        $pick->execute([$consoleId, $consoleId, $cycle]);
+        $pick->execute([$consoleId]);
 
         foreach ($pick->fetchAll() as $row) {
             $insert->execute([$today, (int) $row['id'], $consoleId, $cycle]);
             $inserted++;
         }
+
+        set_console_position($consoleId, $position + $quota);
     }
 
     return $inserted;
@@ -814,6 +858,7 @@ function start_new_cycle(): void
     /* Same cycle for everyone, and counting starts over at Cycle 1. */
     foreach ($consoles as $console) {
         set_console_cycle((int) $console['id'], $next);
+        set_console_position((int) $console['id'], 0);
     }
     set_workflow_setting('task_cycle_base', (string) $next);
 }
@@ -829,28 +874,44 @@ function shift_console_cycle(int $consoleId, string $direction): void
         throw new RuntimeException('Console was not found.');
     }
 
-    $current = console_cycle($consoleId);
-    $target = $current;
+    $quota = max(1, console_task_quota($consoleId));
+    $total = console_ready_count($consoleId);
+    $cycle = console_cycle($consoleId);
+    $start = console_today_start($consoleId);
+    $target = $start;
 
-    if ($direction === 'next') {
-        $target = $current + 1;
+    if ($direction === 'restart') {
+        $target = 0;
+    } elseif ($direction === 'next') {
+        $target = $start + $quota;
+        if ($total > 0 && $target >= $total) {
+            $cycle++;
+            $target = 0;
+        }
     } elseif ($direction === 'previous') {
-        $target = $current - 1;
-    } elseif ($direction !== 'restart') {
+        $target = $start - $quota;
+        if ($target < 0) {
+            $cycle--;
+            if ($cycle < task_cycle_base()) {
+                throw new RuntimeException('This console is already on the first apps of Cycle 1.');
+            }
+            $target = $total > 0 ? intdiv(max(0, $total - 1), $quota) * $quota : 0;
+        }
+    } else {
         throw new RuntimeException('Invalid cycle action.');
-    }
-
-    if ($target < task_cycle_base()) {
-        throw new RuntimeException('This console is already on Cycle 1.');
     }
 
     $today = db()->prepare('DELETE FROM daily_tasks WHERE task_date = ? AND console_id = ?');
     $today->execute([date('Y-m-d'), $consoleId]);
 
-    $round = db()->prepare('DELETE FROM daily_tasks WHERE console_id = ? AND cycle_no = ?');
-    $round->execute([$consoleId, $target]);
+    if ($direction === 'restart') {
+        /* A restart clears what this cycle already showed. */
+        $round = db()->prepare('DELETE FROM daily_tasks WHERE console_id = ? AND cycle_no = ?');
+        $round->execute([$consoleId, $cycle]);
+    }
 
-    set_console_cycle($consoleId, $target);
+    set_console_cycle($consoleId, $cycle);
+    set_console_position($consoleId, $target);
 }
 
 function restart_console_cycle(int $consoleId): void
