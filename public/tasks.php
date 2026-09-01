@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $messages = [
                 'next' => 'Console moved to the next cycle.',
                 'previous' => 'Console moved back to the previous cycle.',
-                'restart' => 'Console restarted from its first app.',
+                'restart' => 'Console restarted from its first app on Cycle 1.',
             ];
             redirect_with('tasks.php', 'success', $messages[$direction] ?? $messages['restart']);
         }
@@ -129,7 +129,7 @@ page_start($view === 'history' ? 'Task History' : "Today's Task");
                             <input type="hidden" name="console_id" value="<?= (int) $consoleId ?>">
                             <button class="btn small" type="submit">&laquo; Previous Cycle</button>
                         </form>
-                        <form method="post" onsubmit="return confirm('Restart this console from its first app? Today will be generated again for it.');">
+                        <form method="post" onsubmit="return confirm('Restart this console from its first app and back to Cycle 1?');">
                             <?= csrf_field() ?>
                             <input type="hidden" name="action" value="cycle_step">
                             <input type="hidden" name="direction" value="restart">

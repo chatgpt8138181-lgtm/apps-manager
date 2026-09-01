@@ -881,6 +881,8 @@ function shift_console_cycle(int $consoleId, string $direction): void
     $target = $start;
 
     if ($direction === 'restart') {
+        /* A restart puts the console back on its first app and Cycle 1. */
+        $cycle = task_cycle_base();
         $target = 0;
     } elseif ($direction === 'next') {
         $target = $start + $quota;
@@ -903,12 +905,6 @@ function shift_console_cycle(int $consoleId, string $direction): void
 
     $today = db()->prepare('DELETE FROM daily_tasks WHERE task_date = ? AND console_id = ?');
     $today->execute([date('Y-m-d'), $consoleId]);
-
-    if ($direction === 'restart') {
-        /* A restart clears what this cycle already showed. */
-        $round = db()->prepare('DELETE FROM daily_tasks WHERE console_id = ? AND cycle_no = ?');
-        $round->execute([$consoleId, $cycle]);
-    }
 
     set_console_cycle($consoleId, $cycle);
     set_console_position($consoleId, $target);

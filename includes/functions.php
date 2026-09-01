@@ -515,6 +515,8 @@ function shift_category_cycle(int $categoryId, string $direction): void
     $target = $start;
 
     if ($direction === 'restart') {
+        /* A restart puts the console back on its first app and Cycle 1. */
+        $cycle = loading_cycle_base();
         $target = 0;
     } elseif ($direction === 'next') {
         $target = $start + $quota;
@@ -537,12 +539,6 @@ function shift_category_cycle(int $categoryId, string $direction): void
 
     $today = db()->prepare('DELETE FROM loading_daily WHERE task_date = ? AND category_id = ?');
     $today->execute([date('Y-m-d'), $categoryId]);
-
-    if ($direction === 'restart') {
-        /* A restart clears what this cycle already showed. */
-        $round = db()->prepare('DELETE FROM loading_daily WHERE category_id = ? AND cycle_no = ?');
-        $round->execute([$categoryId, $cycle]);
-    }
 
     set_category_cycle($categoryId, $cycle);
     set_category_position($categoryId, $target);
