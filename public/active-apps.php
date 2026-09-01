@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($action === 'new_cycle') {
             start_new_loading_cycle();
-            redirect_with('active-apps.php', 'success', 'New cycle started. All active apps are eligible again.');
+            redirect_with('active-apps.php', 'success', 'Rotation restarted from the first app of every console.');
         }
     } catch (Throwable $e) {
         redirect_with($return, 'error', $e->getMessage());
@@ -81,15 +81,15 @@ page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading
                 </label>
                 <button class="btn primary" type="submit">Save</button>
             </form>
-            <?php if ($progress['complete']): ?>
-                <form method="post" onsubmit="return confirm('Start a new cycle? All active apps become eligible again.');">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="action" value="new_cycle">
-                    <button class="btn primary" type="submit">Start New Cycle</button>
-                </form>
-            <?php endif; ?>
+            <form method="post" onsubmit="return confirm('Restart the rotation from the first app of every console? Today will be generated again.');">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="new_cycle">
+                <button class="btn <?= $progress['complete'] ? 'primary' : '' ?>" type="submit">
+                    <?= $progress['complete'] ? 'Start New Cycle' : 'Restart from First App' ?>
+                </button>
+            </form>
         </div>
-        <p class="hint">Every day each console shows the next <?= (int) $progress['apps_per_day'] ?> active app(s). Apps never repeat within a cycle.</p>
+        <p class="hint">Every day each console shows the next <?= (int) $progress['apps_per_day'] ?> active app(s). Apps never repeat within a cycle. Use Restart to begin again from each console's first app.</p>
     </section>
 
     <section class="panel">
