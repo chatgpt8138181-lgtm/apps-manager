@@ -22,6 +22,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect_with('active-apps.php', 'success', 'Settings saved. New quota applies from the next generated day.');
         }
 
+        if ($action === 'restart_console') {
+            restart_category_cycle((int) ($_POST['category_id'] ?? 0));
+            redirect_with('active-apps.php', 'success', 'Console restarted from its first app.');
+        }
+
         if ($action === 'new_cycle') {
             start_new_loading_cycle();
             redirect_with('active-apps.php', 'success', 'Rotation restarted from the first app of every console.');
@@ -112,6 +117,14 @@ page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading
                     <span class="nav-chevron" aria-hidden="true"></span>
                 </button>
                 <div class="app-group-body">
+                    <div class="inline-actions bulk-status-row">
+                        <form method="post" onsubmit="return confirm('Restart this console from its first app? Today will be generated again for it.');">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="restart_console">
+                            <input type="hidden" name="category_id" value="<?= (int) $categoryId ?>">
+                            <button class="btn small" type="submit">Restart This Console</button>
+                        </form>
+                    </div>
                     <div class="table-wrap">
                         <table>
                             <thead>

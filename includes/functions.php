@@ -473,6 +473,19 @@ function start_new_loading_cycle(): void
     }
 }
 
+/* Manual restart for one console only. */
+function restart_category_cycle(int $categoryId): void
+{
+    if ($categoryId <= 0) {
+        throw new RuntimeException('Console was not found.');
+    }
+
+    $stmt = db()->prepare('DELETE FROM loading_daily WHERE task_date = ? AND category_id = ?');
+    $stmt->execute([date('Y-m-d'), $categoryId]);
+
+    set_category_cycle($categoryId, category_cycle($categoryId) + 1);
+}
+
 function loading_cycle_progress(): array
 {
     $eligible = 0;

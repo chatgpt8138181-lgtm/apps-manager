@@ -24,7 +24,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($action === 'new_cycle') {
             start_new_cycle();
-            redirect_with('tasks.php', 'success', 'New cycle started. All Ready for Work apps are eligible again.');
+            redirect_with('tasks.php', 'success', 'Every console restarted from its first app.');
+        }
+
+        if ($action === 'restart_console') {
+            restart_console_cycle((int) ($_POST['console_id'] ?? 0));
+            redirect_with('tasks.php', 'success', 'Console restarted from its first app.');
         }
     } catch (Throwable $e) {
         redirect_with($return, 'error', $e->getMessage());
@@ -38,7 +43,10 @@ if ($view === 'today') {
 $progress = cycle_progress();
 $todayGroups = $view === 'today' ? todays_tasks() : [];
 $historyGroups = $view === 'history' ? task_history() : [];
-$todayTotal = array_sum(array_map('count', $todayGroups));
+$todayTotal = 0;
+foreach ($todayGroups as $group) {
+    $todayTotal += count($group['tasks']);
+}
 
 page_start($view === 'history' ? 'Task History' : "Today's Task");
 ?>
@@ -49,7 +57,6 @@ page_start($view === 'history' ? 'Task History' : "Today's Task");
 
 <?php if ($view === 'today'): ?>
     <section class="stats-grid cycle-grid">
-        <div class="stat"><span><?= (int) $progress['cycle_no'] ?></span><p>Current Cycle</p></div>
         <div class="stat"><span><?= (int) $progress['cycle_days'] ?></span><p>Cycle Days</p></div>
         <div class="stat"><span><?= (int) $progress['eligible'] ?></span><p>Eligible Apps</p></div>
         <div class="stat"><span><?= (int) $progress['shown'] ?></span><p>Shown This Cycle</p></div>
@@ -59,9 +66,7 @@ page_start($view === 'history' ? 'Task History' : "Today's Task");
     <section class="form-panel">
         <div class="panel-heading">
             <h2>Cycle Settings</h2>
-            <?php if ($progress['complete']): ?>
-                <span class="badge badge-green">Cycle Complete</span>
-            <?php endif; ?>
+            <span class="hint">Each console runs its own cycle.</span>
         </div>
         <div class="inline-actions cycle-controls">
             <form method="post" class="inline-form cycle-days-form">
@@ -72,15 +77,13 @@ page_start($view === 'history' ? 'Task History' : "Today's Task");
                 </label>
                 <button class="btn primary" type="submit">Save</button>
             </form>
-            <?php if ($progress['complete']): ?>
-                <form method="post" onsubmit="return confirm('Start a new cycle? All Ready for Work apps become eligible again.');">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="action" value="new_cycle">
-                    <button class="btn primary" type="submit">Start New Cycle</button>
-                </form>
-            <?php endif; ?>
+            <form method="post" onsubmit="return confirm('Restart every console from its first app? Today will be generated again.');">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="new_cycle">
+                <button class="btn" type="submit">Restart All Consoles</button>
+            </form>
         </div>
-        <p class="hint">Daily quota per console = ceil(console's Ready for Work apps ÷ cycle days). Apps never repeat within a cycle.</p>
+        <p class="hint">Daily quota per console = ceil(console's Ready for Work apps &divide; cycle days). When a console has shown all of its apps it starts again from its first app automatically.</p>
     </section>
 
     <section class="panel">
@@ -96,20 +99,29 @@ page_start($view === 'history' ? 'Task History' : "Today's Task");
                 No tasks for today.
                 <?php if ($progress['eligible'] === 0): ?>
                     Tag Live apps as Ready for Work and assign consoles to start the task system.
-                <?php elseif ($progress['complete']): ?>
-                    The cycle is complete — start a new cycle to continue.
                 <?php endif; ?>
             </p>
         <?php endif; ?>
 
-        <?php foreach ($todayGroups as $consoleName => $tasks): ?>
-            <?php $doneCount = count(array_filter($tasks, fn($task) => (int) $task['is_done'] === 1)); ?>
-            <div class="app-group" data-group-key="console-<?= h($consoleName) ?>">
+        <?php foreach ($todayGroups as $consoleId => $group): ?>
+            <?php
+            $tasks = $group['tasks'];
+            $doneCount = count(array_filter($tasks, fn($task) => (int) $task['is_done'] === 1));
+            ?>
+            <div class="app-group" data-group-key="console-<?= (int) $consoleId ?>">
                 <button class="app-group-toggle" type="button" aria-expanded="false">
-                    <span><?= h($consoleName) ?> (<?= $doneCount ?>/<?= count($tasks) ?> done)</span>
+                    <span><?= h($group['name']) ?> (<?= $doneCount ?>/<?= count($tasks) ?> done) &middot; Cycle <?= (int) $group['cycle_no'] ?></span>
                     <span class="nav-chevron" aria-hidden="true"></span>
                 </button>
                 <div class="app-group-body">
+                <div class="inline-actions bulk-status-row">
+                    <form method="post" onsubmit="return confirm('Restart this console from its first app? Today will be generated again for it.');">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="restart_console">
+                        <input type="hidden" name="console_id" value="<?= (int) $consoleId ?>">
+                        <button class="btn small" type="submit">Restart This Console</button>
+                    </form>
+                </div>
                 <div class="table-wrap">
                     <table>
                         <thead>
@@ -165,7 +177,7 @@ page_start($view === 'history' ? 'Task History' : "Today's Task");
             <?php $doneCount = count(array_filter($tasks, fn($task) => (int) $task['is_done'] === 1)); ?>
             <div class="app-group" data-group-key="date-<?= h((string) $date) ?>">
                 <button class="app-group-toggle" type="button" aria-expanded="false">
-                    <span><?= h(date('d M Y', strtotime((string) $date))) ?> — Cycle <?= (int) $tasks[0]['cycle_no'] ?> (<?= $doneCount ?>/<?= count($tasks) ?> done)</span>
+                    <span><?= h(date('d M Y', strtotime((string) $date))) ?> (<?= $doneCount ?>/<?= count($tasks) ?> done)</span>
                     <span class="nav-chevron" aria-hidden="true"></span>
                 </button>
                 <div class="app-group-body">

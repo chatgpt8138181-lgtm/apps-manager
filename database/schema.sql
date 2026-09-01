@@ -120,7 +120,6 @@ CREATE TABLE IF NOT EXISTS loading_daily (
 
 INSERT INTO workflow_settings (setting_key, setting_value) VALUES
 ('cycle_days', '5'),
-('current_cycle', '1'),
 ('loading_apps_per_day', '2')
 ON DUPLICATE KEY UPDATE setting_key = setting_key;
 

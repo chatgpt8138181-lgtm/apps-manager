@@ -54,7 +54,7 @@ page_start('Play Consoles');
 <section class="panel">
     <div class="panel-heading">
         <h2>Play Consoles (<?= count($consoles) ?>)</h2>
-        <span class="hint">Cycle <?= (int) $progress['cycle_no'] ?> — "shown" and "remaining" reset when a new cycle starts.</span>
+                <span class="hint">Each console runs its own cycle; "shown" and "remaining" reset when that console restarts.</span>
     </div>
 
     <?php if (!$consoles): ?>
@@ -79,6 +79,7 @@ page_start('Play Consoles');
             </button>
             <div class="app-group-body">
                 <div class="console-stats">
+                    <span><strong>Cycle <?= (int) $console['cycle_no'] ?></strong></span>
                     <span><strong><?= (int) $console['live_total'] ?></strong> Live Apps</span>
                     <span><strong><?= (int) $console['ready_total'] ?></strong> Ready for Work</span>
                     <span><strong><?= (int) $console['shown_total'] ?></strong> Shown This Cycle</span>

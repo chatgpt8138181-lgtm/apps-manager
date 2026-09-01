@@ -70,11 +70,6 @@ function cycle_days(): int
     return max(1, (int) workflow_setting('cycle_days', '5'));
 }
 
-function current_cycle(): int
-{
-    return max(1, (int) workflow_setting('current_cycle', '1'));
-}
-
 function validate_production_fields(array $data): array
 {
     $name = trim((string) ($data['name'] ?? ''));
@@ -590,73 +585,101 @@ function delete_console(int $consoleId): void
 
 function console_overview(): array
 {
-    $cycle = current_cycle();
-    $stmt = db()->prepare(
+    $stmt = db()->query(
         "SELECT c.id, c.name, c.privacy_policy_url, c.app_domain_url, c.created_at,
             (SELECT COUNT(*) FROM production_apps pa
              WHERE pa.console_id = c.id AND pa.status = 'live') AS live_total,
             (SELECT COUNT(*) FROM production_apps pa
-             WHERE pa.console_id = c.id AND pa.status = 'live' AND pa.ready_for_work = 1) AS ready_total,
-            (SELECT COUNT(DISTINCT dt.app_id) FROM daily_tasks dt
-             JOIN production_apps pa ON pa.id = dt.app_id
-             WHERE pa.console_id = c.id AND dt.cycle_no = ?
-               AND pa.status = 'live' AND pa.ready_for_work = 1) AS shown_total
+             WHERE pa.console_id = c.id AND pa.status = 'live' AND pa.ready_for_work = 1) AS ready_total
          FROM consoles c
          ORDER BY c.created_at ASC, c.id ASC"
     );
-    $stmt->execute([$cycle]);
 
     $consoles = $stmt->fetchAll();
     foreach ($consoles as &$console) {
-        $console['remaining'] = max(0, (int) $console['ready_total'] - (int) $console['shown_total']);
+        $consoleId = (int) $console['id'];
+        $cycle = console_cycle($consoleId);
+        $shown = min((int) $console['ready_total'], console_task_shown_count($consoleId, $cycle));
+
+        $console['cycle_no'] = $cycle;
+        $console['shown_total'] = $shown;
+        $console['remaining'] = max(0, (int) $console['ready_total'] - $shown);
     }
     unset($console);
 
     return $consoles;
 }
 
-function cycle_progress(): array
+/*
+ * Each console runs its own task cycle: once a console has shown all of
+ * its Ready for Work apps it starts again from its first app, without
+ * waiting for the other consoles.
+ */
+function console_cycle(int $consoleId): int
 {
-    $cycle = current_cycle();
+    return max(1, (int) workflow_setting('task_cycle_c' . $consoleId, '1'));
+}
 
-    $eligible = (int) db()->query(
+function set_console_cycle(int $consoleId, int $cycle): void
+{
+    set_workflow_setting('task_cycle_c' . $consoleId, (string) $cycle);
+}
+
+function console_ready_count(int $consoleId): int
+{
+    $stmt = db()->prepare(
         "SELECT COUNT(*) FROM production_apps
-         WHERE status = 'live' AND ready_for_work = 1 AND console_id IS NOT NULL"
-    )->fetchColumn();
+         WHERE console_id = ? AND status = 'live' AND ready_for_work = 1"
+    );
+    $stmt->execute([$consoleId]);
 
-    $shownStmt = db()->prepare(
+    return (int) $stmt->fetchColumn();
+}
+
+function console_task_shown_count(int $consoleId, int $cycle): int
+{
+    $stmt = db()->prepare(
         "SELECT COUNT(DISTINCT dt.app_id) FROM daily_tasks dt
          JOIN production_apps pa ON pa.id = dt.app_id
-         WHERE dt.cycle_no = ?
-           AND pa.status = 'live' AND pa.ready_for_work = 1 AND pa.console_id IS NOT NULL"
+         WHERE dt.console_id = ? AND dt.cycle_no = ?
+           AND pa.status = 'live' AND pa.ready_for_work = 1"
     );
-    $shownStmt->execute([$cycle]);
-    $shown = (int) $shownStmt->fetchColumn();
+    $stmt->execute([$consoleId, $cycle]);
+
+    return (int) $stmt->fetchColumn();
+}
+
+function cycle_progress(): array
+{
+    $eligible = 0;
+    $shown = 0;
+
+    foreach (all_consoles() as $console) {
+        $consoleId = (int) $console['id'];
+        $total = console_ready_count($consoleId);
+        if ($total === 0) {
+            continue;
+        }
+
+        $eligible += $total;
+        $shown += min($total, console_task_shown_count($consoleId, console_cycle($consoleId)));
+    }
 
     return [
-        'cycle_no' => $cycle,
         'cycle_days' => cycle_days(),
         'eligible' => $eligible,
         'shown' => $shown,
         'remaining' => max(0, $eligible - $shown),
-        'complete' => $eligible > 0 && $shown >= $eligible,
     ];
 }
 
 function generate_daily_tasks(): int
 {
     $today = date('Y-m-d');
-    $cycle = current_cycle();
-
-    $exists = db()->prepare('SELECT COUNT(*) FROM daily_tasks WHERE task_date = ? AND cycle_no = ?');
-    $exists->execute([$today, $cycle]);
-    if ((int) $exists->fetchColumn() > 0) {
-        return 0;
-    }
-
     $days = cycle_days();
     $inserted = 0;
 
+    $done = db()->prepare('SELECT COUNT(*) FROM daily_tasks WHERE task_date = ? AND console_id = ?');
     $insert = db()->prepare(
         'INSERT IGNORE INTO daily_tasks (task_date, app_id, console_id, cycle_no) VALUES (?, ?, ?, ?)'
     );
@@ -664,15 +687,22 @@ function generate_daily_tasks(): int
     foreach (all_consoles() as $console) {
         $consoleId = (int) $console['id'];
 
-        $totalStmt = db()->prepare(
-            "SELECT COUNT(*) FROM production_apps
-             WHERE console_id = ? AND status = 'live' AND ready_for_work = 1"
-        );
-        $totalStmt->execute([$consoleId]);
-        $total = (int) $totalStmt->fetchColumn();
+        $done->execute([$today, $consoleId]);
+        if ((int) $done->fetchColumn() > 0) {
+            continue;
+        }
 
+        $total = console_ready_count($consoleId);
         if ($total === 0) {
             continue;
+        }
+
+        $cycle = console_cycle($consoleId);
+
+        /* This console finished its list, so start it over. */
+        if (console_task_shown_count($consoleId, $cycle) >= $total) {
+            $cycle++;
+            set_console_cycle($consoleId, $cycle);
         }
 
         $quota = (int) ceil($total / $days);
@@ -680,11 +710,13 @@ function generate_daily_tasks(): int
         $pick = db()->prepare(
             "SELECT id FROM production_apps
              WHERE console_id = ? AND status = 'live' AND ready_for_work = 1
-               AND id NOT IN (SELECT app_id FROM daily_tasks WHERE cycle_no = ?)
+               AND id NOT IN (
+                   SELECT app_id FROM daily_tasks WHERE console_id = ? AND cycle_no = ?
+               )
              ORDER BY created_at ASC, id ASC
              LIMIT " . $quota
         );
-        $pick->execute([$consoleId, $cycle]);
+        $pick->execute([$consoleId, $consoleId, $cycle]);
 
         foreach ($pick->fetchAll() as $row) {
             $insert->execute([$today, (int) $row['id'], $consoleId, $cycle]);
@@ -698,18 +730,22 @@ function generate_daily_tasks(): int
 function todays_tasks(): array
 {
     $stmt = db()->prepare(
-        'SELECT dt.id, dt.is_done, dt.cycle_no, pa.name AS app_name, pa.package_name, c.name AS console_name
+        "SELECT dt.id, dt.is_done, dt.cycle_no, pa.name AS app_name, pa.package_name,
+                c.id AS console_id, c.name AS console_name
          FROM daily_tasks dt
          JOIN production_apps pa ON pa.id = dt.app_id
          JOIN consoles c ON c.id = dt.console_id
-         WHERE dt.task_date = ? AND dt.cycle_no = ?
-         ORDER BY c.created_at ASC, c.id ASC, dt.id ASC'
+         WHERE dt.task_date = ? AND pa.status = 'live' AND pa.ready_for_work = 1
+         ORDER BY c.created_at ASC, c.id ASC, dt.id ASC"
     );
-    $stmt->execute([date('Y-m-d'), current_cycle()]);
+    $stmt->execute([date('Y-m-d')]);
 
     $grouped = [];
     foreach ($stmt->fetchAll() as $task) {
-        $grouped[$task['console_name']][] = $task;
+        $consoleId = (int) $task['console_id'];
+        $grouped[$consoleId]['name'] = $task['console_name'];
+        $grouped[$consoleId]['cycle_no'] = (int) $task['cycle_no'];
+        $grouped[$consoleId]['tasks'][] = $task;
     }
 
     return $grouped;
@@ -752,7 +788,27 @@ function update_cycle_days(int $days): void
     set_workflow_setting('cycle_days', (string) $days);
 }
 
+/* Manual restart: every console starts again from its first app today. */
 function start_new_cycle(): void
 {
-    set_workflow_setting('current_cycle', (string) (current_cycle() + 1));
+    $stmt = db()->prepare('DELETE FROM daily_tasks WHERE task_date = ?');
+    $stmt->execute([date('Y-m-d')]);
+
+    foreach (all_consoles() as $console) {
+        $consoleId = (int) $console['id'];
+        set_console_cycle($consoleId, console_cycle($consoleId) + 1);
+    }
+}
+
+/* Manual restart for one console only. */
+function restart_console_cycle(int $consoleId): void
+{
+    if ($consoleId <= 0) {
+        throw new RuntimeException('Console was not found.');
+    }
+
+    $stmt = db()->prepare('DELETE FROM daily_tasks WHERE task_date = ? AND console_id = ?');
+    $stmt->execute([date('Y-m-d'), $consoleId]);
+
+    set_console_cycle($consoleId, console_cycle($consoleId) + 1);
 }
