@@ -113,7 +113,7 @@ page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading
             <?php $doneCount = count(array_filter($group['apps'], fn($app) => (int) $app['is_done'] === 1)); ?>
             <div class="app-group" data-group-key="cat-<?= (int) $categoryId ?>">
                 <button class="app-group-toggle" type="button" aria-expanded="false">
-                    <span><?= h($group['name']) ?> (<?= $doneCount ?>/<?= count($group['apps']) ?> done) &middot; Cycle <?= (int) $group['cycle_no'] ?></span>
+                    <span><?= h($group['name']) ?> (<?= $doneCount ?>/<?= count($group['apps']) ?> done) &middot; Cycle <?= display_category_cycle((int) $group['cycle_no']) ?></span>
                     <span class="nav-chevron" aria-hidden="true"></span>
                 </button>
                 <div class="app-group-body">

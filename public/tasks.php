@@ -110,7 +110,7 @@ page_start($view === 'history' ? 'Task History' : "Today's Task");
             ?>
             <div class="app-group" data-group-key="console-<?= (int) $consoleId ?>">
                 <button class="app-group-toggle" type="button" aria-expanded="false">
-                    <span><?= h($group['name']) ?> (<?= $doneCount ?>/<?= count($tasks) ?> done) &middot; Cycle <?= (int) $group['cycle_no'] ?></span>
+                    <span><?= h($group['name']) ?> (<?= $doneCount ?>/<?= count($tasks) ?> done) &middot; Cycle <?= display_console_cycle((int) $group['cycle_no']) ?></span>
                     <span class="nav-chevron" aria-hidden="true"></span>
                 </button>
                 <div class="app-group-body">

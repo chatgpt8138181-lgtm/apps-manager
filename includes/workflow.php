@@ -601,7 +601,7 @@ function console_overview(): array
         $cycle = console_cycle($consoleId);
         $shown = min((int) $console['ready_total'], console_task_shown_count($consoleId, $cycle));
 
-        $console['cycle_no'] = $cycle;
+        $console['cycle_no'] = display_console_cycle($cycle);
         $console['shown_total'] = $shown;
         $console['remaining'] = max(0, (int) $console['ready_total'] - $shown);
     }
@@ -618,6 +618,20 @@ function console_overview(): array
 function console_cycle(int $consoleId): int
 {
     return max(1, (int) workflow_setting('task_cycle_c' . $consoleId, '1'));
+}
+
+/*
+ * Stored cycle numbers only ever grow so past rows stay valid, while the
+ * number shown to the user counts from the last "Restart All Consoles".
+ */
+function task_cycle_base(): int
+{
+    return max(1, (int) workflow_setting('task_cycle_base', '1'));
+}
+
+function display_console_cycle(int $storedCycle): int
+{
+    return max(1, $storedCycle - task_cycle_base() + 1);
 }
 
 function set_console_cycle(int $consoleId, int $cycle): void
@@ -794,10 +808,19 @@ function start_new_cycle(): void
     $stmt = db()->prepare('DELETE FROM daily_tasks WHERE task_date = ?');
     $stmt->execute([date('Y-m-d')]);
 
-    foreach (all_consoles() as $console) {
-        $consoleId = (int) $console['id'];
-        set_console_cycle($consoleId, console_cycle($consoleId) + 1);
+    $consoles = all_consoles();
+
+    $next = (int) db()->query('SELECT COALESCE(MAX(cycle_no), 0) FROM daily_tasks')->fetchColumn();
+    foreach ($consoles as $console) {
+        $next = max($next, console_cycle((int) $console['id']));
     }
+    $next++;
+
+    /* Same cycle for everyone, and counting starts over at Cycle 1. */
+    foreach ($consoles as $console) {
+        set_console_cycle((int) $console['id'], $next);
+    }
+    set_workflow_setting('task_cycle_base', (string) $next);
 }
 
 /* Manual restart for one console only. */

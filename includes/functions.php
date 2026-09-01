@@ -427,6 +427,20 @@ function category_cycle(int $categoryId): int
     return max(1, (int) workflow_setting('loading_cycle_c' . $categoryId, '1'));
 }
 
+/*
+ * Stored cycle numbers only ever grow so past rows stay valid, while the
+ * number shown to the user counts from the last "Restart All Consoles".
+ */
+function loading_cycle_base(): int
+{
+    return max(1, (int) workflow_setting('loading_cycle_base', '1'));
+}
+
+function display_category_cycle(int $storedCycle): int
+{
+    return max(1, $storedCycle - loading_cycle_base() + 1);
+}
+
 function set_category_cycle(int $categoryId, int $cycle): void
 {
     set_workflow_setting('loading_cycle_c' . $categoryId, (string) $cycle);
@@ -467,10 +481,19 @@ function start_new_loading_cycle(): void
     $stmt = db()->prepare('DELETE FROM loading_daily WHERE task_date = ?');
     $stmt->execute([date('Y-m-d')]);
 
-    foreach (all_categories() as $category) {
-        $categoryId = (int) $category['id'];
-        set_category_cycle($categoryId, category_cycle($categoryId) + 1);
+    $categories = all_categories();
+
+    $next = (int) db()->query('SELECT COALESCE(MAX(cycle_no), 0) FROM loading_daily')->fetchColumn();
+    foreach ($categories as $category) {
+        $next = max($next, category_cycle((int) $category['id']));
     }
+    $next++;
+
+    /* Same cycle for everyone, and counting starts over at Cycle 1. */
+    foreach ($categories as $category) {
+        set_category_cycle((int) $category['id'], $next);
+    }
+    set_workflow_setting('loading_cycle_base', (string) $next);
 }
 
 /* Manual restart for one console only. */
