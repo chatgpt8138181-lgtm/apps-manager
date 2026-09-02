@@ -243,7 +243,7 @@ page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading
                             <tbody>
                             <?php foreach ($categoryApps as $app): ?>
                                 <tr>
-                                    <td><?= (int) $app['display_id'] ?></td>
+                                    <td>#<?= (int) $app['id'] ?></td>
                                     <td><img class="app-icon" src="<?= h(app_icon_url($app['icon_path'])) ?>" alt=""></td>
                                     <td><?= h($app['app_name']) ?></td>
                                     <td><?= render_status_badge($app['ready_loading_status']) ?></td>

@@ -144,7 +144,7 @@ page_start('Dashboard');
                                 <?php foreach ($categoryApps as $app): ?>
                                     <?php $appId = (int) $app['id']; ?>
                                     <tr>
-                                        <td class="col-id"><?= (int) $app['display_id'] ?></td>
+                                        <td class="col-id">#<?= (int) $app['id'] ?></td>
                                         <td class="app-icon-cell"><img class="app-icon" src="<?= h(app_icon_url($app['icon_path'])) ?>" alt=""></td>
                                         <td class="col-name"><?= h($app['app_name']) ?></td>
                                         <td class="status-cell">

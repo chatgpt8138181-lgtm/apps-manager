@@ -296,22 +296,9 @@ function sorted_apps(?int $categoryId = null): array
 
     $stmt = db()->prepare($sql);
     $stmt->execute($params);
-    return assign_display_ids($stmt->fetchAll());
+    return $stmt->fetchAll();
 }
 
-function assign_display_ids(array $apps): array
-{
-    $displayIds = [];
-
-    foreach ($apps as &$app) {
-        $categoryId = (int) $app['category_id'];
-        $displayIds[$categoryId] = ($displayIds[$categoryId] ?? 0) + 1;
-        $app['display_id'] = $displayIds[$categoryId];
-    }
-    unset($app);
-
-    return $apps;
-}
 
 function search_apps(string $query, int $categoryId): array
 {
@@ -326,7 +313,7 @@ function search_apps(string $query, int $categoryId): array
     $needle = text_lower($query);
 
     return array_values(array_filter($all, static function (array $app) use ($isNumeric, $query, $needle): bool {
-        if ($isNumeric && (string) $app['display_id'] === $query) {
+        if ($isNumeric && (string) $app['id'] === $query) {
             return true;
         }
 

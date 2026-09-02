@@ -48,7 +48,7 @@ page_start('Search/Edit');
 <section class="form-panel">
     <form method="get" class="search-form" id="search-filter-form">
         <label>Search
-            <input type="text" name="q" value="<?= h($query) ?>" placeholder="App name or display ID">
+            <input type="text" name="q" value="<?= h($query) ?>" placeholder="App name or ID">
         </label>
         <label>Console
             <select name="category_id" id="search-category-select">
@@ -107,7 +107,7 @@ page_start('Search/Edit');
                                 <?php foreach ($categoryResults as $app): ?>
                                     <tr>
                                         <td><img class="app-icon" src="<?= h(app_icon_url($app['icon_path'])) ?>" alt=""></td>
-                                        <td><?= (int) $app['display_id'] ?></td>
+                                        <td>#<?= (int) $app['id'] ?></td>
                                         <td>
                                             <input type="text" name="apps[<?= (int) $app['id'] ?>][app_name]" value="<?= h($app['app_name']) ?>" maxlength="200" required>
                                         </td>

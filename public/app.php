@@ -161,6 +161,7 @@ page_start($app['name']);
         <?php if ((int) ($app['url_checked'] ?? 0) === 1): ?>
             <span class="badge badge-blue">URL checked</span>
         <?php endif; ?>
+        &middot; #<?= $appId ?>
         &middot; Console: <?= h($app['console_name'] ?? 'Not assigned') ?>
         &middot; Created: <?= h($app['created_at']) ?>
         <?php if (!empty($app['sent_at'])): ?>&middot; Sent: <?= h($app['sent_at']) ?><?php endif; ?>
