@@ -1,15 +1,50 @@
 :root {
     --bg: #f4f7fb;
     --panel: #ffffff;
+    --surface: #f8fafc;
     --text: #172033;
     --muted: #667085;
-    --line: #d9e1ec;
+    --line: #dfe6f0;
+    --line-strong: #c9d4e4;
     --primary: #2557d6;
     --primary-dark: #1d46ad;
+    --primary-soft: #eaf0fe;
     --green-bg: #dcfce7;
     --green-text: #166534;
     --red-bg: #fee2e2;
     --red-text: #991b1b;
+    --amber-bg: #fef3c7;
+    --amber-text: #92400e;
+    --blue-bg: #dbeafe;
+    --blue-text: #1e40af;
+    --gray-bg: #e9edf3;
+    --gray-text: #374151;
+
+    --sidebar-bg: #111827;
+    --sidebar-text: #d9e3f0;
+    --sidebar-muted: #8fa3bd;
+    --sidebar-hover: #243044;
+
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+        "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 24px;
+    --sp-6: 32px;
+
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 14px;
+    --r-pill: 999px;
+
+    --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
+    --shadow-md: 0 4px 14px rgba(20, 30, 50, 0.07);
+    --shadow-lg: 0 16px 40px rgba(20, 30, 50, 0.14);
+    --ring: 0 0 0 3px rgba(37, 87, 214, 0.28);
 }
 
 * { box-sizing: border-box; }
@@ -22,7 +57,7 @@ body {
     margin: 0;
     background: var(--bg);
     color: var(--text);
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--font);
     overflow-x: hidden;
 }
 
@@ -61,7 +96,7 @@ img {
     align-items: center;
     background: #243044;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 8px;
+    border-radius: var(--r-md);
     color: #fff;
     cursor: pointer;
     display: none;
@@ -120,7 +155,7 @@ img {
 
 .sidebar nav a,
 .logout {
-    border-radius: 8px;
+    border-radius: var(--r-md);
     color: #d9e3f0;
     display: block;
     padding: 12px 14px;
@@ -130,7 +165,7 @@ img {
     align-items: center;
     background: none;
     border: 0;
-    border-radius: 8px;
+    border-radius: var(--r-md);
     color: #8fa3bd;
     cursor: pointer;
     display: flex;
@@ -275,8 +310,8 @@ h2 { font-size: 20px; }
 .login-card {
     background: var(--panel);
     border: 1px solid var(--line);
-    border-radius: 8px;
-    box-shadow: 0 10px 28px rgba(20, 30, 50, 0.06);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-md);
 }
 
 .stat {
@@ -346,7 +381,7 @@ h2 { font-size: 20px; }
 .category-summary {
     align-items: center;
     border: 1px solid var(--line);
-    border-radius: 8px;
+    border-radius: var(--r-md);
     display: flex;
     justify-content: space-between;
     gap: 12px;
@@ -389,7 +424,7 @@ small {
 }
 
 .table-wrap {
-    border-radius: 8px;
+    border-radius: var(--r-md);
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     width: 100%;
@@ -470,7 +505,7 @@ th {
 .app-icon {
     background: #eef2f7;
     border: 1px solid var(--line);
-    border-radius: 8px;
+    border-radius: var(--r-md);
     height: 48px;
     object-fit: cover;
     width: 48px;
@@ -514,8 +549,8 @@ th {
 .action-menu {
     background: var(--panel);
     border: 1px solid var(--line);
-    border-radius: 8px;
-    box-shadow: 0 12px 28px rgba(20, 30, 50, 0.18);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-lg);
     display: none;
     max-height: calc(100vh - 24px);
     max-width: calc(100vw - 16px);
@@ -605,9 +640,9 @@ select.status-select.is-red {
 
 .badge-green { background: var(--green-bg); color: var(--green-text); }
 .badge-red { background: var(--red-bg); color: var(--red-text); }
-.badge-blue { background: #dbeafe; color: #1e40af; }
-.badge-amber { background: #fef3c7; color: #92400e; }
-.badge-gray { background: #e5e7eb; color: #374151; }
+.badge-blue { background: var(--blue-bg); color: var(--blue-text); }
+.badge-amber { background: var(--amber-bg); color: var(--amber-text); }
+.badge-gray { background: var(--gray-bg); color: var(--gray-text); }
 
 .tabs {
     display: flex;
@@ -673,7 +708,7 @@ select.status-select.is-red {
 
 .checklist-item {
     border: 1px solid var(--line);
-    border-radius: 8px;
+    border-radius: var(--r-md);
     padding: 10px 12px;
 }
 
@@ -807,7 +842,7 @@ input[readonly] {
 
 .app-group {
     border: 1px solid var(--line);
-    border-radius: 8px;
+    border-radius: var(--r-md);
     margin-bottom: 12px;
     overflow: hidden;
 }
@@ -902,7 +937,7 @@ input,
 select {
     background: #fff;
     border: 1px solid var(--line);
-    border-radius: 8px;
+    border-radius: var(--r-md);
     color: var(--text);
     font: inherit;
     min-height: 42px;
@@ -953,7 +988,7 @@ select {
     align-items: center;
     background: #edf2f7;
     border: 0;
-    border-radius: 8px;
+    border-radius: var(--r-md);
     color: #243044;
     cursor: pointer;
     display: inline-flex;
@@ -997,7 +1032,7 @@ select {
 }
 
 .alert {
-    border-radius: 8px;
+    border-radius: var(--r-md);
     font-weight: 700;
     margin-bottom: 18px;
     padding: 12px 14px;
@@ -1380,14 +1415,14 @@ select:focus {
 .publish-console-urls {
     background: #f8fafc;
     border: 1px solid var(--line);
-    border-radius: 8px;
+    border-radius: var(--r-md);
     margin-bottom: 14px;
     padding: 12px;
 }
 
 .publish-app {
     border: 1px solid var(--line);
-    border-radius: 8px;
+    border-radius: var(--r-md);
     margin-bottom: 12px;
     padding: 12px;
 }
@@ -1445,4 +1480,175 @@ select:focus {
     letter-spacing: 0;
     padding: 10px 12px;
     text-transform: none;
+}
+
+/* A single visible focus style, so keyboard use looks deliberate. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+    box-shadow: var(--ring);
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+}
+
+code,
+kbd,
+pre {
+    font-family: var(--font-mono);
+}
+
+/* --- Phase 1 polish: depth, motion and hierarchy on shared components --- */
+
+.stat,
+.panel,
+.form-panel {
+    border-color: var(--line);
+}
+
+.stat {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.stat:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-1px);
+}
+
+.stat span {
+    letter-spacing: -0.02em;
+}
+
+h1 {
+    letter-spacing: -0.02em;
+}
+
+.btn {
+    border: 1px solid transparent;
+    box-shadow: var(--shadow-sm);
+    transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+}
+
+.btn:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.btn:active {
+    transform: translateY(1px);
+}
+
+.btn.primary {
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.12), 0 4px 12px rgba(37, 87, 214, 0.24);
+}
+
+.badge {
+    border-radius: var(--r-pill);
+    letter-spacing: 0.01em;
+}
+
+input[type="text"],
+input[type="search"],
+input[type="number"],
+input[type="url"],
+input[type="password"],
+select,
+textarea {
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+table thead th {
+    letter-spacing: 0.04em;
+}
+
+tbody tr {
+    transition: background 0.15s ease;
+}
+
+tbody tr:hover {
+    background: var(--surface);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .stat,
+    .btn,
+    tbody tr {
+        transition: none;
+    }
+
+    .stat:hover,
+    .btn:active {
+        transform: none;
+    }
+}
+
+/* --- Phase 2: sidebar icons, counts and an active marker --- */
+
+.sidebar nav a,
+.nav-group-toggle,
+.logout {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+}
+
+.nav-label {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nav-ico {
+    flex: 0 0 18px;
+    height: 18px;
+    opacity: 0.75;
+    width: 18px;
+}
+
+.sidebar nav a.active .nav-ico,
+.nav-group-toggle:hover .nav-ico,
+.sidebar nav a:hover .nav-ico {
+    opacity: 1;
+}
+
+/* Active page gets a left marker, not just a fill. */
+.sidebar nav a {
+    position: relative;
+}
+
+.sidebar nav a.active::before {
+    background: #60a5fa;
+    border-radius: var(--r-pill);
+    bottom: 8px;
+    content: "";
+    left: -8px;
+    position: absolute;
+    top: 8px;
+    width: 3px;
+}
+
+.nav-count {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--r-pill);
+    color: #cbd5e1;
+    flex: 0 0 auto;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    padding: 4px 8px;
+}
+
+.sidebar nav a.active .nav-count {
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+}
+
+.sidebar nav a.nav-single .nav-label {
+    letter-spacing: 0.5px;
 }

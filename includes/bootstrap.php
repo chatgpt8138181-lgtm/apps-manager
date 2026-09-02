@@ -30,6 +30,53 @@ function asset_version(string $path): int
     return is_file($file) ? (int) filemtime($file) : time();
 }
 
+/* Inline, self-hosted icon set for the sidebar. Keys are page files
+   plus the group labels that need one. */
+function nav_icon(string $key): string
+{
+    $paths = [
+        'production.php' => '<path d="M9 4h6v3H9z"/><path d="M7 4H5v16h14V4h-2"/><path d="m9 13 2 2 4-4"/>',
+        'ready-apps.php' => '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
+        'sent-production.php' => '<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>',
+        'live-apps.php' => '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18"/>',
+        'publish-info.php' => '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5h10"/>',
+        'consoles.php' => '<rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/>',
+        'app-urls.php' => '<path d="M10 13a4 4 0 0 0 5.6.6l2.6-2.6a4 4 0 0 0-5.6-5.6L11 6.9"/><path d="M14 11a4 4 0 0 0-5.6-.6L5.8 13a4 4 0 0 0 5.6 5.6l1.5-1.5"/>',
+        'tasks.php' => '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="m9 15 2 2 4-4"/>',
+        'dashboard.php' => '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="11" width="7" height="10" rx="1"/><rect x="3" y="15" width="7" height="6" rx="1"/>',
+        'active-apps.php' => '<circle cx="12" cy="12" r="9"/><path d="m10 9 5 3-5 3z"/>',
+        'add-app.php' => '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/>',
+        'search.php' => '<circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/>',
+        'categories.php' => '<path d="M3 12V5a2 2 0 0 1 2-2h7l9 9-9 9z"/><path d="M7.5 7.5h.01"/>',
+        'admins.php' => '<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 11a3 3 0 1 0 0-6"/><path d="M18 20a6 6 0 0 0-3-5.2"/>',
+        'App Workflow' => '<path d="M4 7h9"/><path d="m10 4 3 3-3 3"/><path d="M20 17h-9"/><path d="m14 14-3 3 3 3"/>',
+    ];
+
+    $path = $paths[$key] ?? '<circle cx="12" cy="12" r="8"/>';
+
+    return '<svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+        . ' stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+        . $path . '</svg>';
+}
+
+/* Counts shown beside the workflow pages, so the sidebar says where
+   work is waiting without opening a page. */
+function nav_counts(): array
+{
+    try {
+        $counts = production_status_counts();
+    } catch (Throwable $e) {
+        return [];
+    }
+
+    return [
+        'production.php' => (int) ($counts['prepare'] ?? 0),
+        'ready-apps.php' => (int) ($counts['ready'] ?? 0),
+        'sent-production.php' => (int) ($counts['sent'] ?? 0),
+        'live-apps.php' => (int) ($counts['live'] ?? 0),
+    ];
+}
+
 /* Nav entries are either "file.php" => "Label" or "Group" => [ ...entries ],
    so a group can hold a group. */
 function nav_items_contain_page(array $items): bool
@@ -50,21 +97,29 @@ function nav_items_contain_page(array $items): bool
     return false;
 }
 
-function render_nav_group(string $label, array $items): void
+function render_nav_group(string $label, array $items, array $counts = [], bool $nested = false): void
 {
     $isOpen = nav_items_contain_page($items);
     ?>
     <div class="nav-group <?= $isOpen ? 'open' : '' ?>">
         <button class="nav-group-toggle" type="button" aria-expanded="<?= $isOpen ? 'true' : 'false' ?>">
-            <span><?= h($label) ?></span>
+            <span class="nav-label">
+                <?php if ($nested): ?><?= nav_icon($label) ?><?php endif; ?>
+                <?= h($label) ?>
+            </span>
             <span class="nav-chevron" aria-hidden="true"></span>
         </button>
         <div class="nav-group-items">
             <?php foreach ($items as $key => $value): ?>
                 <?php if (is_array($value)): ?>
-                    <?php render_nav_group((string) $key, $value); ?>
+                    <?php render_nav_group((string) $key, $value, $counts, true); ?>
                 <?php else: ?>
-                    <a class="<?= current_page() === $key ? 'active' : '' ?>" href="<?= h((string) $key) ?>"><?= h((string) $value) ?></a>
+                    <a class="<?= current_page() === $key ? 'active' : '' ?>" href="<?= h((string) $key) ?>">
+                        <span class="nav-label"><?= nav_icon((string) $key) ?><?= h((string) $value) ?></span>
+                        <?php if (!empty($counts[$key])): ?>
+                            <span class="nav-count"><?= (int) $counts[$key] ?></span>
+                        <?php endif; ?>
+                    </a>
                 <?php endif; ?>
             <?php endforeach; ?>
         </div>
@@ -96,6 +151,7 @@ function page_start(string $title): void
             'categories.php' => 'Console Names',
         ],
     ];
+    $navCounts = nav_counts();
     $flash = flash();
     ?>
     <!doctype html>
@@ -119,9 +175,11 @@ function page_start(string $title): void
             <div class="menu-panel" id="mobile-menu">
                 <nav>
                     <?php foreach ($navGroups as $group => $items): ?>
-                        <?php render_nav_group($group, $items); ?>
+                        <?php render_nav_group($group, $items, $navCounts); ?>
                     <?php endforeach; ?>
-                    <a class="nav-single <?= current_page() === 'admins.php' ? 'active' : '' ?>" href="admins.php">Admins</a>
+                    <a class="nav-single <?= current_page() === 'admins.php' ? 'active' : '' ?>" href="admins.php">
+                        <span class="nav-label"><?= nav_icon('admins.php') ?>Admins</span>
+                    </a>
                 </nav>
                 <a class="logout" href="logout.php">Logout</a>
             </div>
