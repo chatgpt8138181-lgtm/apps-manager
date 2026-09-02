@@ -204,6 +204,7 @@ page_start('Apps');
                         ['value' => 'live', 'label' => 'Mark Live'],
                         ['value' => 'tag_ready', 'label' => 'Tag Ready for Work'],
                         ['value' => 'untag_ready', 'label' => 'Remove Tag'],
+                        ['value' => 'store_sync', 'label' => 'Fetch from Play Store'],
                     ]); ?>
 
                     <div class="table-wrap">
@@ -211,6 +212,7 @@ page_start('Apps');
                             <thead>
                             <tr>
                                 <th class="col-select"><input type="checkbox" class="bulk-all" aria-label="Select all"></th>
+                                <th class="col-icon">Icon</th>
                                 <th>App</th>
                                 <th>Stage</th>
                                 <th>Loading</th>
@@ -221,6 +223,7 @@ page_start('Apps');
                             <?php foreach ($group['apps'] as $app): ?>
                                 <tr>
                                     <td class="col-select"><input type="checkbox" class="bulk-row" value="<?= (int) $app['id'] ?>"></td>
+                                    <td class="app-icon-cell"><img class="app-icon" src="<?= h(app_icon_url($app['icon_path'] ?? null)) ?>" alt=""></td>
                                     <td>
                                         <span class="cell-title">
                                             <?= h($app['app_name']) ?>

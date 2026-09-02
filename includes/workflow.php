@@ -603,6 +603,8 @@ function apply_bulk_production_action(string $action, array $appIds): array
                 set_production_result($appId, $action);
             } elseif ($action === 'tag_ready' || $action === 'untag_ready') {
                 set_ready_for_work($appId, $action === 'tag_ready');
+            } elseif ($action === 'store_sync') {
+                sync_app_with_store($appId);
             } else {
                 throw new RuntimeException('Unknown bulk action.');
             }

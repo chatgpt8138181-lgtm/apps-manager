@@ -2703,3 +2703,41 @@ tbody tr.is-picked {
 .app-group-body > .rotation-title:first-child {
     margin-top: 0;
 }
+
+/* The app's own icon, and the store fetch row. */
+.app-title {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+}
+
+.app-title .app-icon {
+    height: 32px;
+    width: 32px;
+}
+
+.store-form {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.store-form label {
+    display: grid;
+    flex: 1 1 340px;
+    gap: 4px;
+}
+
+.store-form label small {
+    color: var(--muted);
+    font-weight: 400;
+}
+
+@media (max-width: 640px) {
+    .store-form label,
+    .store-form .btn {
+        flex: 1 1 100%;
+    }
+}

@@ -108,6 +108,7 @@ function activity_label(string $action): string
         'url_checked' => 'URL marked checked',
         'url_pending' => 'URL moved to pending',
         'console_assigned' => 'Console assigned',
+        'store_synced' => 'Updated from Play Store',
     ];
 
     return $labels[$action] ?? ucfirst(str_replace('_', ' ', $action));

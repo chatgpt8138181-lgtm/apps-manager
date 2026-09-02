@@ -45,6 +45,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect_with($self, 'success', 'App removed from the publishing flow.');
         }
 
+        if ($action === 'store_sync') {
+            $link = trim((string) ($_POST['store_url'] ?? ''));
+            if ($link !== '') {
+                $save = db()->prepare('UPDATE apps SET store_url = ? WHERE id = ?');
+                $save->execute([$link, $appId]);
+            }
+            $result = sync_app_with_store($appId);
+            redirect_with($self, 'success', 'Updated from the Play Store: ' . $result['name'] . '.');
+        }
+
         if ($action === 'update_details') {
             update_production_app_details($appId, $_POST);
             redirect_with($self, 'success', 'App details updated.');
@@ -167,7 +177,10 @@ page_start($app['name']);
 ?>
 <section class="panel">
     <div class="panel-heading">
-        <h2><?= h($app['name']) ?></h2>
+        <h2 class="app-title">
+            <img class="app-icon" src="<?= h(app_icon_url($app['icon_path'] ?? null)) ?>" alt="">
+            <?= h($app['name']) ?>
+        </h2>
         <a class="btn small" href="<?= h($backList) ?>">Back to list</a>
     </div>
 
@@ -356,8 +369,27 @@ page_start($app['name']);
 <section class="panel">
     <div class="panel-heading">
         <h2>Store Listing</h2>
-        <button class="btn small copy-url" type="button" data-url="<?= h($copyBlock) ?>">Copy All</button>
+        <div class="inline-actions">
+            <?php if (!empty($app['store_url'])): ?>
+                <a class="btn small" href="<?= h($app['store_url']) ?>" target="_blank" rel="noopener">Open on Play Store</a>
+            <?php endif; ?>
+            <button class="btn small copy-url" type="button" data-url="<?= h($copyBlock) ?>">Copy All</button>
+        </div>
     </div>
+
+    <form method="post" class="inline-form store-form">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="store_sync">
+        <input type="hidden" name="app_id" value="<?= $appId ?>">
+        <label>Play Store link <small>(optional &mdash; the package is enough)</small>
+            <input type="text" name="store_url" value="<?= h($app['store_url'] ?? '') ?>"
+                   placeholder="https://play.google.com/store/apps/details?id=...">
+        </label>
+        <button class="btn" type="submit">Fetch from Play Store</button>
+    </form>
+    <?php if (!empty($app['store_checked_at'])): ?>
+        <p class="hint">Last read from the store: <?= h($app['store_checked_at']) ?></p>
+    <?php endif; ?>
     <?php app_fact_row('App Name', $app['name']); ?>
     <?php app_fact_row('Package Name', $app['package_name'] ?? null, 'Package not set'); ?>
     <?php app_fact_row('Application ID', $app['application_id'] ?? null, 'Not set'); ?>
