@@ -1662,3 +1662,158 @@ tbody tr:hover {
 .nav-group-items .nav-group-items > .collapse-inner {
     padding-left: 6px;
 }
+
+/* --- Phase 3: tables become cards on phones, plus a density switch --- */
+
+@media (max-width: 760px) {
+    .table-wrap {
+        overflow-x: visible;
+    }
+
+    .table-wrap table {
+        min-width: 0;
+    }
+
+    .table-wrap thead {
+        clip: rect(0 0 0 0);
+        height: 1px;
+        overflow: hidden;
+        position: absolute;
+        width: 1px;
+    }
+
+    .table-wrap table,
+    .table-wrap tbody,
+    .table-wrap tr,
+    .table-wrap td {
+        display: block;
+        width: 100%;
+    }
+
+    .table-wrap tr {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--r-md);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 10px;
+        overflow: hidden;
+    }
+
+    .table-wrap tr:last-child {
+        margin-bottom: 0;
+    }
+
+    .table-wrap tr:hover {
+        background: var(--panel);
+    }
+
+    .table-wrap td {
+        align-items: center;
+        border: 0;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        gap: 12px;
+        justify-content: space-between;
+        padding: 10px 12px;
+    }
+
+    .table-wrap td:last-child {
+        border-bottom: 0;
+    }
+
+    .table-wrap td::before {
+        color: var(--muted);
+        content: attr(data-label);
+        flex: 0 0 40%;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+    }
+
+    .table-wrap td:not([data-label])::before,
+    .table-wrap td[data-label=""]::before {
+        display: none;
+    }
+
+    .table-wrap td.actions {
+        background: var(--surface);
+        justify-content: flex-end;
+    }
+
+    .table-wrap td .console-url,
+    .table-wrap td .inline-actions {
+        justify-content: flex-end;
+    }
+}
+
+/* Compact density: same rows, less air. */
+body.density-compact th,
+body.density-compact td {
+    padding: 7px 10px;
+}
+
+body.density-compact .app-icon {
+    height: 30px;
+    width: 30px;
+}
+
+body.density-compact .btn {
+    min-height: 34px;
+    padding: 6px 10px;
+}
+
+body.density-compact .panel,
+body.density-compact .form-panel {
+    padding: 14px;
+}
+
+.density-toggle {
+    align-items: center;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+}
+
+.density-toggle button {
+    background: none;
+    border: 0;
+    border-radius: var(--r-pill);
+    color: var(--muted);
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 12px;
+}
+
+.density-toggle button.active {
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.topbar-tools {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+}
+
+@media (max-width: 640px) {
+    .density-toggle {
+        display: none;
+    }
+}
+
+/* Secondary identity line under a name, for lists full of look-alike apps. */
+.cell-title {
+    display: grid;
+    gap: 2px;
+}
+
+.cell-sub {
+    color: var(--muted);
+    font-size: 12px;
+}

@@ -190,7 +190,13 @@ function page_start(string $title): void
                     <p class="eyebrow">Admin Dashboard</p>
                     <h1><?= h($title) ?></h1>
                 </div>
-                <span class="user-pill"><?= h($_SESSION['admin_username'] ?? 'Admin') ?></span>
+                <div class="topbar-tools">
+                    <div class="density-toggle" role="group" aria-label="Row density">
+                        <button type="button" data-density="comfortable">Comfortable</button>
+                        <button type="button" data-density="compact">Compact</button>
+                    </div>
+                    <span class="user-pill"><?= h($_SESSION['admin_username'] ?? 'Admin') ?></span>
+                </div>
             </header>
             <?php if ($flash): ?>
                 <div class="alert <?= h($flash['type']) ?>"><?= h($flash['message']) ?></div>
@@ -212,6 +218,58 @@ function page_end(): void
                 inner.appendChild(body.firstChild);
             }
             body.appendChild(inner);
+        });
+
+        /* Phone layout turns each row into a card, so every cell carries
+           its column name. */
+        document.querySelectorAll('.table-wrap table').forEach((table) => {
+            const heads = [...table.querySelectorAll('thead th')].map((th) => th.textContent.trim());
+            if (!heads.length) {
+                return;
+            }
+            table.querySelectorAll('tbody tr').forEach((row) => {
+                [...row.children].forEach((cell, index) => {
+                    if (cell.colSpan > 1) {
+                        return;
+                    }
+                    const label = heads[index] || '';
+                    if (label && label.toLowerCase() !== 'actions' && label.toLowerCase() !== 'action') {
+                        cell.dataset.label = label;
+                    }
+                    if (label.toLowerCase() === 'actions' || label.toLowerCase() === 'action') {
+                        cell.classList.add('actions');
+                    }
+                });
+            });
+        });
+
+        const densityStore = 'rowDensity';
+        const densityButtons = document.querySelectorAll('.density-toggle button');
+
+        const applyDensity = (value) => {
+            document.body.classList.toggle('density-compact', value === 'compact');
+            densityButtons.forEach((button) => {
+                button.classList.toggle('active', button.dataset.density === value);
+            });
+        };
+
+        let density = 'comfortable';
+        try {
+            density = localStorage.getItem(densityStore) || 'comfortable';
+        } catch (error) {
+            /* storage unavailable */
+        }
+        applyDensity(density);
+
+        densityButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                applyDensity(button.dataset.density);
+                try {
+                    localStorage.setItem(densityStore, button.dataset.density);
+                } catch (error) {
+                    /* storage unavailable */
+                }
+            });
         });
 
         const menuToggle = document.querySelector('.menu-toggle');

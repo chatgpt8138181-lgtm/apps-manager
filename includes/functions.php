@@ -664,7 +664,7 @@ function todays_loading_apps(): array
 {
     $stmt = db()->prepare(
         "SELECT ld.id, ld.is_done, ld.cycle_no, c.id AS category_id, c.name AS category_name,
-                a.app_name, a.icon_path, a.ready_loading_status
+                a.id AS app_id, a.app_name, a.icon_path, a.ready_loading_status
          FROM loading_daily ld
          JOIN apps a ON a.id = ld.app_id
          JOIN categories c ON c.id = ld.category_id
@@ -687,7 +687,8 @@ function todays_loading_apps(): array
 function loading_history(): array
 {
     $stmt = db()->query(
-        'SELECT ld.task_date, ld.is_done, ld.cycle_no, a.app_name, a.icon_path, c.name AS category_name
+        'SELECT ld.task_date, ld.is_done, ld.cycle_no, a.id AS app_id, a.app_name, a.icon_path,
+                c.name AS category_name
          FROM loading_daily ld
          JOIN apps a ON a.id = ld.app_id
          JOIN categories c ON c.id = ld.category_id

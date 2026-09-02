@@ -229,7 +229,12 @@ page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading
                                 <tr>
                                     <td><?= (int) $app['display_id'] ?></td>
                                     <td><img class="app-icon" src="<?= h(app_icon_url($app['icon_path'])) ?>" alt=""></td>
-                                    <td><?= h($app['app_name']) ?></td>
+                                    <td>
+                                        <span class="cell-title">
+                                            <?= h($app['app_name']) ?>
+                                            <span class="cell-sub">#<?= (int) $app['app_id'] ?></span>
+                                        </span>
+                                    </td>
                                     <td><?= render_status_badge($app['ready_loading_status']) ?></td>
                                     <td><?= h($app['created_at']) ?></td>
                                 </tr>
@@ -281,7 +286,12 @@ page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading
                                             <tr>
                                                 <td><?= h($task['category_name']) ?></td>
                                                 <td><img class="app-icon" src="<?= h(app_icon_url($task['icon_path'])) ?>" alt=""></td>
-                                                <td><?= h($task['app_name']) ?></td>
+                                                <td>
+                                                    <span class="cell-title">
+                                                        <?= h($task['app_name']) ?>
+                                                        <span class="cell-sub">#<?= (int) $task['app_id'] ?></span>
+                                                    </span>
+                                                </td>
                                                 <td>
                                                     <?= (int) $task['is_done'] === 1
                                                         ? '<span class="badge badge-green">Done</span>'
