@@ -426,51 +426,17 @@ function loading_apps_per_day(): int
  * active apps, that console starts again from its first app without
  * waiting for the other consoles.
  */
-function category_cycle(int $categoryId): int
-{
-    return max(1, (int) workflow_setting('loading_cycle_c' . $categoryId, '1'));
-}
 
 /*
  * Stored cycle numbers only ever grow so past rows stay valid, while the
  * number shown to the user counts from the last "Restart All Consoles".
  */
-function loading_cycle_base(): int
-{
-    return max(1, (int) workflow_setting('loading_cycle_base', '1'));
-}
 
 /* The cycle number a console is on: how far its rotation has walked,
    counted in day-sized steps and starting over with each new round. */
-function display_category_cycle(int $categoryId): int
-{
-    return intdiv(category_today_start($categoryId), loading_apps_per_day()) + 1;
-}
 
-function set_category_cycle(int $categoryId, int $cycle): void
-{
-    set_workflow_setting('loading_cycle_c' . $categoryId, (string) $cycle);
-}
 
-function category_active_count(int $categoryId): int
-{
-    $stmt = db()->prepare("SELECT COUNT(*) FROM apps WHERE category_id = ? AND loading_status = 'Active'");
-    $stmt->execute([$categoryId]);
 
-    return (int) $stmt->fetchColumn();
-}
-
-function category_shown_count(int $categoryId, int $cycle): int
-{
-    $stmt = db()->prepare(
-        "SELECT COUNT(DISTINCT ld.app_id) FROM loading_daily ld
-         JOIN apps a ON a.id = ld.app_id
-         WHERE ld.category_id = ? AND ld.cycle_no = ? AND a.loading_status = 'Active'"
-    );
-    $stmt->execute([$categoryId, $cycle]);
-
-    return (int) $stmt->fetchColumn();
-}
 
 function update_loading_apps_per_day(int $count): void
 {
@@ -482,187 +448,22 @@ function update_loading_apps_per_day(int $count): void
 }
 
 /* Manual restart: every console starts again from its first app today. */
-function start_new_loading_cycle(): void
-{
-    $stmt = db()->prepare('DELETE FROM loading_daily WHERE task_date = ?');
-    $stmt->execute([date('Y-m-d')]);
-
-    $categories = all_categories();
-
-    $next = (int) db()->query('SELECT COALESCE(MAX(cycle_no), 0) FROM loading_daily')->fetchColumn();
-    foreach ($categories as $category) {
-        $next = max($next, category_cycle((int) $category['id']));
-    }
-    $next++;
-
-    /* Same cycle for everyone, and counting starts over at Cycle 1. */
-    foreach ($categories as $category) {
-        set_category_cycle((int) $category['id'], $next);
-        set_category_position((int) $category['id'], 0);
-    }
-    set_workflow_setting('loading_cycle_base', (string) $next);
-}
 
 /*
  * Move one console between rounds. 'restart' replays the current cycle,
  * 'next' and 'previous' step the cycle number; either way that console
  * starts again from its first app.
  */
-function shift_category_cycle(int $categoryId, string $direction): void
-{
-    if ($categoryId <= 0) {
-        throw new RuntimeException('Console was not found.');
-    }
 
-    $quota = loading_apps_per_day();
-    $total = category_active_count($categoryId);
-    $cycle = category_cycle($categoryId);
-    $start = category_today_start($categoryId);
-    $target = $start;
-
-    if ($direction === 'restart') {
-        /* A restart puts the console back on its first app and Cycle 1. */
-        $cycle = loading_cycle_base();
-        $target = 0;
-    } elseif ($direction === 'next') {
-        $target = $start + $quota;
-        if ($total > 0 && $target >= $total) {
-            $cycle++;
-            $target = 0;
-        }
-    } elseif ($direction === 'previous') {
-        $target = $start - $quota;
-        if ($target < 0) {
-            $cycle--;
-            if ($cycle < loading_cycle_base()) {
-                throw new RuntimeException('This console is already on the first apps of Cycle 1.');
-            }
-            $target = $total > 0 ? intdiv(max(0, $total - 1), $quota) * $quota : 0;
-        }
-    } else {
-        throw new RuntimeException('Invalid cycle action.');
-    }
-
-    $today = db()->prepare('DELETE FROM loading_daily WHERE task_date = ? AND category_id = ?');
-    $today->execute([date('Y-m-d'), $categoryId]);
-
-    set_category_cycle($categoryId, $cycle);
-    set_category_position($categoryId, $target);
-}
-
-function restart_category_cycle(int $categoryId): void
-{
-    shift_category_cycle($categoryId, 'restart');
-}
 
 /* Where the console's rotation currently sits: the list position that the
    next generated day starts from. Older installs fall back to what the
    current cycle already showed, so nothing jumps back to the first app. */
-function category_position(int $categoryId): int
-{
-    $stored = workflow_setting('loading_pos_c' . $categoryId, '');
-    if ($stored === '') {
-        return category_shown_count($categoryId, category_cycle($categoryId));
-    }
 
-    return max(0, (int) $stored);
-}
-
-function set_category_position(int $categoryId, int $position): void
-{
-    set_workflow_setting('loading_pos_c' . $categoryId, (string) max(0, $position));
-}
 
 /* Start of the window that today's apps were taken from. */
-function category_today_start(int $categoryId): int
-{
-    $stmt = db()->prepare('SELECT COUNT(*) FROM loading_daily WHERE task_date = ? AND category_id = ?');
-    $stmt->execute([date('Y-m-d'), $categoryId]);
-    $position = category_position($categoryId);
 
-    if ((int) $stmt->fetchColumn() < 1) {
-        return $position;
-    }
 
-    return max(0, $position - loading_apps_per_day());
-}
-
-function loading_cycle_progress(): array
-{
-    $eligible = 0;
-    $shown = 0;
-
-    foreach (all_categories() as $category) {
-        $categoryId = (int) $category['id'];
-        $total = category_active_count($categoryId);
-        if ($total === 0) {
-            continue;
-        }
-
-        $eligible += $total;
-        $shown += min($total, category_position($categoryId));
-    }
-
-    return [
-        'apps_per_day' => loading_apps_per_day(),
-        'eligible' => $eligible,
-        'shown' => $shown,
-        'remaining' => max(0, $eligible - $shown),
-    ];
-}
-
-function generate_loading_daily(): int
-{
-    $today = date('Y-m-d');
-    $quota = loading_apps_per_day();
-    $inserted = 0;
-
-    $done = db()->prepare('SELECT COUNT(*) FROM loading_daily WHERE task_date = ? AND category_id = ?');
-    $insert = db()->prepare(
-        'INSERT IGNORE INTO loading_daily (task_date, app_id, category_id, cycle_no) VALUES (?, ?, ?, ?)'
-    );
-
-    foreach (all_categories() as $category) {
-        $categoryId = (int) $category['id'];
-
-        $done->execute([$today, $categoryId]);
-        if ((int) $done->fetchColumn() > 0) {
-            continue;
-        }
-
-        $total = category_active_count($categoryId);
-        if ($total === 0) {
-            continue;
-        }
-
-        $cycle = category_cycle($categoryId);
-        $position = category_position($categoryId);
-
-        /* This console finished its list, so start it over. */
-        if ($position >= $total) {
-            $cycle++;
-            set_category_cycle($categoryId, $cycle);
-            $position = 0;
-        }
-
-        $pick = db()->prepare(
-            "SELECT id FROM apps
-             WHERE category_id = ? AND loading_status = 'Active'
-             ORDER BY created_at ASC, id ASC
-             LIMIT " . $quota . " OFFSET " . $position
-        );
-        $pick->execute([$categoryId]);
-
-        foreach ($pick->fetchAll() as $row) {
-            $insert->execute([$today, (int) $row['id'], $categoryId, $cycle]);
-            $inserted++;
-        }
-
-        set_category_position($categoryId, $position + $quota);
-    }
-
-    return $inserted;
-}
 
 function todays_loading_apps(): array
 {
@@ -686,6 +487,77 @@ function todays_loading_apps(): array
     }
 
     return $grouped;
+}
+
+/* Loading rotation: thin names over the shared engine in rotation.php. */
+function category_cycle(int $categoryId): int
+{
+    return rotation_cycle('loading', $categoryId);
+}
+
+function set_category_cycle(int $categoryId, int $cycle): void
+{
+    rotation_set_cycle('loading', $categoryId, $cycle);
+}
+
+function loading_cycle_base(): int
+{
+    return rotation_base('loading');
+}
+
+function display_category_cycle(int $categoryId): int
+{
+    return rotation_display_cycle('loading', $categoryId);
+}
+
+function category_active_count(int $categoryId): int
+{
+    return rotation_total('loading', $categoryId);
+}
+
+function category_position(int $categoryId): int
+{
+    return rotation_position('loading', $categoryId);
+}
+
+function set_category_position(int $categoryId, int $position): void
+{
+    rotation_set_position('loading', $categoryId, $position);
+}
+
+function category_today_start(int $categoryId): int
+{
+    return rotation_today_start('loading', $categoryId);
+}
+
+function loading_cycle_progress(): array
+{
+    return ['apps_per_day' => loading_apps_per_day()] + rotation_progress('loading');
+}
+
+function generate_loading_daily(): int
+{
+    return rotation_generate('loading');
+}
+
+function toggle_loading_done(int $taskId): void
+{
+    rotation_toggle_done('loading', $taskId);
+}
+
+function start_new_loading_cycle(): void
+{
+    rotation_restart_all('loading');
+}
+
+function shift_category_cycle(int $categoryId, string $direction): void
+{
+    rotation_shift('loading', $categoryId, $direction);
+}
+
+function restart_category_cycle(int $categoryId): void
+{
+    rotation_shift('loading', $categoryId, 'restart');
 }
 
 function loading_history(): array
@@ -742,15 +614,6 @@ function group_history_by_month(array $rows): array
     return $months;
 }
 
-function toggle_loading_done(int $taskId): void
-{
-    $stmt = db()->prepare('UPDATE loading_daily SET is_done = 1 - is_done WHERE id = ?');
-    $stmt->execute([$taskId]);
-
-    if ($stmt->rowCount() < 1) {
-        throw new RuntimeException('Task was not found.');
-    }
-}
 
 function render_status_badge(string $status): string
 {
