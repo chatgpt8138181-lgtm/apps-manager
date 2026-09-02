@@ -29,13 +29,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($action === 'cycle_step') {
             $direction = (string) ($_POST['direction'] ?? 'restart');
-            shift_console_cycle((int) ($_POST['console_id'] ?? 0), $direction);
+            $consoleId = (int) ($_POST['console_id'] ?? 0);
+            shift_console_cycle($consoleId, $direction);
             $messages = [
                 'next' => 'Console moved to the next cycle.',
                 'previous' => 'Console moved back to the previous cycle.',
                 'restart' => 'Console restarted from its first app on Cycle 1.',
             ];
-            redirect_with('tasks.php', 'success', $messages[$direction] ?? $messages['restart']);
+            $opposite = ['next' => 'previous', 'previous' => 'next'];
+            $undo = isset($opposite[$direction])
+                ? ['page' => 'tasks.php', 'fields' => [
+                    'action' => 'cycle_step',
+                    'direction' => $opposite[$direction],
+                    'console_id' => $consoleId,
+                ]]
+                : null;
+            redirect_with('tasks.php', 'success', $messages[$direction] ?? $messages['restart'], $undo);
         }
     } catch (Throwable $e) {
         redirect_with($return, 'error', $e->getMessage());

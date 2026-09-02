@@ -13,7 +13,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($action === 'toggle_ready') {
             $ready = (int) ($_POST['ready'] ?? 0) === 1;
             set_ready_for_work($appId, $ready);
-            redirect_with('live-apps.php', 'success', $ready ? 'App tagged Ready for Work.' : 'Ready for Work tag removed.');
+            redirect_with(
+                'live-apps.php',
+                'success',
+                $ready ? 'App tagged Ready for Work.' : 'Ready for Work tag removed.',
+                ['page' => 'live-apps.php', 'fields' => [
+                    'action' => 'toggle_ready',
+                    'app_id' => $appId,
+                    'ready' => $ready ? 0 : 1,
+                ]]
+            );
         }
 
         if ($action === 'delete') {

@@ -1817,3 +1817,134 @@ body.density-compact .form-panel {
     color: var(--muted);
     font-size: 12px;
 }
+
+/* --- Phase 4: toasts, undo and a working-state on buttons --- */
+
+.toast-stack {
+    bottom: 20px;
+    display: grid;
+    gap: 10px;
+    justify-items: end;
+    pointer-events: none;
+    position: fixed;
+    right: 20px;
+    z-index: 60;
+}
+
+.toast {
+    align-items: center;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    gap: 12px;
+    margin-bottom: 0;
+    max-width: min(420px, calc(100vw - 40px));
+    opacity: 0;
+    pointer-events: auto;
+    transform: translateY(10px);
+    transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.toast.shown {
+    opacity: 1;
+    transform: none;
+}
+
+.toast.leaving {
+    opacity: 0;
+    transform: translateY(6px);
+}
+
+.toast-message {
+    flex: 1;
+    min-width: 0;
+}
+
+.toast-undo button {
+    background: rgba(255, 255, 255, 0.65);
+    border: 0;
+    border-radius: var(--r-sm);
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+    padding: 5px 10px;
+}
+
+.toast-undo button:hover {
+    background: #fff;
+}
+
+.toast-close {
+    background: none;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+    opacity: 0.6;
+    padding: 0 2px;
+}
+
+.toast-close:hover {
+    opacity: 1;
+}
+
+@media (max-width: 640px) {
+    .toast-stack {
+        bottom: 12px;
+        justify-items: stretch;
+        left: 12px;
+        right: 12px;
+    }
+
+    .toast {
+        max-width: none;
+    }
+}
+
+/* A pressed button shows it is working, and the form only submits once. */
+.btn.is-loading,
+button.is-loading {
+    color: transparent !important;
+    pointer-events: none;
+    position: relative;
+}
+
+.btn.is-loading::after,
+button.is-loading::after {
+    animation: btn-spin 0.6s linear infinite;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    border-right-color: transparent;
+    color: #fff;
+    content: "";
+    height: 16px;
+    left: calc(50% - 8px);
+    position: absolute;
+    top: calc(50% - 8px);
+    width: 16px;
+}
+
+.btn.is-loading:not(.primary):not(.danger)::after {
+    color: #243044;
+}
+
+@keyframes btn-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Row actions stay on one line; the table scrolls if it must. */
+td.actions {
+    flex-wrap: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .toast {
+        transition: none;
+    }
+
+    .btn.is-loading::after,
+    button.is-loading::after {
+        animation-duration: 2s;
+    }
+}

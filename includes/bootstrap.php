@@ -198,9 +198,23 @@ function page_start(string $title): void
                     <span class="user-pill"><?= h($_SESSION['admin_username'] ?? 'Admin') ?></span>
                 </div>
             </header>
-            <?php if ($flash): ?>
-                <div class="alert <?= h($flash['type']) ?>"><?= h($flash['message']) ?></div>
-            <?php endif; ?>
+            <div class="toast-stack" id="toast-stack" aria-live="polite">
+                <?php if ($flash): ?>
+                    <div class="toast alert <?= h($flash['type']) ?>" role="status">
+                        <span class="toast-message"><?= h($flash['message']) ?></span>
+                        <?php if (!empty($flash['undo']['page']) && !empty($flash['undo']['fields'])): ?>
+                            <form method="post" action="<?= h((string) $flash['undo']['page']) ?>" class="toast-undo">
+                                <?= csrf_field() ?>
+                                <?php foreach ($flash['undo']['fields'] as $name => $value): ?>
+                                    <input type="hidden" name="<?= h((string) $name) ?>" value="<?= h((string) $value) ?>">
+                                <?php endforeach; ?>
+                                <button type="submit">Undo</button>
+                            </form>
+                        <?php endif; ?>
+                        <button class="toast-close" type="button" aria-label="Dismiss">&times;</button>
+                    </div>
+                <?php endif; ?>
+            </div>
     <?php
 }
 
@@ -270,6 +284,52 @@ function page_end(): void
                     /* storage unavailable */
                 }
             });
+        });
+
+        /* Toasts clear themselves; an error stays long enough to read. */
+        document.querySelectorAll('.toast').forEach((toast) => {
+            const life = toast.classList.contains('error') ? 9000 : 6000;
+            let timer = null;
+
+            const dismiss = () => {
+                toast.classList.add('leaving');
+                setTimeout(() => toast.remove(), 250);
+            };
+
+            const start = () => {
+                clearTimeout(timer);
+                timer = setTimeout(dismiss, life);
+            };
+
+            toast.querySelector('.toast-close')?.addEventListener('click', dismiss);
+            toast.addEventListener('mouseenter', () => clearTimeout(timer));
+            toast.addEventListener('mouseleave', start);
+            requestAnimationFrame(() => toast.classList.add('shown'));
+            start();
+        });
+
+        /* One submit per form, and the pressed button says it is working. */
+        document.addEventListener('submit', (event) => {
+            const form = event.target;
+            if (!(form instanceof HTMLFormElement)) {
+                return;
+            }
+            if (form.dataset.submitting === '1') {
+                event.preventDefault();
+                return;
+            }
+            form.dataset.submitting = '1';
+
+            const button = event.submitter;
+            if (button && button.tagName === 'BUTTON') {
+                button.classList.add('is-loading');
+            }
+
+            /* A failed navigation should not leave the form stuck. */
+            setTimeout(() => {
+                form.dataset.submitting = '';
+                button?.classList.remove('is-loading');
+            }, 12000);
         });
 
         const menuToggle = document.querySelector('.menu-toggle');

@@ -24,13 +24,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($action === 'cycle_step') {
             $direction = (string) ($_POST['direction'] ?? 'restart');
-            shift_category_cycle((int) ($_POST['category_id'] ?? 0), $direction);
+            $categoryId = (int) ($_POST['category_id'] ?? 0);
+            shift_category_cycle($categoryId, $direction);
             $messages = [
                 'next' => 'Console moved to the next cycle.',
                 'previous' => 'Console moved back to the previous cycle.',
                 'restart' => 'Console restarted from its first app on Cycle 1.',
             ];
-            redirect_with('active-apps.php', 'success', $messages[$direction] ?? $messages['restart']);
+            $opposite = ['next' => 'previous', 'previous' => 'next'];
+            $undo = isset($opposite[$direction])
+                ? ['page' => 'active-apps.php', 'fields' => [
+                    'action' => 'cycle_step',
+                    'direction' => $opposite[$direction],
+                    'category_id' => $categoryId,
+                ]]
+                : null;
+            redirect_with('active-apps.php', 'success', $messages[$direction] ?? $messages['restart'], $undo);
         }
 
         if ($action === 'new_cycle') {

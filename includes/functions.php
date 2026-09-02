@@ -33,9 +33,13 @@ function public_path(string $relative = ''): string
     return rtrim($public . '/' . ltrim($relative, '/'), '/');
 }
 
-function redirect_with(string $url, string $type, string $message): void
+/*
+ * $undo, when given, is ['page' => 'tasks.php', 'fields' => [...]]: the POST
+ * that puts things back. The toast renders it as an Undo button.
+ */
+function redirect_with(string $url, string $type, string $message, ?array $undo = null): void
 {
-    $_SESSION['flash'] = ['type' => $type, 'message' => $message];
+    $_SESSION['flash'] = ['type' => $type, 'message' => $message, 'undo' => $undo];
     header('Location: ' . $url);
     exit;
 }
