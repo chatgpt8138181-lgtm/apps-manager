@@ -142,7 +142,11 @@ function render_workflow_stepper(array $app): void
         <?php endforeach; ?>
     </ol>
     <?php if ($offTrack): ?>
-        <p class="hint">This app is <?= h($status) ?>, so it sits outside the normal flow.</p>
+        <p class="hint">
+            <?= $status === 'none'
+                ? 'This app is not in the publishing flow yet.'
+                : 'This app is ' . h($status) . ', so it sits outside the normal flow.' ?>
+        </p>
     <?php endif; ?>
     <?php
 }

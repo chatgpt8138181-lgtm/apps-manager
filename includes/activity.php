@@ -100,6 +100,7 @@ function activity_label(string $action): string
         'stage_rejected' => 'Marked Rejected',
         'stage_suspended' => 'Marked Suspended',
         'stage_prepare' => 'Moved back to Prepare',
+        'stage_none' => 'Removed from publishing',
         'stage_back_ready' => 'Moved back to Ready',
         'stage_back_sent' => 'Moved back to Sent',
         'tagged_ready' => 'Tagged Ready for Work',

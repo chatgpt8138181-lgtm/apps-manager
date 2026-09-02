@@ -26,6 +26,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $action = (string) ($_POST['action'] ?? '');
 
+        if ($action === 'update_loading') {
+            update_app_statuses(
+                $appId,
+                (string) ($_POST['loading_status'] ?? ''),
+                (string) ($_POST['ready_loading_status'] ?? '')
+            );
+            redirect_with($self, 'success', 'Loading status updated.');
+        }
+
+        if ($action === 'start_publishing') {
+            start_publishing($appId);
+            redirect_with($self, 'success', 'App added to Prepare Production.');
+        }
+
+        if ($action === 'stop_publishing') {
+            stop_publishing($appId);
+            redirect_with($self, 'success', 'App removed from the publishing flow.');
+        }
+
         if ($action === 'update_details') {
             update_production_app_details($appId, $_POST);
             redirect_with($self, 'success', 'App details updated.');
@@ -246,6 +265,14 @@ page_start($app['name']);
                 <input type="hidden" name="app_id" value="<?= $appId ?>">
                 <button class="btn" type="submit">Back to Sent</button>
             </form>
+        <?php elseif ($status === 'none'): ?>
+            <form method="post">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="start_publishing">
+                <input type="hidden" name="app_id" value="<?= $appId ?>">
+                <button class="btn primary" type="submit">Start publishing</button>
+            </form>
+            <span class="hint">This app is only in the loading rotation so far.</span>
         <?php else: ?>
             <form method="post">
                 <?= csrf_field() ?>
@@ -265,7 +292,15 @@ page_start($app['name']);
         <div class="action-menu-wrap">
             <button class="btn small action-menu-btn" type="button" aria-label="More actions">&#8942;</button>
             <div class="action-menu">
-                <?php if (!in_array($status, ['prepare', 'ready'], true)): ?>
+                <?php if ($status === 'prepare'): ?>
+                    <form method="post">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="stop_publishing">
+                        <input type="hidden" name="app_id" value="<?= $appId ?>">
+                        <button class="menu-item" type="submit">Remove from publishing</button>
+                    </form>
+                <?php endif; ?>
+                <?php if (!in_array($status, ['prepare', 'ready', 'none'], true)): ?>
                     <form method="post">
                         <?= csrf_field() ?>
                         <input type="hidden" name="action" value="to_prepare">
@@ -291,6 +326,31 @@ page_start($app['name']);
             </div>
         </div>
     </div>
+</section>
+
+<section class="form-panel">
+    <div class="panel-heading">
+        <h2>Loading</h2>
+        <a class="btn small" href="active-apps.php">Loading rotation</a>
+    </div>
+    <form method="post" class="inline-form">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="update_loading">
+        <input type="hidden" name="app_id" value="<?= $appId ?>">
+        <label>Loading
+            <select name="loading_status">
+                <option <?= $app['loading_status'] === 'Active' ? 'selected' : '' ?>>Active</option>
+                <option <?= $app['loading_status'] === 'Inactive' ? 'selected' : '' ?>>Inactive</option>
+            </select>
+        </label>
+        <label>Ready to Load
+            <select name="ready_loading_status">
+                <option <?= $app['ready_loading_status'] === 'Ready' ? 'selected' : '' ?>>Ready</option>
+                <option <?= $app['ready_loading_status'] === 'Not Ready' ? 'selected' : '' ?>>Not Ready</option>
+            </select>
+        </label>
+        <button class="btn primary" type="submit">Save</button>
+    </form>
 </section>
 
 <section class="panel">
@@ -341,6 +401,7 @@ page_start($app['name']);
     </form>
 </section>
 
+<?php if ($status !== 'none'): ?>
 <section class="panel">
     <div class="panel-heading">
         <h2>Checklist (<?= $done ?>/<?= $total ?>)</h2>
@@ -373,6 +434,7 @@ page_start($app['name']);
         <?php endforeach; ?>
     </div>
 </section>
+<?php endif; ?>
 
 <section class="panel">
     <div class="panel-heading">

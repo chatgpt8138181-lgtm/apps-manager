@@ -325,6 +325,42 @@ function send_app_to_production(int $appId): void
     log_activity('app', $appId, 'stage_sent', (string) $app['name']);
 }
 
+/* Put a loading-only app into the publishing flow. */
+function start_publishing(int $appId): void
+{
+    $app = get_production_app($appId);
+    if (!$app) {
+        throw new RuntimeException('App was not found.');
+    }
+
+    if ($app['status'] !== 'none') {
+        throw new RuntimeException('This app is already in the publishing flow.');
+    }
+
+    $stmt = db()->prepare("UPDATE apps SET stage = 'prepare' WHERE id = ?");
+    $stmt->execute([$appId]);
+
+    log_activity('app', $appId, 'stage_prepare', (string) $app['name'], 'Started publishing');
+}
+
+/* Take it back out, leaving the loading side untouched. */
+function stop_publishing(int $appId): void
+{
+    $app = get_production_app($appId);
+    if (!$app) {
+        throw new RuntimeException('App was not found.');
+    }
+
+    if ($app['status'] !== 'prepare') {
+        throw new RuntimeException('Only an app still in Prepare can leave the publishing flow.');
+    }
+
+    $stmt = db()->prepare("UPDATE apps SET stage = 'none' WHERE id = ?");
+    $stmt->execute([$appId]);
+
+    log_activity('app', $appId, 'stage_none', (string) $app['name'], 'Removed from publishing');
+}
+
 function mark_app_ready(int $appId): void
 {
     $app = get_production_app($appId);
