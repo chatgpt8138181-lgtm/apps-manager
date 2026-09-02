@@ -111,7 +111,7 @@ if ($selectedId > 0) {
     }
 }
 
-page_start('Ready for Production');
+page_start('Ready Apps');
 ?>
 <?php if ($selected): ?>
     <?php render_app_details_panel($selected, $consoles, 'ready-apps.php'); ?>
@@ -119,12 +119,12 @@ page_start('Ready for Production');
 <?php else: ?>
 <section class="panel">
     <div class="panel-heading">
-        <h2>Ready for Production (<?= count($apps) ?>)</h2>
+        <h2>Ready Apps (<?= count($apps) ?>)</h2>
         <span class="hint">Checklist-complete apps waiting to be sent. Send each app when its console is ready.</span>
     </div>
 
     <?php if (!$apps): ?>
-        <p class="empty block">No apps are marked Ready for Production. Complete a checklist in Production, then use "Ready for Production".</p>
+        <p class="empty block">No apps are ready yet. Complete a checklist in Production, then use "Ready for Production".</p>
     <?php endif; ?>
 
     <?php foreach ($consoles as $console): ?>

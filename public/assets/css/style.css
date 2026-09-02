@@ -2151,3 +2151,12 @@ td.actions {
 .stepper-off .step-dot {
     opacity: 0.5;
 }
+
+/* A tab that leads to another page, not another view of this one. */
+.tabs .tab-link {
+    color: var(--muted);
+}
+
+.tabs .tab-link:hover {
+    color: var(--primary);
+}

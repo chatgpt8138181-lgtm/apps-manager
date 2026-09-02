@@ -24,9 +24,9 @@ page_start('Add App');
         <label>App Name
             <input type="text" name="app_name" maxlength="200" required>
         </label>
-        <label>Category
+        <label>Console
             <select name="category_id" required>
-                <option value="">Choose category</option>
+                <option value="">Choose console</option>
                 <?php foreach ($categories as $category): ?>
                     <option value="<?= (int) $category['id'] ?>"><?= h($category['name']) ?></option>
                 <?php endforeach; ?>

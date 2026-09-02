@@ -4,7 +4,12 @@ require_once $root . '/includes/bootstrap.php';
 require_login();
 
 $status = (string) ($_GET['status'] ?? 'sent');
-if (!in_array($status, ['sent', 'live', 'rejected', 'suspended'], true)) {
+if ($status === 'live') {
+    /* Live apps have their own page, so send the reader there. */
+    header('Location: live-apps.php');
+    exit;
+}
+if (!in_array($status, ['sent', 'rejected', 'suspended'], true)) {
     $status = 'sent';
 }
 
@@ -16,7 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (($_POST['action'] ?? '') === 'set_result') {
             $result = (string) ($_POST['result'] ?? '');
             set_production_result((int) ($_POST['app_id'] ?? 0), $result);
-            redirect_with($return, 'success', 'App marked as ' . ucfirst($result) . '.');
+            $to = $result === 'live' ? 'live-apps.php' : $return;
+            redirect_with($to, 'success', 'App marked as ' . ucfirst($result) . '.');
         }
 
         if (($_POST['action'] ?? '') === 'delete') {
@@ -156,7 +162,6 @@ $apps = production_apps_by_status($status);
 $unassigned = array_values(array_filter($apps, fn($app) => empty($app['console_id'])));
 $tabs = [
     'sent' => 'Sent for Production',
-    'live' => 'Live',
     'rejected' => 'Rejected',
     'suspended' => 'Suspended',
 ];
@@ -165,7 +170,11 @@ $selectedId = (int) ($_GET['app_id'] ?? 0);
 $selected = null;
 if ($selectedId > 0) {
     $selected = get_production_app($selectedId);
-    if (!$selected || !in_array($selected['status'], ['sent', 'live', 'rejected', 'suspended'], true)) {
+    if ($selected && $selected['status'] === 'live') {
+        header('Location: live-apps.php?app_id=' . $selectedId);
+        exit;
+    }
+    if (!$selected || !in_array($selected['status'], ['sent', 'rejected', 'suspended'], true)) {
         $selected = null;
     }
 }
@@ -182,15 +191,14 @@ page_start('Production Apps');
             <?= h($label) ?> (<?= (int) $counts[$key] ?>)
         </a>
     <?php endforeach; ?>
+    <a class="tab-link" href="live-apps.php">Live (<?= (int) $counts['live'] ?>) &rarr;</a>
 </div>
 
 <section class="panel">
     <div class="panel-heading">
         <h2><?= h($tabs[$status]) ?> (<?= count($apps) ?>)</h2>
         <?php if ($status === 'sent'): ?>
-            <span class="hint">Set the Play Console review result for each app.</span>
-        <?php elseif ($status === 'live'): ?>
-            <a class="btn small" href="live-apps.php">Manage in Live Apps</a>
+            <span class="hint">Set the Play Console review result. Marking an app Live moves it to Live Apps.</span>
         <?php endif; ?>
     </div>
 

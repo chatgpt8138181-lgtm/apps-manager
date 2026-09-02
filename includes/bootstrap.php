@@ -133,13 +133,13 @@ function page_start(string $title): void
         'Publishing' => [
             /* The four stages an app moves through, in order. */
             'App Workflow' => [
-                'production.php' => 'Production',
+                'production.php' => 'Prepare Production',
                 'ready-apps.php' => 'Ready Apps',
                 'sent-production.php' => 'Production Apps',
                 'live-apps.php' => 'Live Apps',
             ],
             'publish-info.php' => 'Publish Info',
-            'consoles.php' => 'Consoles',
+            'consoles.php' => 'Play Consoles',
             'app-urls.php' => 'App URLs',
             'tasks.php' => 'Daily Tasks',
         ],

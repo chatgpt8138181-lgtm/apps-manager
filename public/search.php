@@ -50,9 +50,9 @@ page_start('Search/Edit');
         <label>Search
             <input type="text" name="q" value="<?= h($query) ?>" placeholder="App name or display ID">
         </label>
-        <label>Category
+        <label>Console
             <select name="category_id" id="search-category-select">
-                <option value="0">All Categories</option>
+                <option value="0">All Consoles</option>
                 <?php foreach ($categories as $category): ?>
                     <option value="<?= (int) $category['id'] ?>" <?= $categoryId === (int) $category['id'] ? 'selected' : '' ?>>
                         <?= h($category['name']) ?>

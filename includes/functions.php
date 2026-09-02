@@ -181,7 +181,7 @@ function add_category(string $name): void
 {
     $name = trim($name);
     if ($name === '' || text_length($name) > 150) {
-        throw new RuntimeException('Category name must be 1 to 150 characters.');
+        throw new RuntimeException('Console name must be 1 to 150 characters.');
     }
 
     $stmt = db()->prepare('INSERT INTO categories (name) VALUES (?)');
@@ -262,7 +262,7 @@ function add_app(array $data, ?string $iconPath): void
     }
 
     if ($categoryId <= 0) {
-        throw new RuntimeException('Please choose a category.');
+        throw new RuntimeException('Please choose a console.');
     }
 
     $stmt = db()->prepare(

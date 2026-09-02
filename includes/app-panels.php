@@ -12,7 +12,7 @@ function render_workflow_stepper(array $app): void
     $steps = [
         'prepare' => 'Prepare',
         'ready' => 'Ready',
-        'sent' => 'Production',
+        'sent' => 'Sent',
         'live' => 'Live',
     ];
     $order = array_keys($steps);
