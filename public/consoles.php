@@ -76,11 +76,18 @@ page_start('Play Consoles');
         ?>
         <div class="app-group" data-group-key="console-<?= $consoleId ?>">
             <button class="app-group-toggle" type="button" aria-expanded="false">
-                <span>
-                    <?= h($console['name']) ?>
-                    <?= $urlsSet
-                        ? '<span class="badge badge-green">URLs set</span>'
-                        : '<span class="badge badge-amber">URLs missing</span>' ?>
+                <span class="console-head">
+                    <span class="console-head-name">
+                        <?= h($console['name']) ?>
+                        <?= $urlsSet
+                            ? '<span class="badge badge-green">URLs set</span>'
+                            : '<span class="badge badge-amber">URLs missing</span>' ?>
+                    </span>
+                    <span class="console-head-meta">
+                        <?= (int) $console['live_total'] ?> live
+                        &middot; <?= (int) $console['ready_total'] ?> ready
+                        &middot; Cycle <?= (int) $console['cycle_no'] ?>
+                    </span>
                 </span>
                 <span class="nav-chevron" aria-hidden="true"></span>
             </button>

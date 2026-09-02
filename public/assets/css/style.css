@@ -2602,3 +2602,70 @@ tbody tr.is-picked {
     :root:not([data-theme="light"]) .theme-toggle .icon-sun { display: block; }
     :root:not([data-theme="light"]) .theme-toggle .icon-moon { display: none; }
 }
+
+/* --- Console health, empty states, shortcuts card --- */
+
+.console-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    align-items: baseline;
+    min-width: 0;
+}
+
+.console-head-name {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.console-head-meta {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.empty.block {
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--r-md);
+    line-height: 1.9;
+}
+
+.empty.block .btn {
+    margin-top: 8px;
+}
+
+.shortcuts-head {
+    border-bottom: 1px solid var(--line);
+    padding: 14px 16px;
+}
+
+.shortcuts-list {
+    display: grid;
+    gap: 4px;
+    list-style: none;
+    margin: 0;
+    padding: 10px 16px;
+}
+
+.shortcuts-list li {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+    padding: 6px 0;
+}
+
+.shortcuts-list kbd {
+    background: var(--surface-strong);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    font-size: 12px;
+    min-width: 30px;
+    padding: 3px 7px;
+    text-align: center;
+}
+
+.shortcuts-list span {
+    color: var(--muted);
+}

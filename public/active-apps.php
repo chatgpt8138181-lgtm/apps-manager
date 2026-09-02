@@ -121,7 +121,7 @@ page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading
             <p class="empty block">
                 No apps for today.
                 <?php if ($progress['eligible'] === 0): ?>
-                    Set apps to Active on the Dashboard to start the rotation.
+                    <br><a class="btn small" href="dashboard.php">Set apps to Active on the Dashboard</a>
                 <?php endif; ?>
             </p>
         <?php endif; ?>

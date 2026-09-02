@@ -328,7 +328,7 @@ $unassignedPrepare = array_values(array_filter($prepareApps, fn($app) => empty($
         <?php if ($listQuery !== '' || $listConsole > 0): ?>
             <p class="empty block">No app matches this filter.</p>
         <?php else: ?>
-            <p class="empty block">No apps in Prepare Production.</p>
+            <p class="empty block">No apps in Prepare Production yet.<br><a class="btn small primary" href="production.php">Add your first app above</a></p>
         <?php endif; ?>
     <?php endif; ?>
 

@@ -154,7 +154,7 @@ page_start('Ready Apps');
         <?php if ($listQuery !== '' || $listConsole > 0): ?>
             <p class="empty block">No app matches this filter.</p>
         <?php else: ?>
-            <p class="empty block">No apps are ready yet. Complete a checklist in Production, then use "Ready for Production".</p>
+            <p class="empty block">No apps are ready yet.<br><a class="btn small" href="production.php">Finish a checklist in Prepare Production</a></p>
         <?php endif; ?>
     <?php endif; ?>
 

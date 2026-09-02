@@ -178,7 +178,7 @@ page_start('Live Apps');
         <?php if ($listQuery !== '' || $listConsole > 0): ?>
             <p class="empty block">No app matches this filter.</p>
         <?php else: ?>
-            <p class="empty block">No live apps yet.</p>
+            <p class="empty block">No live apps yet.<br><a class="btn small" href="sent-production.php">See apps waiting for review</a></p>
         <?php endif; ?>
     <?php endif; ?>
 

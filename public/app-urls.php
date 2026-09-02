@@ -133,7 +133,12 @@ page_start('App URLs');
     <?php endforeach; ?>
 
     <?php if ($consoles && !$shownAny): ?>
-        <p class="empty block"><?= $wantChecked ? 'No checked URLs yet.' : 'No pending URLs — everything is checked.' ?></p>
+        <p class="empty block">
+            <?= $wantChecked ? 'No checked URLs yet.' : 'No pending URLs — everything is checked.' ?>
+            <?php if (!$wantChecked): ?>
+                <br><a class="btn small" href="app-urls.php?status=checked">See checked URLs</a>
+            <?php endif; ?>
+        </p>
     <?php endif; ?>
 </section>
 

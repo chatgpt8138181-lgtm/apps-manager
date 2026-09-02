@@ -113,7 +113,7 @@ page_start($view === 'history' ? 'Task History' : "Today's Task");
             <p class="empty block">
                 No tasks for today.
                 <?php if ($progress['eligible'] === 0): ?>
-                    Tag Live apps as Ready for Work and assign consoles to start the task system.
+                    <br><a class="btn small" href="live-apps.php">Tag Live apps as Ready for Work</a>
                 <?php endif; ?>
             </p>
         <?php endif; ?>

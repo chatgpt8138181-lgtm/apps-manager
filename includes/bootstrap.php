@@ -262,6 +262,20 @@ function page_end(): void
     ?>
         </main>
     </div>
+    <div class="palette" id="shortcuts" hidden>
+        <div class="palette-box" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+            <div class="shortcuts-head"><strong>Keyboard shortcuts</strong></div>
+            <ul class="shortcuts-list">
+                <li><kbd>&#8984;K</kbd> <span>Search pages and apps</span></li>
+                <li><kbd>/</kbd> <span>Search, without the modifier</span></li>
+                <li><kbd>?</kbd> <span>This list</span></li>
+                <li><kbd>Esc</kbd> <span>Close search or this list</span></li>
+                <li><kbd>&uarr;</kbd> <kbd>&darr;</kbd> <span>Move through search results</span></li>
+                <li><kbd>Enter</kbd> <span>Open the highlighted result</span></li>
+            </ul>
+            <p class="palette-hint">Esc to close</p>
+        </div>
+    </div>
     <div class="palette" id="palette" hidden>
         <div class="palette-box" role="dialog" aria-modal="true" aria-label="Search">
             <input type="search" id="palette-input" placeholder="Search pages and apps&hellip;" autocomplete="off">
@@ -486,6 +500,12 @@ function page_end(): void
                 }
             });
 
+            document.getElementById('shortcuts')?.addEventListener('click', (event) => {
+                if (event.target.id === 'shortcuts') {
+                    event.target.hidden = true;
+                }
+            });
+
             let typingTimer = null;
             paletteInput.addEventListener('input', () => {
                 clearTimeout(typingTimer);
@@ -512,8 +532,23 @@ function page_end(): void
                 }
             });
 
+            /* The shortcuts card, opened with ? and closed with Esc. */
+            const shortcuts = document.getElementById('shortcuts');
+
             document.addEventListener('keydown', (event) => {
                 const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName);
+
+                if (event.key === '?' && !typing) {
+                    event.preventDefault();
+                    if (shortcuts) {
+                        shortcuts.hidden = !shortcuts.hidden;
+                    }
+                    return;
+                }
+                if (event.key === 'Escape' && shortcuts && !shortcuts.hidden) {
+                    shortcuts.hidden = true;
+                    return;
+                }
                 if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
                     event.preventDefault();
                     palette.hidden ? openPalette() : closePalette();
