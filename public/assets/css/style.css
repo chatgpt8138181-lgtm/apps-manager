@@ -2306,3 +2306,61 @@ a.stat:hover {
     border-bottom: 1px solid var(--line);
     border-radius: var(--r-md) var(--r-md) 0 0;
 }
+
+/* --- Bulk selection --- */
+
+.col-select {
+    width: 38px;
+}
+
+.col-select input {
+    cursor: pointer;
+    height: 16px;
+    width: 16px;
+}
+
+tbody tr.is-picked {
+    background: var(--primary-soft);
+}
+
+.bulk-bar {
+    align-items: center;
+    background: var(--primary-soft);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+}
+
+.bulk-count {
+    color: var(--primary);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.bulk-bar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+@media (max-width: 760px) {
+    .bulk-bar {
+        position: sticky;
+        top: 8px;
+        z-index: 5;
+    }
+
+    .table-wrap td.col-select {
+        background: var(--surface);
+        justify-content: flex-start;
+    }
+
+    .table-wrap td.col-select::before {
+        content: "Select";
+    }
+}

@@ -492,6 +492,53 @@ function page_end(): void
             });
         }
 
+        /* Row selection: the bulk bar only appears once something is ticked. */
+        document.querySelectorAll('form.bulk-form').forEach((form) => {
+            const bar = form.querySelector('.bulk-bar');
+            const number = form.querySelector('.bulk-number');
+            const all = form.querySelector('.bulk-all');
+            const rows = [...form.querySelectorAll('.bulk-row')];
+            if (!bar || !rows.length) {
+                return;
+            }
+
+            const sync = () => {
+                const picked = rows.filter((row) => row.checked);
+                bar.hidden = picked.length === 0;
+                if (number) {
+                    number.textContent = String(picked.length);
+                }
+                if (all) {
+                    all.checked = picked.length === rows.length;
+                    all.indeterminate = picked.length > 0 && picked.length < rows.length;
+                }
+                rows.forEach((row) => row.closest('tr')?.classList.toggle('is-picked', row.checked));
+            };
+
+            rows.forEach((row) => row.addEventListener('change', sync));
+
+            all?.addEventListener('change', () => {
+                rows.forEach((row) => { row.checked = all.checked; });
+                sync();
+            });
+
+            form.querySelector('.bulk-clear')?.addEventListener('click', () => {
+                rows.forEach((row) => { row.checked = false; });
+                sync();
+            });
+
+            form.addEventListener('submit', (event) => {
+                const button = event.submitter;
+                const question = button?.dataset.confirm;
+                if (question && !window.confirm(question)) {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                }
+            });
+
+            sync();
+        });
+
         const menuToggle = document.querySelector('.menu-toggle');
         const menuPanel = document.querySelector('.menu-panel');
 

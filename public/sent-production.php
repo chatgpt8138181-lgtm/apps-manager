@@ -18,6 +18,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $return = 'sent-production.php?status=' . urlencode((string) ($_POST['return_status'] ?? 'sent'));
 
     try {
+        if (($_POST['action'] ?? '') === 'bulk') {
+            $bulkAction = (string) ($_POST['bulk_action'] ?? '');
+            $result = apply_bulk_production_action($bulkAction, (array) ($_POST['app_ids'] ?? []));
+            $to = $bulkAction === 'live' ? 'live-apps.php' : $return;
+            redirect_with($to, 'success', bulk_result_message($result, 'updated'));
+        }
+
         if (($_POST['action'] ?? '') === 'set_result') {
             $result = (string) ($_POST['result'] ?? '');
             set_production_result((int) ($_POST['app_id'] ?? 0), $result);
@@ -57,11 +64,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 function render_sent_apps_table(array $apps, string $status): void
 {
+    $bulk = $status === 'sent'
+        ? [
+            ['value' => 'live', 'label' => 'Mark Live', 'class' => 'primary'],
+            ['value' => 'rejected', 'label' => 'Reject'],
+            ['value' => 'suspended', 'label' => 'Suspend'],
+            ['value' => 'to_ready', 'label' => 'Back to Ready'],
+        ]
+        : [
+            ['value' => 'live', 'label' => 'Mark Live', 'class' => 'primary'],
+            ['value' => 'to_sent', 'label' => 'Back to Sent'],
+        ];
     ?>
+    <form method="post" class="bulk-form">
+    <?= csrf_field() ?>
+    <input type="hidden" name="action" value="bulk">
+    <input type="hidden" name="return_status" value="<?= h($status) ?>">
+    <?php render_bulk_bar($bulk); ?>
     <div class="table-wrap">
         <table>
             <thead>
             <tr>
+                <th class="col-select"><input type="checkbox" class="bulk-all" aria-label="Select all"></th>
                 <th>App Name</th>
                 <th>Package</th>
                 <th>Status</th>
@@ -73,6 +97,7 @@ function render_sent_apps_table(array $apps, string $status): void
             <tbody>
             <?php foreach ($apps as $app): ?>
                 <tr>
+                    <td class="col-select"><input type="checkbox" class="bulk-row" name="app_ids[]" value="<?= (int) $app['id'] ?>"></td>
                     <td><?= h($app['name']) ?></td>
                     <td>
                         <?php if (!empty($app['package_name'])): ?>
@@ -153,6 +178,7 @@ function render_sent_apps_table(array $apps, string $status): void
             </tbody>
         </table>
     </div>
+    </form>
     <?php
 }
 

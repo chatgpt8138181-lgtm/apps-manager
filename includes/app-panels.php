@@ -105,6 +105,32 @@ function render_app_details_panel(array $app, array $consoles, string $backUrl):
     <?php
 }
 
+/* The bar that appears once rows are ticked. $actions is a list of
+   ['value' => ..., 'label' => ..., 'class' => ..., 'confirm' => ...]. */
+function render_bulk_bar(array $actions): void
+{
+    ?>
+    <div class="bulk-bar" hidden>
+        <span class="bulk-count"><strong class="bulk-number">0</strong> selected</span>
+        <div class="bulk-bar-actions">
+            <?php foreach ($actions as $action): ?>
+                <button class="btn small <?= h($action['class'] ?? '') ?>"
+                        type="submit"
+                        name="bulk_action"
+                        value="<?= h($action['value']) ?>"
+                        <?= !empty($action['confirm'])
+                            ? 'data-confirm="' . h($action['confirm']) . '"'
+                            : '' ?>>
+                    <?= h($action['label']) ?>
+                </button>
+            <?php endforeach; ?>
+            <button class="btn small bulk-clear" type="button">Clear</button>
+        </div>
+    </div>
+    <?php
+}
+
+/* Where this comment sits, the checklist panel follows. */
 function render_checklist_summary_panel(array $app): void
 {
     $items = checklist_items();

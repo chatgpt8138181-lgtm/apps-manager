@@ -10,6 +10,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = $_POST['action'] ?? '';
         $appId = (int) ($_POST['app_id'] ?? 0);
 
+        if ($action === 'bulk') {
+            $result = apply_bulk_production_action(
+                (string) ($_POST['bulk_action'] ?? ''),
+                (array) ($_POST['app_ids'] ?? [])
+            );
+            redirect_with('ready-apps.php', 'success', bulk_result_message($result, 'updated'));
+        }
+
         if ($action === 'send') {
             send_app_to_production($appId);
             redirect_with('sent-production.php', 'success', 'App sent for production.');
@@ -37,10 +45,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 function render_ready_apps_table(array $apps): void
 {
     ?>
+    <form method="post" class="bulk-form">
+    <?= csrf_field() ?>
+    <input type="hidden" name="action" value="bulk">
+    <?php render_bulk_bar([
+        ['value' => 'send', 'label' => 'Send for Production', 'class' => 'primary'],
+        ['value' => 'to_prepare', 'label' => 'Back to Prepare'],
+        ['value' => 'delete', 'label' => 'Delete', 'class' => 'danger',
+         'confirm' => 'Delete the selected apps? Their checklists and task history go too.'],
+    ]); ?>
     <div class="table-wrap">
         <table>
             <thead>
             <tr>
+                <th class="col-select"><input type="checkbox" class="bulk-all" aria-label="Select all"></th>
                 <th>App Name</th>
                 <th>Package</th>
                 <th>Status</th>
@@ -51,6 +69,7 @@ function render_ready_apps_table(array $apps): void
             <tbody>
             <?php foreach ($apps as $app): ?>
                 <tr>
+                    <td class="col-select"><input type="checkbox" class="bulk-row" name="app_ids[]" value="<?= (int) $app['id'] ?>"></td>
                     <td><?= h($app['name']) ?></td>
                     <td>
                         <?php if (!empty($app['package_name'])): ?>
@@ -95,6 +114,7 @@ function render_ready_apps_table(array $apps): void
             </tbody>
         </table>
     </div>
+    </form>
     <?php
 }
 

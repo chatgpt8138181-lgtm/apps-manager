@@ -10,6 +10,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = $_POST['action'] ?? '';
         $appId = (int) ($_POST['app_id'] ?? 0);
 
+        if ($action === 'bulk') {
+            $result = apply_bulk_production_action(
+                (string) ($_POST['bulk_action'] ?? ''),
+                (array) ($_POST['app_ids'] ?? [])
+            );
+            redirect_with('live-apps.php', 'success', bulk_result_message($result, 'updated'));
+        }
+
         if ($action === 'toggle_ready') {
             $ready = (int) ($_POST['ready'] ?? 0) === 1;
             set_ready_for_work($appId, $ready);
@@ -47,10 +55,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 function render_live_apps_table(array $apps): void
 {
     ?>
+    <form method="post" class="bulk-form">
+    <?= csrf_field() ?>
+    <input type="hidden" name="action" value="bulk">
+    <?php render_bulk_bar([
+        ['value' => 'tag_ready', 'label' => 'Tag Ready for Work', 'class' => 'primary'],
+        ['value' => 'untag_ready', 'label' => 'Remove Tag'],
+        ['value' => 'to_sent', 'label' => 'Back to Sent'],
+    ]); ?>
     <div class="table-wrap">
         <table>
             <thead>
             <tr>
+                <th class="col-select"><input type="checkbox" class="bulk-all" aria-label="Select all"></th>
                 <th>App Name</th>
                 <th>Package</th>
                 <th>Live At</th>
@@ -62,6 +79,7 @@ function render_live_apps_table(array $apps): void
             <?php foreach ($apps as $app): ?>
                 <?php $isReady = (int) $app['ready_for_work'] === 1; ?>
                 <tr>
+                    <td class="col-select"><input type="checkbox" class="bulk-row" name="app_ids[]" value="<?= (int) $app['id'] ?>"></td>
                     <td><?= h($app['name']) ?></td>
                     <td><?= h($app['package_name'] ?? '—') ?></td>
                     <td><?= h($app['live_at'] ?? '—') ?></td>
@@ -104,6 +122,7 @@ function render_live_apps_table(array $apps): void
             </tbody>
         </table>
     </div>
+    </form>
     <?php
 }
 

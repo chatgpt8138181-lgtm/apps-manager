@@ -428,6 +428,64 @@ function set_ready_for_work(int $appId, bool $ready): void
     $stmt->execute([$ready ? 1 : 0, $appId]);
 }
 
+/* Apply one stage move to many apps at once. Returns how many moved and
+   the first problem, so a page can report both. */
+function apply_bulk_production_action(string $action, array $appIds): array
+{
+    $moves = [
+        'ready' => 'mark_app_ready',
+        'send' => 'send_app_to_production',
+        'to_prepare' => 'revert_app_to_prepare',
+        'to_ready' => 'revert_app_to_ready',
+        'to_sent' => 'revert_app_to_sent',
+        'delete' => 'delete_production_app',
+    ];
+    $results = ['live', 'rejected', 'suspended'];
+
+    $done = 0;
+    $failed = 0;
+    $firstError = null;
+
+    foreach ($appIds as $rawId) {
+        $appId = (int) $rawId;
+        if ($appId <= 0) {
+            continue;
+        }
+
+        try {
+            if (isset($moves[$action])) {
+                $moves[$action]($appId);
+            } elseif (in_array($action, $results, true)) {
+                set_production_result($appId, $action);
+            } elseif ($action === 'tag_ready' || $action === 'untag_ready') {
+                set_ready_for_work($appId, $action === 'tag_ready');
+            } else {
+                throw new RuntimeException('Unknown bulk action.');
+            }
+            $done++;
+        } catch (Throwable $e) {
+            $failed++;
+            $firstError = $firstError ?? $e->getMessage();
+        }
+    }
+
+    if ($done === 0 && $firstError !== null) {
+        throw new RuntimeException($firstError);
+    }
+
+    return ['done' => $done, 'failed' => $failed, 'error' => $firstError];
+}
+
+function bulk_result_message(array $result, string $verb): string
+{
+    $message = $result['done'] . ' app(s) ' . $verb . '.';
+    if ($result['failed'] > 0) {
+        $message .= ' ' . $result['failed'] . ' skipped: ' . (string) $result['error'];
+    }
+
+    return $message;
+}
+
 function app_slug(string $name): string
 {
     $slug = strtolower(trim($name));
