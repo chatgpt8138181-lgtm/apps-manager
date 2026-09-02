@@ -319,7 +319,11 @@ $unassignedPrepare = array_values(array_filter($prepareApps, fn($app) => empty($
     </div>
 
     <?php if (!$prepareApps): ?>
-        <p class="empty block">No apps in Prepare Production.</p>
+        <?php if ($listQuery !== '' || $listConsole > 0): ?>
+            <p class="empty block">No app matches this filter.</p>
+        <?php else: ?>
+            <p class="empty block">No apps in Prepare Production.</p>
+        <?php endif; ?>
     <?php endif; ?>
 
     <?php foreach ($consoles as $console): ?>

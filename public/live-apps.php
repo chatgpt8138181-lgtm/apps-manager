@@ -174,7 +174,11 @@ page_start('Live Apps');
     </div>
 
     <?php if (!$apps): ?>
-        <p class="empty block">No live apps yet.</p>
+        <?php if ($listQuery !== '' || $listConsole > 0): ?>
+            <p class="empty block">No app matches this filter.</p>
+        <?php else: ?>
+            <p class="empty block">No live apps yet.</p>
+        <?php endif; ?>
     <?php endif; ?>
 
     <?php foreach ($consoles as $console): ?>

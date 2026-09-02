@@ -235,7 +235,11 @@ page_start('Production Apps');
     </div>
 
     <?php if (!$apps): ?>
-        <p class="empty block">No apps in this list.</p>
+        <?php if ($listQuery !== '' || $listConsole > 0): ?>
+            <p class="empty block">No app matches this filter.</p>
+        <?php else: ?>
+            <p class="empty block">No apps in this list.</p>
+        <?php endif; ?>
     <?php endif; ?>
 
     <?php foreach ($consoles as $console): ?>
