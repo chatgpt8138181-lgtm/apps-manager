@@ -65,7 +65,7 @@ function render_ready_apps_table(array $apps): void
                     <td><?= render_production_badge($app['status']) ?></td>
                     <td><?= h($app['created_at']) ?></td>
                     <td class="actions">
-                        <a class="btn small" href="ready-apps.php?app_id=<?= (int) $app['id'] ?>">Manage</a>
+                        <a class="btn small" href="app.php?id=<?= (int) $app['id'] ?>">Open</a>
                         <form method="post">
                             <?= csrf_field() ?>
                             <input type="hidden" name="action" value="send">

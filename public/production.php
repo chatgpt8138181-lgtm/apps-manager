@@ -244,7 +244,7 @@ function render_prepare_apps_table(array $apps, int $totalItems): void
                     </td>
                     <td><?= h($app['created_at']) ?></td>
                     <td class="actions">
-                        <a class="btn small" href="production.php?app_id=<?= (int) $app['id'] ?>">Manage</a>
+                        <a class="btn small" href="app.php?id=<?= (int) $app['id'] ?>">Open</a>
                         <form method="post">
                             <?= csrf_field() ?>
                             <input type="hidden" name="action" value="ready">

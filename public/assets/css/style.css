@@ -2180,3 +2180,11 @@ td.actions {
 .nav-group-items .nav-group-items .nav-label {
     gap: 8px;
 }
+
+/* The app page's stage buttons sit on one row and wrap as a group. */
+.app-stage-actions {
+    border-top: 1px solid var(--line);
+    flex-wrap: wrap;
+    margin-top: 14px;
+    padding-top: 14px;
+}

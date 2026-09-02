@@ -88,7 +88,7 @@ function render_sent_apps_table(array $apps, string $status): void
                     <td><?= h($app['sent_at'] ?? '—') ?></td>
                     <td><?= h($app['live_at'] ?? '—') ?></td>
                     <td class="actions">
-                        <a class="btn small" href="sent-production.php?status=<?= h($status) ?>&app_id=<?= (int) $app['id'] ?>">Manage</a>
+                        <a class="btn small" href="app.php?id=<?= (int) $app['id'] ?>">Open</a>
                         <?php if ($app['status'] === 'sent'): ?>
                             <form method="post">
                                 <?= csrf_field() ?>

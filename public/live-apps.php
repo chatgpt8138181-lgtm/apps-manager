@@ -71,7 +71,7 @@ function render_live_apps_table(array $apps): void
                             : '<span class="badge badge-gray">Not Tagged</span>' ?>
                     </td>
                     <td class="actions">
-                        <a class="btn small" href="live-apps.php?app_id=<?= (int) $app['id'] ?>">Manage</a>
+                        <a class="btn small" href="app.php?id=<?= (int) $app['id'] ?>">Open</a>
                         <form method="post">
                             <?= csrf_field() ?>
                             <input type="hidden" name="action" value="toggle_ready">

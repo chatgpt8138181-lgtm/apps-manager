@@ -16,15 +16,6 @@ if ($query === '') {
 $like = '%' . $query . '%';
 $results = [];
 
-$stagePages = [
-    'prepare' => 'production.php',
-    'ready' => 'ready-apps.php',
-    'sent' => 'sent-production.php',
-    'live' => 'live-apps.php',
-    'rejected' => 'sent-production.php',
-    'suspended' => 'sent-production.php',
-];
-
 $stmt = db()->prepare(
     "SELECT pa.id, pa.name, pa.package_name, pa.status, c.name AS console_name
      FROM production_apps pa
@@ -37,14 +28,13 @@ $stmt->execute([$like, $like]);
 
 foreach ($stmt->fetchAll() as $row) {
     $status = (string) $row['status'];
-    $page = $stagePages[$status] ?? 'production.php';
 
     $results[] = [
         'group' => 'Publishing',
         'title' => (string) $row['name'],
         'sub' => trim(((string) ($row['package_name'] ?? '')) . ' · ' . ucfirst($status)
             . (!empty($row['console_name']) ? ' · ' . $row['console_name'] : ''), ' ·'),
-        'url' => $page . '?app_id=' . (int) $row['id'],
+        'url' => 'app.php?id=' . (int) $row['id'],
     ];
 }
 
