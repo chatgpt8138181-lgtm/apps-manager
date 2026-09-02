@@ -79,6 +79,13 @@ function nav_counts(): array
 
 /* Nav entries are either "file.php" => "Label" or "Group" => [ ...entries ],
    so a group can hold a group. */
+/* The app page belongs to the workflow group even though it is not a
+   menu entry of its own. */
+function nav_group_page(): string
+{
+    return current_page() === 'app.php' ? 'ready-apps.php' : current_page();
+}
+
 function nav_items_contain_page(array $items): bool
 {
     foreach ($items as $key => $value) {
@@ -89,7 +96,7 @@ function nav_items_contain_page(array $items): bool
             continue;
         }
 
-        if ($key === current_page()) {
+        if ($key === nav_group_page()) {
             return true;
         }
     }
