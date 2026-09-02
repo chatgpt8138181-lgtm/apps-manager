@@ -30,9 +30,9 @@ function rotation_config(string $kind): array
         'task' => [
             'table' => 'daily_tasks',
             'owner_column' => 'console_id',
-            'source_table' => 'production_apps',
+            'source_table' => 'apps',
             'source_owner' => 'console_id',
-            'source_where' => "status = 'live' AND ready_for_work = 1",
+            'source_where' => "stage = 'live' AND ready_for_work = 1",
             'cycle_key' => 'task_cycle_c',
             'position_key' => 'task_pos_c',
             'base_key' => 'task_cycle_base',

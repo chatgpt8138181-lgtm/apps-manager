@@ -111,15 +111,14 @@ function add_production_app(array $data): int
     $consoleId = validate_console_choice($data);
 
     $stmt = db()->prepare(
-        'INSERT INTO production_apps (name, package_name, application_id, privacy_policy_url, app_domain_url, console_id)
-         VALUES (?, ?, ?, ?, ?, ?)'
+        "INSERT INTO apps (app_name, package_name, application_id, console_id, stage,
+                            loading_status, ready_loading_status)
+         VALUES (?, ?, ?, ?, 'prepare', 'Inactive', 'Not Ready')"
     );
     $stmt->execute([
         $name,
         $optional['package_name'],
         $optional['application_id'],
-        $optional['privacy_policy_url'],
-        $optional['app_domain_url'],
         $consoleId,
     ]);
 
@@ -139,8 +138,8 @@ function update_production_app_details(int $appId, array $data): void
     $consoleId = validate_console_choice($data);
 
     $stmt = db()->prepare(
-        'UPDATE production_apps
-         SET name = ?, package_name = ?, application_id = ?, privacy_policy_url = ?, app_domain_url = ?,
+        'UPDATE apps
+         SET app_name = ?, package_name = ?, application_id = ?,
              console_id = ?, ready_for_work = IF(? IS NULL, 0, ready_for_work)
          WHERE id = ?'
     );
@@ -148,8 +147,6 @@ function update_production_app_details(int $appId, array $data): void
         $name,
         $optional['package_name'],
         $optional['application_id'],
-        $optional['privacy_policy_url'],
-        $optional['app_domain_url'],
         $consoleId,
         $consoleId,
         $appId,
@@ -162,7 +159,7 @@ function delete_production_app(int $appId): void
 {
     $app = get_production_app($appId);
 
-    $stmt = db()->prepare('DELETE FROM production_apps WHERE id = ?');
+    $stmt = db()->prepare('DELETE FROM apps WHERE id = ?');
     $stmt->execute([$appId]);
 
     if ($app) {
@@ -173,11 +170,11 @@ function delete_production_app(int $appId): void
 function get_production_app(int $appId): ?array
 {
     $stmt = db()->prepare(
-        'SELECT pa.*, c.name AS console_name,
+        'SELECT pa.*, pa.app_name AS name, pa.stage AS status, c.name AS console_name,
             c.privacy_policy_url AS console_privacy_policy_url,
             c.app_domain_url AS console_app_domain_url,
             (SELECT COUNT(*) FROM production_checklist pc WHERE pc.app_id = pa.id AND pc.is_done = 1) AS checklist_done
-         FROM production_apps pa
+         FROM apps pa
          LEFT JOIN consoles c ON c.id = pa.console_id
          WHERE pa.id = ?
          LIMIT 1'
@@ -191,13 +188,13 @@ function get_production_app(int $appId): ?array
 function production_apps_by_status(string $status): array
 {
     $stmt = db()->prepare(
-        'SELECT pa.*, c.name AS console_name,
+        'SELECT pa.*, pa.app_name AS name, pa.stage AS status, c.name AS console_name,
             c.privacy_policy_url AS console_privacy_policy_url,
             c.app_domain_url AS console_app_domain_url,
             (SELECT COUNT(*) FROM production_checklist pc WHERE pc.app_id = pa.id AND pc.is_done = 1) AS checklist_done
-         FROM production_apps pa
+         FROM apps pa
          LEFT JOIN consoles c ON c.id = pa.console_id
-         WHERE pa.status = ?
+         WHERE pa.stage = ?
          ORDER BY pa.created_at ASC, pa.id ASC'
     );
     $stmt->execute([$status]);
@@ -207,7 +204,7 @@ function production_apps_by_status(string $status): array
 
 function production_status_counts(): array
 {
-    $stmt = db()->query('SELECT status, COUNT(*) AS total FROM production_apps GROUP BY status');
+    $stmt = db()->query("SELECT stage AS status, COUNT(*) AS total FROM apps WHERE stage <> 'none' GROUP BY stage");
     $counts = array_fill_keys(production_statuses(), 0);
 
     foreach ($stmt->fetchAll() as $row) {
@@ -290,7 +287,7 @@ function save_checklist(int $appId, array $doneKeys, array $fieldValues = []): v
 
     if ($updates) {
         $params[] = $appId;
-        $update = db()->prepare('UPDATE production_apps SET ' . implode(', ', $updates) . ' WHERE id = ?');
+        $update = db()->prepare('UPDATE apps SET ' . implode(', ', $updates) . ' WHERE id = ?');
         $update->execute($params);
     }
 
@@ -322,7 +319,7 @@ function send_app_to_production(int $appId): void
         throw new RuntimeException('Checklist must be 100% complete before sending for production.');
     }
 
-    $stmt = db()->prepare("UPDATE production_apps SET status = 'sent', sent_at = NOW() WHERE id = ?");
+    $stmt = db()->prepare("UPDATE apps SET stage = 'sent', sent_at = NOW() WHERE id = ?");
     $stmt->execute([$appId]);
 
     log_activity('app', $appId, 'stage_sent', (string) $app['name']);
@@ -343,7 +340,7 @@ function mark_app_ready(int $appId): void
         throw new RuntimeException('Checklist must be 100% complete before marking Ready for Production.');
     }
 
-    $stmt = db()->prepare("UPDATE production_apps SET status = 'ready' WHERE id = ?");
+    $stmt = db()->prepare("UPDATE apps SET stage = 'ready' WHERE id = ?");
     $stmt->execute([$appId]);
 
     log_activity('app', $appId, 'stage_ready', (string) $app['name']);
@@ -364,7 +361,7 @@ function revert_app_to_prepare(int $appId): void
         throw new RuntimeException('Only Ready or Sent apps can move back to Prepare.');
     }
 
-    $stmt = db()->prepare("UPDATE production_apps SET status = 'prepare', sent_at = NULL WHERE id = ?");
+    $stmt = db()->prepare("UPDATE apps SET stage = 'prepare', sent_at = NULL WHERE id = ?");
     $stmt->execute([$appId]);
 
     log_activity('app', $appId, 'stage_prepare', (string) $app['name'], 'Was ' . (string) $app['status']);
@@ -381,7 +378,7 @@ function revert_app_to_ready(int $appId): void
         throw new RuntimeException('Only Sent apps can move back to Ready.');
     }
 
-    $stmt = db()->prepare("UPDATE production_apps SET status = 'ready', sent_at = NULL WHERE id = ?");
+    $stmt = db()->prepare("UPDATE apps SET stage = 'ready', sent_at = NULL WHERE id = ?");
     $stmt->execute([$appId]);
 
     log_activity('app', $appId, 'stage_back_ready', (string) $app['name']);
@@ -398,7 +395,7 @@ function revert_app_to_sent(int $appId): void
         throw new RuntimeException('Only Live, Rejected, or Suspended apps can move back to Sent.');
     }
 
-    $stmt = db()->prepare("UPDATE production_apps SET status = 'sent', live_at = NULL, ready_for_work = 0 WHERE id = ?");
+    $stmt = db()->prepare("UPDATE apps SET stage = 'sent', live_at = NULL, ready_for_work = 0 WHERE id = ?");
     $stmt->execute([$appId]);
 
     log_activity('app', $appId, 'stage_back_sent', (string) $app['name'], 'Was ' . (string) $app['status']);
@@ -420,9 +417,9 @@ function set_production_result(int $appId, string $result): void
     }
 
     if ($result === 'live') {
-        $stmt = db()->prepare("UPDATE production_apps SET status = 'live', live_at = COALESCE(live_at, NOW()) WHERE id = ?");
+        $stmt = db()->prepare("UPDATE apps SET stage = 'live', live_at = COALESCE(live_at, NOW()) WHERE id = ?");
     } else {
-        $stmt = db()->prepare('UPDATE production_apps SET status = ? WHERE id = ?');
+        $stmt = db()->prepare('UPDATE apps SET stage = ? WHERE id = ?');
     }
 
     $result === 'live' ? $stmt->execute([$appId]) : $stmt->execute([$result, $appId]);
@@ -438,7 +435,7 @@ function assign_console(int $appId, int $consoleId): void
     }
 
     if ($consoleId <= 0) {
-        $stmt = db()->prepare('UPDATE production_apps SET console_id = NULL, ready_for_work = 0 WHERE id = ?');
+        $stmt = db()->prepare('UPDATE apps SET console_id = NULL, ready_for_work = 0 WHERE id = ?');
         $stmt->execute([$appId]);
         return;
     }
@@ -449,7 +446,7 @@ function assign_console(int $appId, int $consoleId): void
         throw new RuntimeException('Console was not found.');
     }
 
-    $stmt = db()->prepare('UPDATE production_apps SET console_id = ? WHERE id = ?');
+    $stmt = db()->prepare('UPDATE apps SET console_id = ? WHERE id = ?');
     $stmt->execute([$consoleId, $appId]);
 }
 
@@ -469,7 +466,7 @@ function set_ready_for_work(int $appId, bool $ready): void
         }
     }
 
-    $stmt = db()->prepare('UPDATE production_apps SET ready_for_work = ? WHERE id = ?');
+    $stmt = db()->prepare('UPDATE apps SET ready_for_work = ? WHERE id = ?');
     $stmt->execute([$ready ? 1 : 0, $appId]);
 
     log_activity('app', $appId, $ready ? 'tagged_ready' : 'untagged_ready', (string) $app['name']);
@@ -558,7 +555,10 @@ function app_domain_url_for(array $app): ?string
         return rtrim((string) $base, '/');
     }
 
-    $stmt = db()->prepare('SELECT name FROM production_apps WHERE console_id = ? AND id < ? ORDER BY id ASC');
+    $stmt = db()->prepare(
+        "SELECT app_name AS name FROM apps
+         WHERE console_id = ? AND stage <> 'none' AND id < ? ORDER BY id ASC"
+    );
     $stmt->execute([(int) $app['console_id'], (int) $app['id']]);
 
     $earlier = 0;
@@ -577,7 +577,10 @@ function app_domain_url_for(array $app): ?string
  */
 function console_app_url_names(int $consoleId, ?string $baseUrl): array
 {
-    $stmt = db()->prepare('SELECT id, name, status, url_checked FROM production_apps WHERE console_id = ? ORDER BY id ASC');
+    $stmt = db()->prepare(
+        "SELECT id, app_name AS name, stage AS status, url_checked FROM apps
+         WHERE console_id = ? AND stage <> 'none' ORDER BY id ASC"
+    );
     $stmt->execute([$consoleId]);
     $rows = $stmt->fetchAll();
 
@@ -598,7 +601,7 @@ function console_app_url_names(int $consoleId, ?string $baseUrl): array
 
 function set_url_checked(int $appId, bool $checked): void
 {
-    $stmt = db()->prepare('UPDATE production_apps SET url_checked = ? WHERE id = ?');
+    $stmt = db()->prepare('UPDATE apps SET url_checked = ? WHERE id = ?');
     $stmt->execute([$checked ? 1 : 0, $appId]);
 
     if ($stmt->rowCount() < 1 && !get_production_app($appId)) {
@@ -611,9 +614,9 @@ function set_url_checked(int $appId, bool $checked): void
 function url_checked_counts(): array
 {
     $stmt = db()->query(
-        'SELECT url_checked, COUNT(*) AS total FROM production_apps
-         WHERE console_id IS NOT NULL
-         GROUP BY url_checked'
+        "SELECT url_checked, COUNT(*) AS total FROM apps
+         WHERE console_id IS NOT NULL AND stage <> 'none'
+         GROUP BY url_checked"
     );
 
     $counts = ['pending' => 0, 'checked' => 0];
@@ -698,10 +701,10 @@ function console_overview(): array
 {
     $stmt = db()->query(
         "SELECT c.id, c.name, c.privacy_policy_url, c.app_domain_url, c.created_at,
-            (SELECT COUNT(*) FROM production_apps pa
-             WHERE pa.console_id = c.id AND pa.status = 'live') AS live_total,
-            (SELECT COUNT(*) FROM production_apps pa
-             WHERE pa.console_id = c.id AND pa.status = 'live' AND pa.ready_for_work = 1) AS ready_total,
+            (SELECT COUNT(*) FROM apps pa
+             WHERE pa.console_id = c.id AND pa.stage = 'live') AS live_total,
+            (SELECT COUNT(*) FROM apps pa
+             WHERE pa.console_id = c.id AND pa.stage = 'live' AND pa.ready_for_work = 1) AS ready_total,
             (SELECT COUNT(*) FROM apps a WHERE a.console_id = c.id) AS loading_total,
             (SELECT COUNT(*) FROM apps a
              WHERE a.console_id = c.id AND a.loading_status = 'Active') AS loading_active
@@ -831,12 +834,12 @@ function restart_console_cycle(int $consoleId): void
 function todays_tasks(): array
 {
     $stmt = db()->prepare(
-        "SELECT dt.id, dt.is_done, dt.cycle_no, pa.name AS app_name, pa.package_name,
+        "SELECT dt.id, dt.is_done, dt.cycle_no, pa.app_name, pa.package_name,
                 c.id AS console_id, c.name AS console_name
          FROM daily_tasks dt
-         JOIN production_apps pa ON pa.id = dt.app_id
+         JOIN apps pa ON pa.id = dt.app_id
          JOIN consoles c ON c.id = dt.console_id
-         WHERE dt.task_date = ? AND pa.status = 'live' AND pa.ready_for_work = 1
+         WHERE dt.task_date = ? AND pa.stage = 'live' AND pa.ready_for_work = 1
          ORDER BY c.created_at ASC, c.id ASC, dt.id ASC"
     );
     $stmt->execute([date('Y-m-d')]);
@@ -855,9 +858,9 @@ function todays_tasks(): array
 function task_history(): array
 {
     $stmt = db()->query(
-        'SELECT dt.task_date, dt.is_done, dt.cycle_no, pa.name AS app_name, c.name AS console_name
+        'SELECT dt.task_date, dt.is_done, dt.cycle_no, pa.app_name, c.name AS console_name
          FROM daily_tasks dt
-         JOIN production_apps pa ON pa.id = dt.app_id
+         JOIN apps pa ON pa.id = dt.app_id
          JOIN consoles c ON c.id = dt.console_id
          ORDER BY dt.task_date DESC, c.created_at ASC, c.id ASC, dt.id ASC'
     );
