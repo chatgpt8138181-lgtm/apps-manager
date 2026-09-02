@@ -2037,19 +2037,28 @@ td.actions {
 
 .palette-title {
     font-weight: 700;
+    grid-column: 1;
+    grid-row: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .palette-group {
+    align-self: center;
     color: var(--muted);
     font-size: 11px;
     font-weight: 700;
-    grid-row: span 2;
+    grid-column: 2;
+    grid-row: 1 / span 2;
     text-transform: uppercase;
 }
 
 .palette-sub {
     color: var(--muted);
     font-size: 12px;
+    grid-column: 1;
+    grid-row: 2;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
