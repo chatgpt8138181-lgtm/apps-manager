@@ -43,6 +43,7 @@ function page_start(string $title): void
         'Publishing' => [
             'production.php' => 'Production',
             'ready-apps.php' => 'Ready Apps',
+            'publish-info.php' => 'Publish Info',
             'sent-production.php' => 'Production Apps',
             'live-apps.php' => 'Live Apps',
             'consoles.php' => 'Consoles',

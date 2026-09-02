@@ -1371,3 +1371,68 @@ select:focus {
         transition-duration: 0.01ms !important;
     }
 }
+
+/* Publish Info: copy-ready store listing values. */
+.publish-search {
+    margin-bottom: 16px;
+}
+
+.publish-console-urls {
+    background: #f8fafc;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin-bottom: 14px;
+    padding: 12px;
+}
+
+.publish-app {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    padding: 12px;
+}
+
+.publish-app:last-child {
+    margin-bottom: 0;
+}
+
+.publish-app-head {
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+}
+
+.publish-app-head h4 {
+    font-size: 15px;
+    margin: 0;
+}
+
+.publish-row {
+    align-items: baseline;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 6px 0;
+}
+
+.publish-label {
+    color: var(--muted);
+    flex: 0 0 120px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+@media (max-width: 700px) {
+    .publish-label {
+        flex-basis: 100%;
+    }
+
+    .publish-row .console-url {
+        width: 100%;
+    }
+}
