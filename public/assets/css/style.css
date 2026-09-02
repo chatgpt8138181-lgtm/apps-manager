@@ -2690,3 +2690,16 @@ tbody tr.is-picked {
         flex: 1 1 100%;
     }
 }
+
+/* A rotation's name inside a console group. */
+.rotation-title {
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    margin: 14px 0 8px;
+    text-transform: uppercase;
+}
+
+.app-group-body > .rotation-title:first-child {
+    margin-top: 0;
+}

@@ -160,70 +160,97 @@ page_start('Apps');
         <p class="empty block">
             <?= $filterState ? 'No app matches this filter.' : 'No apps yet.' ?>
         </p>
-    <?php else: ?>
-        <div class="bulk-form">
-            <form method="post" class="bulk-submit" hidden>
-                <?= csrf_field() ?>
-                <input type="hidden" name="action" value="bulk">
-                <input type="hidden" name="bulk_action" value="">
-                <input type="hidden" name="return_stage" value="<?= h($stage) ?>">
-                <input type="hidden" name="return_console" value="<?= (int) $listConsole ?>">
-                <input type="hidden" name="return_loading" value="<?= h($loading) ?>">
-                <input type="hidden" name="return_q" value="<?= h($listQuery) ?>">
-            </form>
-            <?php render_bulk_bar([
-                ['value' => 'ready', 'label' => 'Mark Ready'],
-                ['value' => 'send', 'label' => 'Send for Production', 'class' => 'primary'],
-                ['value' => 'live', 'label' => 'Mark Live'],
-                ['value' => 'tag_ready', 'label' => 'Tag Ready for Work'],
-                ['value' => 'untag_ready', 'label' => 'Remove Tag'],
-            ]); ?>
+    <?php endif; ?>
 
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                    <tr>
-                        <th class="col-select"><input type="checkbox" class="bulk-all" aria-label="Select all"></th>
-                        <th>App</th>
-                        <th>Console</th>
-                        <th>Stage</th>
-                        <th>Loading</th>
-                        <th>Actions</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($rows as $app): ?>
-                        <tr>
-                            <td class="col-select"><input type="checkbox" class="bulk-row" value="<?= (int) $app['id'] ?>"></td>
-                            <td>
-                                <span class="cell-title">
-                                    <?= h($app['app_name']) ?>
-                                    <span class="cell-sub">
-                                        #<?= (int) $app['id'] ?>
-                                        <?php if (!empty($app['package_name'])): ?>
-                                            &middot; <?= h($app['package_name']) ?>
+    <?php
+    /* The page's rows, grouped the way every other list groups them. */
+    $groups = [];
+    foreach ($rows as $row) {
+        $key = (int) ($row['console_id'] ?? 0);
+        $groups[$key]['name'] = $row['console_name'] ?? 'No console';
+        $groups[$key]['apps'][] = $row;
+    }
+    ?>
+
+    <?php foreach ($groups as $groupId => $group): ?>
+        <div class="app-group" data-group-key="console-<?= (int) $groupId ?>">
+            <button class="app-group-toggle" type="button" aria-expanded="false">
+                <span class="console-head">
+                    <span class="console-head-name"><?= h($group['name']) ?> (<?= count($group['apps']) ?>)</span>
+                    <?php
+                    $liveHere = count(array_filter($group['apps'], fn($a) => $a['stage'] === 'live'));
+                    $activeHere = count(array_filter($group['apps'], fn($a) => $a['loading_status'] === 'Active'));
+                    ?>
+                    <span class="console-head-meta">
+                        <?= $activeHere ?> active &middot; <?= $liveHere ?> live
+                    </span>
+                </span>
+                <span class="nav-chevron" aria-hidden="true"></span>
+            </button>
+            <div class="app-group-body">
+                <div class="bulk-form">
+                    <form method="post" class="bulk-submit" hidden>
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="bulk">
+                        <input type="hidden" name="bulk_action" value="">
+                        <input type="hidden" name="return_stage" value="<?= h($stage) ?>">
+                        <input type="hidden" name="return_console" value="<?= (int) $listConsole ?>">
+                        <input type="hidden" name="return_loading" value="<?= h($loading) ?>">
+                        <input type="hidden" name="return_q" value="<?= h($listQuery) ?>">
+                    </form>
+                    <?php render_bulk_bar([
+                        ['value' => 'ready', 'label' => 'Mark Ready'],
+                        ['value' => 'send', 'label' => 'Send for Production', 'class' => 'primary'],
+                        ['value' => 'live', 'label' => 'Mark Live'],
+                        ['value' => 'tag_ready', 'label' => 'Tag Ready for Work'],
+                        ['value' => 'untag_ready', 'label' => 'Remove Tag'],
+                    ]); ?>
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                            <tr>
+                                <th class="col-select"><input type="checkbox" class="bulk-all" aria-label="Select all"></th>
+                                <th>App</th>
+                                <th>Stage</th>
+                                <th>Loading</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php foreach ($group['apps'] as $app): ?>
+                                <tr>
+                                    <td class="col-select"><input type="checkbox" class="bulk-row" value="<?= (int) $app['id'] ?>"></td>
+                                    <td>
+                                        <span class="cell-title">
+                                            <?= h($app['app_name']) ?>
+                                            <span class="cell-sub">
+                                                #<?= (int) $app['id'] ?>
+                                                <?php if (!empty($app['package_name'])): ?>
+                                                    &middot; <?= h($app['package_name']) ?>
+                                                <?php endif; ?>
+                                            </span>
+                                        </span>
+                                    </td>
+                                    <td><?= render_production_badge((string) $app['stage']) ?></td>
+                                    <td>
+                                        <?= render_status_badge((string) $app['loading_status']) ?>
+                                        <?php if ((int) $app['ready_for_work'] === 1): ?>
+                                            <span class="badge badge-green">Ready for Work</span>
                                         <?php endif; ?>
-                                    </span>
-                                </span>
-                            </td>
-                            <td><?= h($app['console_name'] ?? '—') ?></td>
-                            <td><?= render_production_badge((string) $app['stage']) ?></td>
-                            <td>
-                                <?= render_status_badge((string) $app['loading_status']) ?>
-                                <?php if ((int) $app['ready_for_work'] === 1): ?>
-                                    <span class="badge badge-green">Ready for Work</span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="actions">
-                                <a class="btn small" href="app.php?id=<?= (int) $app['id'] ?>">Open</a>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                    </tbody>
-                </table>
+                                    </td>
+                                    <td class="actions">
+                                        <a class="btn small" href="app.php?id=<?= (int) $app['id'] ?>">Open</a>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
-    <?php endif; ?>
+    <?php endforeach; ?>
 
     <?php render_pager($page, 'apps.php', [
         'stage' => $stage,

@@ -56,13 +56,13 @@ $attention = [
     [
         'count' => (int) $counts['ready'],
         'label' => 'Ready apps waiting to be sent',
-        'href' => 'ready-apps.php',
+        'href' => 'apps.php?stage=ready',
         'tone' => 'blue',
     ],
     [
         'count' => $prepareIncomplete,
         'label' => 'Apps with an unfinished checklist',
-        'href' => 'production.php',
+        'href' => 'apps.php?stage=prepare',
         'tone' => 'amber',
     ],
     [
@@ -80,7 +80,7 @@ $attention = [
     [
         'count' => $untagged,
         'label' => 'Live apps not tagged Ready for Work',
-        'href' => 'live-apps.php',
+        'href' => 'apps.php?stage=live',
         'tone' => 'gray',
     ],
 ];
@@ -100,7 +100,7 @@ page_start('Home');
     <div class="panel home-card">
         <div class="panel-heading">
             <h2>Today's Loading</h2>
-            <a class="btn small" href="active-apps.php">Open</a>
+            <a class="btn small" href="rotations.php">Open</a>
         </div>
         <?php if ($loadingTotal === 0): ?>
             <p class="empty block">No loading apps for today. Mark apps Active to start the rotation.</p>
@@ -125,7 +125,7 @@ page_start('Home');
     <div class="panel home-card">
         <div class="panel-heading">
             <h2>Today's Tasks</h2>
-            <a class="btn small" href="tasks.php">Open</a>
+            <a class="btn small" href="rotations.php">Open</a>
         </div>
         <?php if ($taskTotal === 0): ?>
             <p class="empty block">No tasks for today. Tag Live apps as Ready for Work to start the task system.</p>

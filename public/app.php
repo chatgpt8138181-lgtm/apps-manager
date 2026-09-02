@@ -331,7 +331,7 @@ page_start($app['name']);
 <section class="form-panel">
     <div class="panel-heading">
         <h2>Loading</h2>
-        <a class="btn small" href="active-apps.php">Loading rotation</a>
+        <a class="btn small" href="rotations.php">Rotations</a>
     </div>
     <form method="post" class="inline-form loading-form">
         <?= csrf_field() ?>
