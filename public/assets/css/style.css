@@ -161,7 +161,7 @@ img {
     width: 7px;
 }
 
-.nav-group.open .nav-chevron {
+.nav-group.open > .nav-group-toggle .nav-chevron {
     transform: rotate(45deg);
 }
 
@@ -177,7 +177,7 @@ img {
     transition: grid-template-rows 0.25s ease;
 }
 
-.nav-group.open .nav-group-items {
+.nav-group.open > .nav-group-items {
     grid-template-rows: 1fr;
 }
 
@@ -189,7 +189,7 @@ img {
     transition: padding 0.25s ease;
 }
 
-.nav-group.open .nav-group-items > .collapse-inner {
+.nav-group.open > .nav-group-items > .collapse-inner {
     padding: 4px 0 4px 8px;
 }
 
@@ -1435,4 +1435,14 @@ select:focus {
     .publish-row .console-url {
         width: 100%;
     }
+}
+
+/* A group nested inside a group reads as a sub-menu, not a section header. */
+.nav-group-items .nav-group-toggle {
+    color: #cbd5e1;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0;
+    padding: 10px 12px;
+    text-transform: none;
 }

@@ -30,25 +30,70 @@ function asset_version(string $path): int
     return is_file($file) ? (int) filemtime($file) : time();
 }
 
+/* Nav entries are either "file.php" => "Label" or "Group" => [ ...entries ],
+   so a group can hold a group. */
+function nav_items_contain_page(array $items): bool
+{
+    foreach ($items as $key => $value) {
+        if (is_array($value)) {
+            if (nav_items_contain_page($value)) {
+                return true;
+            }
+            continue;
+        }
+
+        if ($key === current_page()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function render_nav_group(string $label, array $items): void
+{
+    $isOpen = nav_items_contain_page($items);
+    ?>
+    <div class="nav-group <?= $isOpen ? 'open' : '' ?>">
+        <button class="nav-group-toggle" type="button" aria-expanded="<?= $isOpen ? 'true' : 'false' ?>">
+            <span><?= h($label) ?></span>
+            <span class="nav-chevron" aria-hidden="true"></span>
+        </button>
+        <div class="nav-group-items">
+            <?php foreach ($items as $key => $value): ?>
+                <?php if (is_array($value)): ?>
+                    <?php render_nav_group((string) $key, $value); ?>
+                <?php else: ?>
+                    <a class="<?= current_page() === $key ? 'active' : '' ?>" href="<?= h((string) $key) ?>"><?= h((string) $value) ?></a>
+                <?php endif; ?>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php
+}
+
 function page_start(string $title): void
 {
     $navGroups = [
+        'Publishing' => [
+            /* The four stages an app moves through, in order. */
+            'App Workflow' => [
+                'production.php' => 'Production',
+                'ready-apps.php' => 'Ready Apps',
+                'sent-production.php' => 'Production Apps',
+                'live-apps.php' => 'Live Apps',
+            ],
+            'publish-info.php' => 'Publish Info',
+            'consoles.php' => 'Consoles',
+            'app-urls.php' => 'App URLs',
+            'tasks.php' => 'Daily Tasks',
+        ],
         'Loading' => [
             'dashboard.php' => 'Dashboard',
             'active-apps.php' => 'Active Apps',
             'add-app.php' => 'Add App',
             'search.php' => 'Search/Edit',
             'categories.php' => 'Console Names',
-        ],
-        'Publishing' => [
-            'production.php' => 'Production',
-            'ready-apps.php' => 'Ready Apps',
-            'publish-info.php' => 'Publish Info',
-            'sent-production.php' => 'Production Apps',
-            'live-apps.php' => 'Live Apps',
-            'consoles.php' => 'Consoles',
-            'app-urls.php' => 'App URLs',
-            'tasks.php' => 'Daily Tasks',
         ],
     ];
     $flash = flash();
@@ -74,18 +119,7 @@ function page_start(string $title): void
             <div class="menu-panel" id="mobile-menu">
                 <nav>
                     <?php foreach ($navGroups as $group => $items): ?>
-                        <?php $isActiveGroup = array_key_exists(current_page(), $items); ?>
-                        <div class="nav-group <?= $isActiveGroup ? 'open' : '' ?>">
-                            <button class="nav-group-toggle" type="button" aria-expanded="<?= $isActiveGroup ? 'true' : 'false' ?>">
-                                <span><?= h($group) ?></span>
-                                <span class="nav-chevron" aria-hidden="true"></span>
-                            </button>
-                            <div class="nav-group-items">
-                                <?php foreach ($items as $file => $label): ?>
-                                    <a class="<?= current_page() === $file ? 'active' : '' ?>" href="<?= h($file) ?>"><?= h($label) ?></a>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
+                        <?php render_nav_group($group, $items); ?>
                     <?php endforeach; ?>
                     <a class="nav-single <?= current_page() === 'admins.php' ? 'active' : '' ?>" href="admins.php">Admins</a>
                 </nav>
@@ -140,10 +174,11 @@ function page_end(): void
                 toggle.setAttribute('aria-expanded', String(isOpen));
 
                 if (isOpen) {
-                    document.querySelectorAll('.nav-group.open').forEach((other) => {
+                    /* Close only the siblings at this level, never the parent. */
+                    group.parentElement?.querySelectorAll(':scope > .nav-group.open').forEach((other) => {
                         if (other !== group) {
                             other.classList.remove('open');
-                            other.querySelector('.nav-group-toggle')?.setAttribute('aria-expanded', 'false');
+                            other.querySelector(':scope > .nav-group-toggle')?.setAttribute('aria-expanded', 'false');
                         }
                     });
                 }
