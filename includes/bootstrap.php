@@ -53,6 +53,7 @@ function nav_icon(string $key): string
         'activity.php' => '<path d="M3 12h4l3 8 4-16 3 8h4"/>',
         'admins.php' => '<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 11a3 3 0 1 0 0-6"/><path d="M18 20a6 6 0 0 0-3-5.2"/>',
         'home.php' => '<path d="m3 11 9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+        'apps.php' => '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
         'App Workflow' => '<path d="M4 7h9"/><path d="m10 4 3 3-3 3"/><path d="M20 17h-9"/><path d="m14 14-3 3 3 3"/>',
     ];
 
@@ -87,7 +88,7 @@ function nav_counts(): array
    menu entry of its own. */
 function nav_group_page(): string
 {
-    return current_page() === 'app.php' ? 'ready-apps.php' : current_page();
+    return current_page() === 'app.php' ? 'apps.php' : current_page();
 }
 
 function nav_items_contain_page(array $items): bool
@@ -141,8 +142,9 @@ function render_nav_group(string $label, array $items, array $counts = [], bool 
 function page_start(string $title): void
 {
     $navGroups = [
-        'Publishing' => [
-            /* The four stages an app moves through, in order. */
+        'Apps' => [
+            'apps.php' => 'All Apps',
+            /* The publishing stages, in order. */
             'App Workflow' => [
                 'production.php' => 'Prepare Production',
                 'ready-apps.php' => 'Ready Apps',
@@ -150,16 +152,17 @@ function page_start(string $title): void
                 'live-apps.php' => 'Live Apps',
             ],
             'publish-info.php' => 'Publish Info',
-            'consoles.php' => 'Play Consoles',
             'app-urls.php' => 'App URLs',
-            'tasks.php' => 'Daily Tasks',
-            'activity.php' => 'Activity',
         ],
-        'Loading' => [
-            'dashboard.php' => 'Dashboard',
-            'active-apps.php' => 'Active Apps',
-            'add-app.php' => 'Add App',
+        'Rotations' => [
+            'active-apps.php' => 'Loading Apps',
+            'tasks.php' => 'Daily Tasks',
+            'dashboard.php' => 'Loading Board',
             'search.php' => 'Search/Edit',
+        ],
+        'Setup' => [
+            'consoles.php' => 'Play Consoles',
+            'activity.php' => 'Activity',
         ],
     ];
     $navCounts = nav_counts();

@@ -333,7 +333,7 @@ page_start($app['name']);
         <h2>Loading</h2>
         <a class="btn small" href="active-apps.php">Loading rotation</a>
     </div>
-    <form method="post" class="inline-form">
+    <form method="post" class="inline-form loading-form">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="update_loading">
         <input type="hidden" name="app_id" value="<?= $appId ?>">

@@ -2669,3 +2669,24 @@ tbody tr.is-picked {
 .shortcuts-list span {
     color: var(--muted);
 }
+
+/* The loading controls sit in a row, not stretched across the panel. */
+.loading-form {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.loading-form label {
+    display: grid;
+    gap: 4px;
+    min-width: 180px;
+}
+
+@media (max-width: 640px) {
+    .loading-form label,
+    .loading-form .btn {
+        flex: 1 1 100%;
+    }
+}

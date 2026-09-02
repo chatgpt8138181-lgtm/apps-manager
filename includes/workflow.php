@@ -35,6 +35,7 @@ function production_statuses(): array
 function render_production_badge(string $status): string
 {
     $map = [
+        'none' => ['badge badge-gray', 'Loading only'],
         'prepare' => ['badge badge-gray', 'Prepare'],
         'ready' => ['badge badge-amber', 'Ready'],
         'sent' => ['badge badge-blue', 'Sent'],
@@ -200,6 +201,69 @@ function production_apps_by_status(string $status): array
     $stmt->execute([$status]);
 
     return $stmt->fetchAll();
+}
+
+/* The one list behind the Apps page. */
+function all_apps_overview(string $stage, int $consoleId, string $loading, string $search): array
+{
+    $where = [];
+    $params = [];
+
+    if ($stage !== '') {
+        $where[] = 'a.stage = ?';
+        $params[] = $stage;
+    }
+    if ($consoleId > 0) {
+        $where[] = 'a.console_id = ?';
+        $params[] = $consoleId;
+    }
+    if ($loading !== '') {
+        $where[] = 'a.loading_status = ?';
+        $params[] = $loading;
+    }
+    if (trim($search) !== '') {
+        $where[] = '(a.app_name LIKE ? OR a.package_name LIKE ?)';
+        $like = '%' . trim($search) . '%';
+        $params[] = $like;
+        $params[] = $like;
+    }
+
+    $sql = 'SELECT a.*, c.name AS console_name FROM apps a
+            LEFT JOIN consoles c ON c.id = a.console_id';
+    if ($where) {
+        $sql .= ' WHERE ' . implode(' AND ', $where);
+    }
+    $sql .= ' ORDER BY c.created_at ASC, c.id ASC, a.created_at ASC, a.id ASC';
+
+    $stmt = db()->prepare($sql);
+    $stmt->execute($params);
+
+    return $stmt->fetchAll();
+}
+
+/* Add an app to either side from one form. */
+function add_app_record(string $name, int $consoleId, bool $publishing): int
+{
+    $name = trim($name);
+    if ($name === '' || text_length($name) > 200) {
+        throw new RuntimeException('App name must be 1 to 200 characters.');
+    }
+
+    $stmt = db()->prepare(
+        "INSERT INTO apps (app_name, console_id, stage, loading_status, ready_loading_status)
+         VALUES (?, ?, ?, ?, 'Not Ready')"
+    );
+    $stmt->execute([
+        $name,
+        $consoleId > 0 ? $consoleId : null,
+        $publishing ? 'prepare' : 'none',
+        $publishing ? 'Inactive' : 'Active',
+    ]);
+
+    $newId = (int) db()->lastInsertId();
+    log_activity('app', $newId, 'created', $name, $publishing ? 'Publishing' : 'Loading');
+
+    return $newId;
 }
 
 function production_status_counts(): array
