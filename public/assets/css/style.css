@@ -2364,3 +2364,32 @@ tbody tr.is-picked {
         content: "Select";
     }
 }
+
+/* The search + console bar above a list. */
+.list-filters {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.list-filters label {
+    display: grid;
+    gap: 4px;
+    min-width: 180px;
+}
+
+.list-filters label:first-of-type {
+    flex: 1 1 240px;
+}
+
+@media (max-width: 640px) {
+    .list-filters label {
+        flex: 1 1 100%;
+    }
+
+    .list-filters .btn {
+        flex: 1 1 auto;
+    }
+}

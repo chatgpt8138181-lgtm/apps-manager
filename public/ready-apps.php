@@ -122,7 +122,9 @@ function render_ready_apps_table(array $apps): void
 }
 
 $consoles = all_consoles();
-$apps = production_apps_by_status('ready');
+$listQuery = trim((string) ($_GET['q'] ?? ''));
+$listConsole = (int) ($_GET['console'] ?? 0);
+$apps = filter_production_apps(production_apps_by_status('ready'), $listQuery, $listConsole);
 $unassigned = array_values(array_filter($apps, fn($app) => empty($app['console_id'])));
 
 $selectedId = (int) ($_GET['app_id'] ?? 0);
@@ -141,6 +143,7 @@ page_start('Ready Apps');
     <?php render_checklist_summary_panel($selected); ?>
 <?php else: ?>
 <section class="panel">
+    <?php render_list_filters('ready-apps.php', $listQuery, $listConsole, $consoles); ?>
     <div class="panel-heading">
         <h2>Ready Apps (<?= count($apps) ?>)</h2>
         <span class="hint">Checklist-complete apps waiting to be sent. Send each app when its console is ready.</span>

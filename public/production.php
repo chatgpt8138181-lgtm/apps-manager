@@ -57,7 +57,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $items = checklist_items();
 $totalItems = count($items);
 $consoles = all_consoles();
-$prepareApps = production_apps_by_status('prepare');
+$listQuery = trim((string) ($_GET['q'] ?? ''));
+$listConsole = (int) ($_GET['console'] ?? 0);
+$prepareApps = filter_production_apps(production_apps_by_status('prepare'), $listQuery, $listConsole);
 $selectedId = (int) ($_GET['app_id'] ?? 0);
 $selected = null;
 
@@ -310,6 +312,7 @@ function render_prepare_apps_table(array $apps, int $totalItems): void
 $unassignedPrepare = array_values(array_filter($prepareApps, fn($app) => empty($app['console_id'])));
 ?>
 <section class="panel">
+    <?php render_list_filters('production.php', $listQuery, $listConsole, $consoles); ?>
     <div class="panel-heading">
         <h2>Prepare Production (<?= count($prepareApps) ?>)</h2>
         <span class="hint">Send for Production unlocks at <?= $totalItems ?>/<?= $totalItems ?>.</span>

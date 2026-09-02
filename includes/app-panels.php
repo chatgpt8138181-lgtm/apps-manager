@@ -7,6 +7,60 @@ declare(strict_types=1);
  */
 
 /* Where this app sits in the four-stage flow. */
+/* Narrow a list by free text (name or package) and by console. */
+function filter_production_apps(array $apps, string $query, int $consoleId): array
+{
+    $needle = mb_strtolower(trim($query));
+
+    return array_values(array_filter($apps, function (array $app) use ($needle, $consoleId) {
+        if ($consoleId > 0 && (int) ($app['console_id'] ?? 0) !== $consoleId) {
+            return false;
+        }
+        if ($needle === '') {
+            return true;
+        }
+
+        $haystack = mb_strtolower(($app['name'] ?? '') . ' ' . ($app['package_name'] ?? ''));
+
+        return mb_strpos($haystack, $needle) !== false;
+    }));
+}
+
+/* The search + console bar every publishing list carries. */
+function render_list_filters(
+    string $page,
+    string $query,
+    int $consoleId,
+    array $consoles,
+    array $hidden = []
+): void {
+    $active = $query !== '' || $consoleId > 0;
+    ?>
+    <form method="get" action="<?= h($page) ?>" class="list-filters">
+        <?php foreach ($hidden as $name => $value): ?>
+            <input type="hidden" name="<?= h((string) $name) ?>" value="<?= h((string) $value) ?>">
+        <?php endforeach; ?>
+        <label>Search
+            <input type="search" name="q" value="<?= h($query) ?>" placeholder="App name or package">
+        </label>
+        <label>Console
+            <select name="console">
+                <option value="0">All consoles</option>
+                <?php foreach ($consoles as $console): ?>
+                    <option value="<?= (int) $console['id'] ?>" <?= $consoleId === (int) $console['id'] ? 'selected' : '' ?>>
+                        <?= h($console['name']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <button class="btn primary" type="submit">Filter</button>
+        <?php if ($active): ?>
+            <a class="btn" href="<?= h($page . ($hidden ? '?' . http_build_query($hidden) : '')) ?>">Clear</a>
+        <?php endif; ?>
+    </form>
+    <?php
+}
+
 function render_workflow_stepper(array $app): void
 {
     $steps = [

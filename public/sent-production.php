@@ -187,7 +187,9 @@ function render_sent_apps_table(array $apps, string $status): void
 
 $counts = production_status_counts();
 $consoles = all_consoles();
-$apps = production_apps_by_status($status);
+$listQuery = trim((string) ($_GET['q'] ?? ''));
+$listConsole = (int) ($_GET['console'] ?? 0);
+$apps = filter_production_apps(production_apps_by_status($status), $listQuery, $listConsole);
 $unassigned = array_values(array_filter($apps, fn($app) => empty($app['console_id'])));
 $tabs = [
     'sent' => 'Sent for Production',
@@ -224,6 +226,7 @@ page_start('Production Apps');
 </div>
 
 <section class="panel">
+    <?php render_list_filters('sent-production.php', $listQuery, $listConsole, $consoles, ['status' => $status]); ?>
     <div class="panel-heading">
         <h2><?= h($tabs[$status]) ?> (<?= count($apps) ?>)</h2>
         <?php if ($status === 'sent'): ?>
