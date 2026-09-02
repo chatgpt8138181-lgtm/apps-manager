@@ -69,7 +69,7 @@ img {
 
 .app-shell {
     display: grid;
-    grid-template-columns: 264px 1fr;
+    grid-template-columns: 286px 1fr;
     min-height: 100vh;
     width: 100%;
 }
@@ -2168,4 +2168,15 @@ td.actions {
 .sidebar nav a,
 .nav-group-toggle {
     min-width: 0;
+}
+
+/* Sub-menu rows carry an icon and a count, so give the label a little
+   more room by tightening its own spacing. */
+.nav-group-items .nav-group-items a {
+    font-size: 13.5px;
+    padding: 11px 12px;
+}
+
+.nav-group-items .nav-group-items .nav-label {
+    gap: 8px;
 }
