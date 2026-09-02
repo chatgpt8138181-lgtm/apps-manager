@@ -2160,3 +2160,12 @@ td.actions {
 .tabs .tab-link:hover {
     color: var(--primary);
 }
+
+/* Grid items refuse to shrink below their text by default, which pushed
+   long menu labels past the sidebar edge. */
+.nav-group-items > .collapse-inner,
+.nav-group-items > .collapse-inner > *,
+.sidebar nav a,
+.nav-group-toggle {
+    min-width: 0;
+}
