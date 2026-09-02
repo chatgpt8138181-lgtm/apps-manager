@@ -262,7 +262,7 @@ page_start($app['name']);
         <div class="action-menu-wrap">
             <button class="btn small action-menu-btn" type="button" aria-label="More actions">&#8942;</button>
             <div class="action-menu">
-                <?php if ($status !== 'prepare'): ?>
+                <?php if (!in_array($status, ['prepare', 'ready'], true)): ?>
                     <form method="post">
                         <?= csrf_field() ?>
                         <input type="hidden" name="action" value="to_prepare">
