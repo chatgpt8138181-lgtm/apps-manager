@@ -59,7 +59,9 @@ $totalItems = count($items);
 $consoles = all_consoles();
 $listQuery = trim((string) ($_GET['q'] ?? ''));
 $listConsole = (int) ($_GET['console'] ?? 0);
-$prepareApps = filter_production_apps(production_apps_by_status('prepare'), $listQuery, $listConsole);
+$prepareAll = filter_production_apps(production_apps_by_status('prepare'), $listQuery, $listConsole);
+$preparePage = paginate($prepareAll);
+$prepareApps = $preparePage['rows'];
 $selectedId = (int) ($_GET['app_id'] ?? 0);
 $selected = null;
 
@@ -314,7 +316,7 @@ $unassignedPrepare = array_values(array_filter($prepareApps, fn($app) => empty($
 <section class="panel">
     <?php render_list_filters('production.php', $listQuery, $listConsole, $consoles); ?>
     <div class="panel-heading">
-        <h2>Prepare Production (<?= count($prepareApps) ?>)</h2>
+        <h2>Prepare Production (<?= (int) $preparePage['total'] ?>)</h2>
         <span class="hint">Send for Production unlocks at <?= $totalItems ?>/<?= $totalItems ?>.</span>
     </div>
 
@@ -359,6 +361,7 @@ $unassignedPrepare = array_values(array_filter($prepareApps, fn($app) => empty($
             </div>
         </div>
     <?php endif; ?>
+    <?php render_pager($preparePage, 'production.php', ['q' => $listQuery, 'console' => $listConsole]); ?>
 </section>
 <?php endif; ?>
 

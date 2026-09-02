@@ -7,6 +7,55 @@ declare(strict_types=1);
  */
 
 /* Where this app sits in the four-stage flow. */
+/* Long lists are shown a page at a time, so the browser never has to
+   draw hundreds of rows at once. */
+function paginate(array $rows, int $perPage = 50): array
+{
+    $total = count($rows);
+    $perPage = max(10, $perPage);
+    $pages = max(1, (int) ceil($total / $perPage));
+    $page = max(1, min($pages, (int) ($_GET['page'] ?? 1)));
+
+    return [
+        'rows' => array_slice($rows, ($page - 1) * $perPage, $perPage),
+        'page' => $page,
+        'pages' => $pages,
+        'total' => $total,
+        'per_page' => $perPage,
+        'from' => $total === 0 ? 0 : ($page - 1) * $perPage + 1,
+        'to' => min($total, $page * $perPage),
+    ];
+}
+
+function render_pager(array $info, string $page, array $params = []): void
+{
+    if ((int) $info['pages'] < 2) {
+        return;
+    }
+
+    $link = function (int $target) use ($page, $params): string {
+        $params['page'] = $target;
+
+        return $page . '?' . http_build_query($params);
+    };
+    ?>
+    <nav class="pager" aria-label="Pages">
+        <span class="pager-count">
+            <?= (int) $info['from'] ?>&ndash;<?= (int) $info['to'] ?> of <?= (int) $info['total'] ?>
+        </span>
+        <span class="pager-links">
+            <?php if ((int) $info['page'] > 1): ?>
+                <a class="btn small" href="<?= h($link((int) $info['page'] - 1)) ?>">&laquo; Previous</a>
+            <?php endif; ?>
+            <span class="pager-position">Page <?= (int) $info['page'] ?> of <?= (int) $info['pages'] ?></span>
+            <?php if ((int) $info['page'] < (int) $info['pages']): ?>
+                <a class="btn small" href="<?= h($link((int) $info['page'] + 1)) ?>">Next &raquo;</a>
+            <?php endif; ?>
+        </span>
+    </nav>
+    <?php
+}
+
 /* Narrow a list by free text (name or package) and by console. */
 function filter_production_apps(array $apps, string $query, int $consoleId): array
 {

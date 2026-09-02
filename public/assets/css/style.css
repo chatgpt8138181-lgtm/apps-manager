@@ -2439,3 +2439,28 @@ tbody tr.is-picked {
     flex: 0 0 auto;
     font-size: 12px;
 }
+
+/* --- Pager --- */
+.pager {
+    align-items: center;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: space-between;
+    margin-top: 14px;
+    padding-top: 12px;
+}
+
+.pager-count,
+.pager-position {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.pager-links {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}

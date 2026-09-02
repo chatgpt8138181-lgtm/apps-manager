@@ -30,6 +30,8 @@ if ($search !== '') {
     }));
 }
 
+$appsPage = paginate($apps);
+$apps = $appsPage['rows'];
 $consoles = all_consoles();
 
 function publish_copy_row(string $label, ?string $value, string $emptyHint = 'Not set'): void
@@ -83,7 +85,7 @@ page_start('Publish Info');
 
 <section class="panel">
     <div class="panel-heading">
-        <h2><?= h($tabs[$view]) ?> (<?= count($apps) ?>)</h2>
+        <h2><?= h($tabs[$view]) ?> (<?= (int) $appsPage['total'] ?>)</h2>
         <span class="hint">Everything a store listing needs, ready to copy. Nothing here changes an app.</span>
     </div>
 
@@ -149,6 +151,7 @@ page_start('Publish Info');
             </div>
         </div>
     <?php endif; ?>
+    <?php render_pager($appsPage, 'publish-info.php', ['status' => $view, 'q' => $search]); ?>
 </section>
 
 <script>

@@ -66,6 +66,8 @@ $categories = all_categories();
 $allActive = $view === 'all'
     ? array_values(array_filter(sorted_apps(), fn($app) => $app['loading_status'] === 'Active'))
     : [];
+$allActivePage = paginate($allActive);
+$allActiveRows = $allActivePage['rows'];
 $historyGroups = $view === 'history' ? loading_history() : [];
 
 page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading History' : 'Active Apps'));
@@ -203,7 +205,7 @@ page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading
 <?php elseif ($view === 'all'): ?>
     <section class="panel">
         <div class="panel-heading">
-            <h2>All Active Apps (<?= count($allActive) ?>)</h2>
+            <h2>All Active Apps (<?= (int) $allActivePage['total'] ?>)</h2>
             <span class="hint">Every Active app, console wise.</span>
         </div>
 
@@ -214,7 +216,7 @@ page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading
         <?php foreach ($categories as $category): ?>
             <?php
             $categoryApps = array_values(array_filter(
-                $allActive,
+                $allActiveRows,
                 fn($app) => (int) $app['category_id'] === (int) $category['id']
             ));
             if (!$categoryApps) {
@@ -254,6 +256,7 @@ page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading
                 </div>
             </div>
         <?php endforeach; ?>
+        <?php render_pager($allActivePage, 'active-apps.php', ['view' => 'all']); ?>
     </section>
 <?php else: ?>
     <section class="panel">

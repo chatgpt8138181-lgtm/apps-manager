@@ -189,7 +189,8 @@ $counts = production_status_counts();
 $consoles = all_consoles();
 $listQuery = trim((string) ($_GET['q'] ?? ''));
 $listConsole = (int) ($_GET['console'] ?? 0);
-$apps = filter_production_apps(production_apps_by_status($status), $listQuery, $listConsole);
+$sentPage = paginate(filter_production_apps(production_apps_by_status($status), $listQuery, $listConsole));
+$apps = $sentPage['rows'];
 $unassigned = array_values(array_filter($apps, fn($app) => empty($app['console_id'])));
 $tabs = [
     'sent' => 'Sent for Production',
@@ -228,7 +229,7 @@ page_start('Production Apps');
 <section class="panel">
     <?php render_list_filters('sent-production.php', $listQuery, $listConsole, $consoles, ['status' => $status]); ?>
     <div class="panel-heading">
-        <h2><?= h($tabs[$status]) ?> (<?= count($apps) ?>)</h2>
+        <h2><?= h($tabs[$status]) ?> (<?= (int) $sentPage['total'] ?>)</h2>
         <?php if ($status === 'sent'): ?>
             <span class="hint">Set the Play Console review result. Marking an app Live moves it to Live Apps.</span>
         <?php endif; ?>
@@ -275,6 +276,8 @@ page_start('Production Apps');
             </div>
         </div>
     <?php endif; ?>
+
+    <?php render_pager($sentPage, 'sent-production.php', ['status' => $status, 'q' => $listQuery, 'console' => $listConsole]); ?>
 </section>
 <?php endif; ?>
 

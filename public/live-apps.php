@@ -134,7 +134,8 @@ $listQuery = trim((string) ($_GET['q'] ?? ''));
 $listConsole = (int) ($_GET['console'] ?? 0);
 /* Stats describe every live app; the list below follows the filters. */
 $allLive = production_apps_by_status('live');
-$apps = filter_production_apps($allLive, $listQuery, $listConsole);
+$livePage = paginate(filter_production_apps($allLive, $listQuery, $listConsole));
+$apps = $livePage['rows'];
 $readyCount = count(array_filter($allLive, fn($app) => (int) $app['ready_for_work'] === 1));
 $unassigned = array_values(array_filter($apps, fn($app) => empty($app['console_id'])));
 
@@ -169,7 +170,7 @@ page_start('Live Apps');
 <section class="panel">
     <?php render_list_filters('live-apps.php', $listQuery, $listConsole, $consoles); ?>
     <div class="panel-heading">
-        <h2>Live Apps (<?= count($apps) ?>)</h2>
+        <h2>Live Apps (<?= (int) $livePage['total'] ?>)</h2>
         <span class="hint">Console is set in Production (Manage). Tag Ready for Work to enter the daily task system.</span>
     </div>
 
@@ -214,6 +215,8 @@ page_start('Live Apps');
             </div>
         </div>
     <?php endif; ?>
+
+    <?php render_pager($livePage, 'live-apps.php', ['q' => $listQuery, 'console' => $listConsole]); ?>
 </section>
 <?php endif; ?>
 <?php page_end(); ?>
