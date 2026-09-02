@@ -2188,3 +2188,96 @@ td.actions {
     margin-top: 14px;
     padding-top: 14px;
 }
+
+/* --- Home: what is due today and what is waiting --- */
+
+.home-grid {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    margin-bottom: 14px;
+}
+
+.home-card {
+    margin-bottom: 0;
+}
+
+.home-list {
+    display: grid;
+    gap: 2px;
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+}
+
+.home-list li {
+    align-items: center;
+    border-top: 1px solid var(--line);
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    padding: 9px 2px;
+}
+
+.home-list-name {
+    font-weight: 700;
+}
+
+.home-list-meta {
+    color: var(--muted);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.attention-list {
+    display: grid;
+    gap: 8px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.attention-list a {
+    align-items: center;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    display: flex;
+    gap: 12px;
+    padding: 12px 14px;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.attention-list a:hover {
+    background: var(--surface);
+    border-color: var(--line-strong);
+}
+
+.attention-count {
+    flex: 0 0 auto;
+    font-size: 13px;
+    min-width: 36px;
+    text-align: center;
+}
+
+.attention-label {
+    flex: 1;
+    font-weight: 700;
+}
+
+.attention-list .nav-chevron {
+    color: var(--muted);
+    transform: rotate(-45deg);
+}
+
+.attention-list li.is-clear a {
+    opacity: 0.65;
+}
+
+.attention-list li.is-clear .attention-label {
+    font-weight: 400;
+}
+
+/* Pipeline tiles are links, so they should feel like it. */
+a.stat:hover {
+    border-color: var(--line-strong);
+}

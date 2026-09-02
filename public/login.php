@@ -3,7 +3,7 @@ $root = is_file(__DIR__ . '/../includes/bootstrap.php') ? dirname(__DIR__) : __D
 require_once $root . '/includes/bootstrap.php';
 
 if (is_logged_in()) {
-    header('Location: dashboard.php');
+    header('Location: home.php');
     exit;
 }
 
@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = (string) ($_POST['password'] ?? '');
 
     if (login_admin($username, $password)) {
-        header('Location: dashboard.php');
+        header('Location: home.php');
         exit;
     }
 

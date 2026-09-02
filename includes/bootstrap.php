@@ -49,6 +49,7 @@ function nav_icon(string $key): string
         'search.php' => '<circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/>',
         'categories.php' => '<path d="M3 12V5a2 2 0 0 1 2-2h7l9 9-9 9z"/><path d="M7.5 7.5h.01"/>',
         'admins.php' => '<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 11a3 3 0 1 0 0-6"/><path d="M18 20a6 6 0 0 0-3-5.2"/>',
+        'home.php' => '<path d="m3 11 9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
         'App Workflow' => '<path d="M4 7h9"/><path d="m10 4 3 3-3 3"/><path d="M20 17h-9"/><path d="m14 14-3 3 3 3"/>',
     ];
 
@@ -173,7 +174,7 @@ function page_start(string $title): void
     <div class="app-shell">
         <aside class="sidebar">
             <div class="sidebar-head">
-                <a class="brand" href="dashboard.php">App Manager</a>
+                <a class="brand" href="home.php">App Manager</a>
                 <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu">
                     <span class="menu-icon" aria-hidden="true"></span>
                     <span>Menu</span>
@@ -181,6 +182,9 @@ function page_start(string $title): void
             </div>
             <div class="menu-panel" id="mobile-menu">
                 <nav>
+                    <a class="nav-single <?= current_page() === 'home.php' ? 'active' : '' ?>" href="home.php">
+                        <span class="nav-label"><?= nav_icon('home.php') ?>Home</span>
+                    </a>
                     <?php foreach ($navGroups as $group => $items): ?>
                         <?php render_nav_group($group, $items, $navCounts); ?>
                     <?php endforeach; ?>
