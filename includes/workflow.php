@@ -123,7 +123,10 @@ function add_production_app(array $data): int
         $consoleId,
     ]);
 
-    return (int) db()->lastInsertId();
+    $newId = (int) db()->lastInsertId();
+    log_activity('app', $newId, 'created', $name);
+
+    return $newId;
 }
 
 function update_production_app_details(int $appId, array $data): void
@@ -151,12 +154,20 @@ function update_production_app_details(int $appId, array $data): void
         $consoleId,
         $appId,
     ]);
+
+    log_activity('app', $appId, 'updated', $name);
 }
 
 function delete_production_app(int $appId): void
 {
+    $app = get_production_app($appId);
+
     $stmt = db()->prepare('DELETE FROM production_apps WHERE id = ?');
     $stmt->execute([$appId]);
+
+    if ($app) {
+        log_activity('app', $appId, 'deleted', (string) $app['name'], 'Was ' . (string) $app['status']);
+    }
 }
 
 function get_production_app(int $appId): ?array
@@ -264,6 +275,10 @@ function save_checklist(int $appId, array $doneKeys, array $fieldValues = []): v
         $update = db()->prepare('UPDATE production_apps SET ' . implode(', ', $updates) . ' WHERE id = ?');
         $update->execute($params);
     }
+
+    $app = get_production_app($appId);
+    log_activity('app', $appId, 'checklist', $app ? (string) $app['name'] : null,
+        count($doneKeys) . ' of ' . count(checklist_items()) . ' complete');
 }
 
 function checklist_is_complete(int $appId): bool
@@ -291,6 +306,8 @@ function send_app_to_production(int $appId): void
 
     $stmt = db()->prepare("UPDATE production_apps SET status = 'sent', sent_at = NOW() WHERE id = ?");
     $stmt->execute([$appId]);
+
+    log_activity('app', $appId, 'stage_sent', (string) $app['name']);
 }
 
 function mark_app_ready(int $appId): void
@@ -310,6 +327,8 @@ function mark_app_ready(int $appId): void
 
     $stmt = db()->prepare("UPDATE production_apps SET status = 'ready' WHERE id = ?");
     $stmt->execute([$appId]);
+
+    log_activity('app', $appId, 'stage_ready', (string) $app['name']);
 }
 
 /*
@@ -329,6 +348,8 @@ function revert_app_to_prepare(int $appId): void
 
     $stmt = db()->prepare("UPDATE production_apps SET status = 'prepare', sent_at = NULL WHERE id = ?");
     $stmt->execute([$appId]);
+
+    log_activity('app', $appId, 'stage_prepare', (string) $app['name'], 'Was ' . (string) $app['status']);
 }
 
 function revert_app_to_ready(int $appId): void
@@ -344,6 +365,8 @@ function revert_app_to_ready(int $appId): void
 
     $stmt = db()->prepare("UPDATE production_apps SET status = 'ready', sent_at = NULL WHERE id = ?");
     $stmt->execute([$appId]);
+
+    log_activity('app', $appId, 'stage_back_ready', (string) $app['name']);
 }
 
 function revert_app_to_sent(int $appId): void
@@ -359,6 +382,8 @@ function revert_app_to_sent(int $appId): void
 
     $stmt = db()->prepare("UPDATE production_apps SET status = 'sent', live_at = NULL, ready_for_work = 0 WHERE id = ?");
     $stmt->execute([$appId]);
+
+    log_activity('app', $appId, 'stage_back_sent', (string) $app['name'], 'Was ' . (string) $app['status']);
 }
 
 function set_production_result(int $appId, string $result): void
@@ -383,6 +408,8 @@ function set_production_result(int $appId, string $result): void
     }
 
     $result === 'live' ? $stmt->execute([$appId]) : $stmt->execute([$result, $appId]);
+
+    log_activity('app', $appId, 'stage_' . $result, (string) $app['name']);
 }
 
 function assign_console(int $appId, int $consoleId): void
@@ -426,6 +453,8 @@ function set_ready_for_work(int $appId, bool $ready): void
 
     $stmt = db()->prepare('UPDATE production_apps SET ready_for_work = ? WHERE id = ?');
     $stmt->execute([$ready ? 1 : 0, $appId]);
+
+    log_activity('app', $appId, $ready ? 'tagged_ready' : 'untagged_ready', (string) $app['name']);
 }
 
 /* Apply one stage move to many apps at once. Returns how many moved and
@@ -557,6 +586,8 @@ function set_url_checked(int $appId, bool $checked): void
     if ($stmt->rowCount() < 1 && !get_production_app($appId)) {
         throw new RuntimeException('App was not found.');
     }
+
+    log_activity('app', $appId, $checked ? 'url_checked' : 'url_pending');
 }
 
 function url_checked_counts(): array
@@ -608,6 +639,8 @@ function add_console(string $name, array $data = []): void
 
     $stmt = db()->prepare('INSERT INTO consoles (name, privacy_policy_url, app_domain_url) VALUES (?, ?, ?)');
     $stmt->execute([$name, $urls['privacy_policy_url'], $urls['app_domain_url']]);
+
+    log_activity('console', (int) db()->lastInsertId(), 'created', $name);
 }
 
 function update_console(int $consoleId, string $name, array $data = []): void
@@ -633,6 +666,8 @@ function update_console(int $consoleId, string $name, array $data = []): void
 
     $stmt = db()->prepare('UPDATE consoles SET name = ?, privacy_policy_url = ?, app_domain_url = ? WHERE id = ?');
     $stmt->execute([$name, $urls['privacy_policy_url'], $urls['app_domain_url'], $consoleId]);
+
+    log_activity('console', $consoleId, 'updated', $name);
 }
 
 function delete_console(int $consoleId): void

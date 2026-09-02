@@ -165,6 +165,7 @@ page_start($app['name']);
         &middot; Created: <?= h($app['created_at']) ?>
         <?php if (!empty($app['sent_at'])): ?>&middot; Sent: <?= h($app['sent_at']) ?><?php endif; ?>
         <?php if (!empty($app['live_at'])): ?>&middot; Live: <?= h($app['live_at']) ?><?php endif; ?>
+        <?php if (!empty($app['updated_at'])): ?>&middot; Updated: <?= h($app['updated_at']) ?><?php endif; ?>
     </p>
 
     <div class="inline-actions app-stage-actions">
@@ -366,6 +367,30 @@ page_start($app['name']);
             </div>
         <?php endforeach; ?>
     </div>
+</section>
+
+<section class="panel">
+    <div class="panel-heading">
+        <h2>Activity</h2>
+        <a class="btn small" href="activity.php">All activity</a>
+    </div>
+    <?php $history = activity_for('app', $appId, 20); ?>
+    <?php if (!$history): ?>
+        <p class="empty block">Nothing recorded for this app yet.</p>
+    <?php else: ?>
+        <ul class="activity-list">
+            <?php foreach ($history as $row): ?>
+                <li>
+                    <span class="activity-time"><?= h((string) $row['created_at']) ?></span>
+                    <span class="activity-what">
+                        <strong><?= h(activity_label((string) $row['action'])) ?></strong>
+                        <?php if (!empty($row['detail'])): ?><small><?= h($row['detail']) ?></small><?php endif; ?>
+                    </span>
+                    <span class="activity-who"><?= h($row['admin_name'] ?? '—') ?></span>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    <?php endif; ?>
 </section>
 
 <script>

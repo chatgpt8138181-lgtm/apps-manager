@@ -7,6 +7,7 @@ require_once $appRoot . '/config/database.php';
 require_once $appRoot . '/includes/functions.php';
 require_once $appRoot . '/includes/auth.php';
 require_once $appRoot . '/includes/csrf.php';
+require_once $appRoot . '/includes/activity.php';
 require_once $appRoot . '/includes/rotation.php';
 require_once $appRoot . '/includes/workflow.php';
 require_once $appRoot . '/includes/app-panels.php';
@@ -49,6 +50,7 @@ function nav_icon(string $key): string
         'add-app.php' => '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/>',
         'search.php' => '<circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/>',
         'categories.php' => '<path d="M3 12V5a2 2 0 0 1 2-2h7l9 9-9 9z"/><path d="M7.5 7.5h.01"/>',
+        'activity.php' => '<path d="M3 12h4l3 8 4-16 3 8h4"/>',
         'admins.php' => '<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 11a3 3 0 1 0 0-6"/><path d="M18 20a6 6 0 0 0-3-5.2"/>',
         'home.php' => '<path d="m3 11 9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
         'App Workflow' => '<path d="M4 7h9"/><path d="m10 4 3 3-3 3"/><path d="M20 17h-9"/><path d="m14 14-3 3 3 3"/>',
@@ -151,6 +153,7 @@ function page_start(string $title): void
             'consoles.php' => 'Play Consoles',
             'app-urls.php' => 'App URLs',
             'tasks.php' => 'Daily Tasks',
+            'activity.php' => 'Activity',
         ],
         'Loading' => [
             'dashboard.php' => 'Dashboard',
