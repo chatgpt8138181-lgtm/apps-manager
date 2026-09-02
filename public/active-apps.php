@@ -162,7 +162,12 @@ page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading
                                 <?php $isDone = (int) $task['is_done'] === 1; ?>
                                 <tr>
                                     <td><img class="app-icon" src="<?= h(app_icon_url($task['icon_path'])) ?>" alt=""></td>
-                                    <td><?= h($task['app_name']) ?></td>
+                                    <td>
+                                        <span class="cell-title">
+                                            <?= h($task['app_name']) ?>
+                                            <span class="cell-sub">#<?= (int) $task['app_id'] ?></span>
+                                        </span>
+                                    </td>
                                     <td><?= render_status_badge($task['ready_loading_status']) ?></td>
                                     <td>
                                         <form method="post">
@@ -229,12 +234,7 @@ page_start($view === 'all' ? 'All Active Apps' : ($view === 'history' ? 'Loading
                                 <tr>
                                     <td><?= (int) $app['display_id'] ?></td>
                                     <td><img class="app-icon" src="<?= h(app_icon_url($app['icon_path'])) ?>" alt=""></td>
-                                    <td>
-                                        <span class="cell-title">
-                                            <?= h($app['app_name']) ?>
-                                            <span class="cell-sub">#<?= (int) $app['app_id'] ?></span>
-                                        </span>
-                                    </td>
+                                    <td><?= h($app['app_name']) ?></td>
                                     <td><?= render_status_badge($app['ready_loading_status']) ?></td>
                                     <td><?= h($app['created_at']) ?></td>
                                 </tr>
