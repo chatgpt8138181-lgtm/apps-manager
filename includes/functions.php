@@ -436,9 +436,11 @@ function loading_cycle_base(): int
     return max(1, (int) workflow_setting('loading_cycle_base', '1'));
 }
 
-function display_category_cycle(int $storedCycle): int
+/* The cycle number a console is on: how far its rotation has walked,
+   counted in day-sized steps and starting over with each new round. */
+function display_category_cycle(int $categoryId): int
 {
-    return max(1, $storedCycle - loading_cycle_base() + 1);
+    return intdiv(category_today_start($categoryId), loading_apps_per_day()) + 1;
 }
 
 function set_category_cycle(int $categoryId, int $cycle): void

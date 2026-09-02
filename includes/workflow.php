@@ -601,7 +601,7 @@ function console_overview(): array
         $cycle = console_cycle($consoleId);
         $shown = min((int) $console['ready_total'], console_task_shown_count($consoleId, $cycle));
 
-        $console['cycle_no'] = display_console_cycle($cycle);
+        $console['cycle_no'] = display_console_cycle($consoleId);
         $console['shown_total'] = $shown;
         $console['remaining'] = max(0, (int) $console['ready_total'] - $shown);
     }
@@ -629,9 +629,16 @@ function task_cycle_base(): int
     return max(1, (int) workflow_setting('task_cycle_base', '1'));
 }
 
-function display_console_cycle(int $storedCycle): int
+/* The cycle number a console is on: how far its rotation has walked,
+   counted in day-sized steps and starting over with each new round. */
+function display_console_cycle(int $consoleId): int
 {
-    return max(1, $storedCycle - task_cycle_base() + 1);
+    $quota = console_task_quota($consoleId);
+    if ($quota < 1) {
+        return 1;
+    }
+
+    return intdiv(console_today_start($consoleId), $quota) + 1;
 }
 
 function set_console_cycle(int $consoleId, int $cycle): void
