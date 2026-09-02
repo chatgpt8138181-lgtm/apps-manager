@@ -2343,6 +2343,11 @@ tbody tr.is-picked {
     padding: 10px 12px;
 }
 
+/* display:flex would otherwise beat the hidden attribute. */
+.bulk-bar[hidden] {
+    display: none;
+}
+
 .bulk-count {
     color: var(--primary);
     font-size: 13px;
