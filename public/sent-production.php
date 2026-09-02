@@ -76,10 +76,13 @@ function render_sent_apps_table(array $apps, string $status): void
             ['value' => 'to_sent', 'label' => 'Back to Sent'],
         ];
     ?>
-    <form method="post" class="bulk-form">
-    <?= csrf_field() ?>
-    <input type="hidden" name="action" value="bulk">
-    <input type="hidden" name="return_status" value="<?= h($status) ?>">
+    <div class="bulk-form">
+    <form method="post" class="bulk-submit" hidden>
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="bulk">
+        <input type="hidden" name="bulk_action" value="">
+        <input type="hidden" name="return_status" value="<?= h($status) ?>">
+    </form>
     <?php render_bulk_bar($bulk); ?>
     <div class="table-wrap">
         <table>
@@ -97,7 +100,7 @@ function render_sent_apps_table(array $apps, string $status): void
             <tbody>
             <?php foreach ($apps as $app): ?>
                 <tr>
-                    <td class="col-select"><input type="checkbox" class="bulk-row" name="app_ids[]" value="<?= (int) $app['id'] ?>"></td>
+                    <td class="col-select"><input type="checkbox" class="bulk-row" value="<?= (int) $app['id'] ?>"></td>
                     <td><?= h($app['name']) ?></td>
                     <td>
                         <?php if (!empty($app['package_name'])): ?>
@@ -178,7 +181,7 @@ function render_sent_apps_table(array $apps, string $status): void
             </tbody>
         </table>
     </div>
-    </form>
+    </div>
     <?php
 }
 

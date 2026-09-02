@@ -236,9 +236,12 @@ page_start('Prepare Production');
 function render_prepare_apps_table(array $apps, int $totalItems): void
 {
     ?>
-    <form method="post" class="bulk-form">
-    <?= csrf_field() ?>
-    <input type="hidden" name="action" value="bulk">
+    <div class="bulk-form">
+    <form method="post" class="bulk-submit" hidden>
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="bulk">
+        <input type="hidden" name="bulk_action" value="">
+    </form>
     <?php render_bulk_bar([
         ['value' => 'ready', 'label' => 'Mark Ready'],
         ['value' => 'send', 'label' => 'Send for Production', 'class' => 'primary'],
@@ -261,7 +264,7 @@ function render_prepare_apps_table(array $apps, int $totalItems): void
             <?php foreach ($apps as $app): ?>
                 <?php $done = (int) $app['checklist_done']; ?>
                 <tr>
-                    <td class="col-select"><input type="checkbox" class="bulk-row" name="app_ids[]" value="<?= (int) $app['id'] ?>"></td>
+                    <td class="col-select"><input type="checkbox" class="bulk-row" value="<?= (int) $app['id'] ?>"></td>
                     <td><?= h($app['name']) ?></td>
                     <td><?= h($app['package_name'] ?? '—') ?></td>
                     <td>
@@ -300,7 +303,7 @@ function render_prepare_apps_table(array $apps, int $totalItems): void
             </tbody>
         </table>
     </div>
-    </form>
+    </div>
     <?php
 }
 

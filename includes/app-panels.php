@@ -115,9 +115,8 @@ function render_bulk_bar(array $actions): void
         <div class="bulk-bar-actions">
             <?php foreach ($actions as $action): ?>
                 <button class="btn small <?= h($action['class'] ?? '') ?>"
-                        type="submit"
-                        name="bulk_action"
-                        value="<?= h($action['value']) ?>"
+                        type="button"
+                        data-bulk-action="<?= h($action['value']) ?>"
                         <?= !empty($action['confirm'])
                             ? 'data-confirm="' . h($action['confirm']) . '"'
                             : '' ?>>

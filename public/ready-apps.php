@@ -45,9 +45,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 function render_ready_apps_table(array $apps): void
 {
     ?>
-    <form method="post" class="bulk-form">
-    <?= csrf_field() ?>
-    <input type="hidden" name="action" value="bulk">
+    <div class="bulk-form">
+    <form method="post" class="bulk-submit" hidden>
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="bulk">
+        <input type="hidden" name="bulk_action" value="">
+    </form>
     <?php render_bulk_bar([
         ['value' => 'send', 'label' => 'Send for Production', 'class' => 'primary'],
         ['value' => 'to_prepare', 'label' => 'Back to Prepare'],
@@ -69,7 +72,7 @@ function render_ready_apps_table(array $apps): void
             <tbody>
             <?php foreach ($apps as $app): ?>
                 <tr>
-                    <td class="col-select"><input type="checkbox" class="bulk-row" name="app_ids[]" value="<?= (int) $app['id'] ?>"></td>
+                    <td class="col-select"><input type="checkbox" class="bulk-row" value="<?= (int) $app['id'] ?>"></td>
                     <td><?= h($app['name']) ?></td>
                     <td>
                         <?php if (!empty($app['package_name'])): ?>
@@ -114,7 +117,7 @@ function render_ready_apps_table(array $apps): void
             </tbody>
         </table>
     </div>
-    </form>
+    </div>
     <?php
 }
 

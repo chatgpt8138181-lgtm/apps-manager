@@ -55,9 +55,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 function render_live_apps_table(array $apps): void
 {
     ?>
-    <form method="post" class="bulk-form">
-    <?= csrf_field() ?>
-    <input type="hidden" name="action" value="bulk">
+    <div class="bulk-form">
+    <form method="post" class="bulk-submit" hidden>
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="bulk">
+        <input type="hidden" name="bulk_action" value="">
+    </form>
     <?php render_bulk_bar([
         ['value' => 'tag_ready', 'label' => 'Tag Ready for Work', 'class' => 'primary'],
         ['value' => 'untag_ready', 'label' => 'Remove Tag'],
@@ -79,7 +82,7 @@ function render_live_apps_table(array $apps): void
             <?php foreach ($apps as $app): ?>
                 <?php $isReady = (int) $app['ready_for_work'] === 1; ?>
                 <tr>
-                    <td class="col-select"><input type="checkbox" class="bulk-row" name="app_ids[]" value="<?= (int) $app['id'] ?>"></td>
+                    <td class="col-select"><input type="checkbox" class="bulk-row" value="<?= (int) $app['id'] ?>"></td>
                     <td><?= h($app['name']) ?></td>
                     <td><?= h($app['package_name'] ?? '—') ?></td>
                     <td><?= h($app['live_at'] ?? '—') ?></td>
@@ -122,7 +125,7 @@ function render_live_apps_table(array $apps): void
             </tbody>
         </table>
     </div>
-    </form>
+    </div>
     <?php
 }
 

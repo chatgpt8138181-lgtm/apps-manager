@@ -492,13 +492,15 @@ function page_end(): void
             });
         }
 
-        /* Row selection: the bulk bar only appears once something is ticked. */
-        document.querySelectorAll('form.bulk-form').forEach((form) => {
-            const bar = form.querySelector('.bulk-bar');
-            const number = form.querySelector('.bulk-number');
-            const all = form.querySelector('.bulk-all');
-            const rows = [...form.querySelectorAll('.bulk-row')];
-            if (!bar || !rows.length) {
+        /* Row selection. The table holds its own per-row forms, so the bulk
+           submit is a separate form that this fills in on click. */
+        document.querySelectorAll('.bulk-form').forEach((scope) => {
+            const bar = scope.querySelector('.bulk-bar');
+            const sender = scope.querySelector('form.bulk-submit');
+            const number = scope.querySelector('.bulk-number');
+            const all = scope.querySelector('.bulk-all');
+            const rows = [...scope.querySelectorAll('.bulk-row')];
+            if (!bar || !sender || !rows.length) {
                 return;
             }
 
@@ -522,18 +524,35 @@ function page_end(): void
                 sync();
             });
 
-            form.querySelector('.bulk-clear')?.addEventListener('click', () => {
+            scope.querySelector('.bulk-clear')?.addEventListener('click', () => {
                 rows.forEach((row) => { row.checked = false; });
                 sync();
             });
 
-            form.addEventListener('submit', (event) => {
-                const button = event.submitter;
-                const question = button?.dataset.confirm;
-                if (question && !window.confirm(question)) {
-                    event.preventDefault();
-                    event.stopImmediatePropagation();
-                }
+            scope.querySelectorAll('[data-bulk-action]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const picked = rows.filter((row) => row.checked);
+                    if (!picked.length) {
+                        return;
+                    }
+                    const question = button.dataset.confirm;
+                    if (question && !window.confirm(question)) {
+                        return;
+                    }
+
+                    sender.querySelectorAll('.bulk-id').forEach((old) => old.remove());
+                    picked.forEach((row) => {
+                        const field = document.createElement('input');
+                        field.type = 'hidden';
+                        field.name = 'app_ids[]';
+                        field.value = row.value;
+                        field.className = 'bulk-id';
+                        sender.appendChild(field);
+                    });
+                    sender.querySelector('[name="bulk_action"]').value = button.dataset.bulkAction;
+                    button.classList.add('is-loading');
+                    sender.submit();
+                });
             });
 
             sync();
