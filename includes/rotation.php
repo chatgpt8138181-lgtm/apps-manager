@@ -18,14 +18,14 @@ function rotation_config(string $kind): array
     $configs = [
         'loading' => [
             'table' => 'loading_daily',
-            'owner_column' => 'category_id',
+            'owner_column' => 'console_id',
             'source_table' => 'apps',
-            'source_owner' => 'category_id',
+            'source_owner' => 'console_id',
             'source_where' => "loading_status = 'Active'",
             'cycle_key' => 'loading_cycle_c',
             'position_key' => 'loading_pos_c',
             'base_key' => 'loading_cycle_base',
-            'owners' => 'all_categories',
+            'owners' => 'all_consoles',
         ],
         'task' => [
             'table' => 'daily_tasks',

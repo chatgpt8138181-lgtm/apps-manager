@@ -65,7 +65,13 @@ function normalize_ready_status(string $status): string
     return $status === 'Not Ready' ? 'Not Ready' : 'Ready';
 }
 
+/* Kept as a name the loading pages already use; consoles are the one list now. */
 function all_categories(): array
+{
+    return all_consoles();
+}
+
+function unused_all_categories(): array
 {
     $stmt = db()->query('SELECT id, name, created_at FROM categories ORDER BY created_at ASC, id ASC');
     return $stmt->fetchAll();
@@ -73,11 +79,11 @@ function all_categories(): array
 
 function category_counts(): array
 {
-    $stmt = db()->query('SELECT category_id, COUNT(*) AS total FROM apps GROUP BY category_id');
+    $stmt = db()->query('SELECT console_id, COUNT(*) AS total FROM apps GROUP BY console_id');
     $counts = [];
 
     foreach ($stmt->fetchAll() as $row) {
-        $counts[(int) $row['category_id']] = (int) $row['total'];
+        $counts[(int) $row['console_id']] = (int) $row['total'];
     }
 
     return $counts;
@@ -266,7 +272,7 @@ function add_app(array $data, ?string $iconPath): void
     }
 
     $stmt = db()->prepare(
-        'INSERT INTO apps (category_id, app_name, loading_status, ready_loading_status, icon_path)
+        'INSERT INTO apps (console_id, app_name, loading_status, ready_loading_status, icon_path)
          VALUES (?, ?, ?, ?, ?)'
     );
     $stmt->execute([
@@ -280,17 +286,17 @@ function add_app(array $data, ?string $iconPath): void
 
 function sorted_apps(?int $categoryId = null): array
 {
-    $sql = 'SELECT apps.*, categories.name AS category_name
+    $sql = 'SELECT apps.*, apps.console_id AS category_id, consoles.name AS category_name
             FROM apps
-            JOIN categories ON categories.id = apps.category_id';
+            JOIN consoles ON consoles.id = apps.console_id';
     $params = [];
 
     if ($categoryId !== null) {
-        $sql .= ' WHERE apps.category_id = ?';
+        $sql .= ' WHERE apps.console_id = ?';
         $params[] = $categoryId;
     }
 
-    $sql .= " ORDER BY categories.created_at ASC, categories.id ASC,
+    $sql .= " ORDER BY consoles.created_at ASC, consoles.id ASC,
               CASE apps.loading_status WHEN 'Active' THEN 0 ELSE 1 END ASC,
               apps.created_at ASC, apps.id ASC";
 
@@ -359,10 +365,10 @@ function bulk_update_category_status(int $categoryId, string $field, string $val
     }
 
     if ($field === 'loading') {
-        $stmt = db()->prepare('UPDATE apps SET loading_status = ?, updated_at = NOW() WHERE category_id = ?');
+        $stmt = db()->prepare('UPDATE apps SET loading_status = ?, updated_at = NOW() WHERE console_id = ?');
         $stmt->execute([normalize_status($value), $categoryId]);
     } elseif ($field === 'ready') {
-        $stmt = db()->prepare('UPDATE apps SET ready_loading_status = ?, updated_at = NOW() WHERE category_id = ?');
+        $stmt = db()->prepare('UPDATE apps SET ready_loading_status = ?, updated_at = NOW() WHERE console_id = ?');
         $stmt->execute([normalize_ready_status($value), $categoryId]);
     } else {
         throw new RuntimeException('Invalid bulk update.');
@@ -459,7 +465,7 @@ function todays_loading_apps(): array
                 a.id AS app_id, a.app_name, a.icon_path, a.ready_loading_status
          FROM loading_daily ld
          JOIN apps a ON a.id = ld.app_id
-         JOIN categories c ON c.id = ld.category_id
+         JOIN consoles c ON c.id = ld.console_id
          WHERE ld.task_date = ? AND a.loading_status = 'Active'
          ORDER BY c.created_at ASC, c.id ASC, ld.id ASC"
     );
@@ -554,7 +560,7 @@ function loading_history(): array
                 c.name AS category_name
          FROM loading_daily ld
          JOIN apps a ON a.id = ld.app_id
-         JOIN categories c ON c.id = ld.category_id
+         JOIN consoles c ON c.id = ld.console_id
          ORDER BY ld.task_date DESC, c.created_at ASC, c.id ASC, ld.id ASC'
     );
 

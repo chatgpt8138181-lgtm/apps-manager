@@ -701,7 +701,10 @@ function console_overview(): array
             (SELECT COUNT(*) FROM production_apps pa
              WHERE pa.console_id = c.id AND pa.status = 'live') AS live_total,
             (SELECT COUNT(*) FROM production_apps pa
-             WHERE pa.console_id = c.id AND pa.status = 'live' AND pa.ready_for_work = 1) AS ready_total
+             WHERE pa.console_id = c.id AND pa.status = 'live' AND pa.ready_for_work = 1) AS ready_total,
+            (SELECT COUNT(*) FROM apps a WHERE a.console_id = c.id) AS loading_total,
+            (SELECT COUNT(*) FROM apps a
+             WHERE a.console_id = c.id AND a.loading_status = 'Active') AS loading_active
          FROM consoles c
          ORDER BY c.created_at ASC, c.id ASC"
     );

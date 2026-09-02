@@ -160,7 +160,6 @@ function page_start(string $title): void
             'active-apps.php' => 'Active Apps',
             'add-app.php' => 'Add App',
             'search.php' => 'Search/Edit',
-            'categories.php' => 'Console Names',
         ],
     ];
     $navCounts = nav_counts();
