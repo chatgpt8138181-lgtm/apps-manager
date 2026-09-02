@@ -2,6 +2,13 @@
     --bg: #f4f7fb;
     --panel: #ffffff;
     --surface: #f8fafc;
+    --surface-strong: #eef2f7;
+    --btn-bg: #edf2f7;
+    --btn-bg-hover: #e5eaf2;
+    --btn-text: #243044;
+    --green-line: #bbf7d0;
+    --red-line: #fecaca;
+    --on-primary: #ffffff;
     --text: #172033;
     --muted: #667085;
     --line: #dfe6f0;
@@ -503,7 +510,7 @@ th {
 }
 
 .app-icon {
-    background: #eef2f7;
+    background: var(--surface-strong);
     border: 1px solid var(--line);
     border-radius: var(--r-md);
     height: 48px;
@@ -628,13 +635,13 @@ select.status-select {
 
 select.status-select.is-green {
     background: var(--green-bg);
-    border-color: #bbf7d0;
+    border-color: var(--green-line);
     color: var(--green-text);
 }
 
 select.status-select.is-red {
     background: var(--red-bg);
-    border-color: #fecaca;
+    border-color: var(--red-line);
     color: var(--red-text);
 }
 
@@ -672,7 +679,7 @@ select.status-select.is-red {
 }
 
 .progress {
-    background: #e5eaf2;
+    background: var(--btn-bg-hover);
     border-radius: 999px;
     height: 8px;
     min-width: 110px;
@@ -754,7 +761,7 @@ select.status-select.is-red {
 }
 
 .console-url code {
-    background: #eef2f7;
+    background: var(--surface-strong);
     border-radius: 6px;
     padding: 6px 10px;
     word-break: break-all;
@@ -808,7 +815,7 @@ input[readonly] {
 
 .checklist-item.done {
     background: var(--green-bg);
-    border-color: #bbf7d0;
+    border-color: var(--green-line);
 }
 
 .btn:disabled {
@@ -849,7 +856,7 @@ input[readonly] {
 
 .app-group-toggle {
     align-items: center;
-    background: #f8fafc;
+    background: var(--surface);
     border: 0;
     color: var(--text);
     cursor: pointer;
@@ -864,7 +871,7 @@ input[readonly] {
 }
 
 .app-group-toggle:hover {
-    background: #eef2f7;
+    background: var(--surface-strong);
 }
 
 .app-group-toggle .nav-chevron {
@@ -896,17 +903,17 @@ input[readonly] {
 
 /* Nested groups (month > day) sit flush inside their parent. */
 .app-group .app-group-body .app-group {
-    background: #fff;
+    background: var(--panel);
 }
 
 .app-group .app-group-body .app-group-toggle {
-    background: #fff;
+    background: var(--panel);
     font-size: 14px;
     padding: 12px 14px;
 }
 
 .app-group .app-group-body .app-group-toggle:hover {
-    background: #f4f7fb;
+    background: var(--bg);
 }
 
 .app-group .app-group-body .app-group:last-child {
@@ -935,7 +942,7 @@ label {
 
 input,
 select {
-    background: #fff;
+    background: var(--panel);
     border: 1px solid var(--line);
     border-radius: var(--r-md);
     color: var(--text);
@@ -986,10 +993,10 @@ select {
 
 .btn {
     align-items: center;
-    background: #edf2f7;
+    background: var(--btn-bg);
     border: 0;
     border-radius: var(--r-md);
-    color: #243044;
+    color: var(--btn-text);
     cursor: pointer;
     display: inline-flex;
     font: inherit;
@@ -1413,7 +1420,7 @@ select:focus {
 }
 
 .publish-console-urls {
-    background: #f8fafc;
+    background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--r-md);
     margin-bottom: 14px;
@@ -1871,7 +1878,7 @@ body.density-compact .form-panel {
 }
 
 .toast-undo button:hover {
-    background: #fff;
+    background: var(--panel);
 }
 
 .toast-close {
@@ -1926,7 +1933,7 @@ button.is-loading::after {
 }
 
 .btn.is-loading:not(.primary):not(.danger)::after {
-    color: #243044;
+    color: var(--btn-text);
 }
 
 @keyframes btn-spin {
@@ -2470,4 +2477,123 @@ tbody tr.is-picked {
     color: var(--green-text);
     font-family: var(--font-mono);
     font-size: 11px;
+}
+
+/* --- Dark theme. The sidebar was already dark, so only the content
+   surfaces flip; every colour below is a token defined in :root. --- */
+:root[data-theme="dark"] {
+    --bg: #0f1622;
+    --panel: #172033;
+    --surface: #1c2739;
+    --surface-strong: #22304a;
+    --text: #e7edf7;
+    --muted: #9fb0c9;
+    --line: #2a3852;
+    --line-strong: #3b4c6b;
+    --primary: #4f83f1;
+    --primary-dark: #3c6cd8;
+    --primary-soft: #1e2c47;
+    --btn-bg: #22304a;
+    --btn-bg-hover: #2b3c5b;
+    --btn-text: #e7edf7;
+    --on-primary: #0f1622;
+
+    --green-bg: #123524;
+    --green-text: #86efac;
+    --green-line: #1d4f36;
+    --red-bg: #3a1618;
+    --red-text: #fca5a5;
+    --red-line: #55242a;
+    --amber-bg: #3a2b10;
+    --amber-text: #fcd34d;
+    --blue-bg: #14273f;
+    --blue-text: #93c5fd;
+    --gray-bg: #253145;
+    --gray-text: #c7d2e4;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.55);
+    --ring: 0 0 0 3px rgba(79, 131, 241, 0.35);
+
+    color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --bg: #0f1622;
+        --panel: #172033;
+        --surface: #1c2739;
+        --surface-strong: #22304a;
+        --text: #e7edf7;
+        --muted: #9fb0c9;
+        --line: #2a3852;
+        --line-strong: #3b4c6b;
+        --primary: #4f83f1;
+        --primary-dark: #3c6cd8;
+        --primary-soft: #1e2c47;
+        --btn-bg: #22304a;
+        --btn-bg-hover: #2b3c5b;
+        --btn-text: #e7edf7;
+        --on-primary: #0f1622;
+
+        --green-bg: #123524;
+        --green-text: #86efac;
+        --green-line: #1d4f36;
+        --red-bg: #3a1618;
+        --red-text: #fca5a5;
+        --red-line: #55242a;
+        --amber-bg: #3a2b10;
+        --amber-text: #fcd34d;
+        --blue-bg: #14273f;
+        --blue-text: #93c5fd;
+        --gray-bg: #253145;
+        --gray-text: #c7d2e4;
+
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+        --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.45);
+        --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.55);
+        --ring: 0 0 0 3px rgba(79, 131, 241, 0.35);
+
+        color-scheme: dark;
+    }
+}
+
+/* Primary buttons keep readable text in both themes. */
+.btn.primary,
+.btn.danger {
+    color: var(--on-primary);
+}
+
+.theme-toggle {
+    align-items: center;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
+    color: var(--muted);
+    cursor: pointer;
+    display: inline-flex;
+    height: 34px;
+    justify-content: center;
+    padding: 0;
+    width: 34px;
+}
+
+.theme-toggle:hover {
+    border-color: var(--line-strong);
+    color: var(--text);
+}
+
+.theme-toggle svg {
+    height: 16px;
+    width: 16px;
+}
+
+.theme-toggle .icon-sun { display: none; }
+:root[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+:root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .theme-toggle .icon-sun { display: block; }
+    :root:not([data-theme="light"]) .theme-toggle .icon-moon { display: none; }
 }

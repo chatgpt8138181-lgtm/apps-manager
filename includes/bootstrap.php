@@ -173,6 +173,18 @@ function page_start(string $title): void
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title><?= h($title) ?> | App Manager</title>
         <link rel="stylesheet" href="assets/css/style.css?v=<?= asset_version('assets/css/style.css') ?>">
+        <script>
+        (() => {
+            try {
+                const saved = localStorage.getItem('theme');
+                if (saved === 'dark' || saved === 'light') {
+                    document.documentElement.dataset.theme = saved;
+                }
+            } catch (error) {
+                /* storage unavailable */
+            }
+        })();
+        </script>
     </head>
     <body>
     <div class="app-shell">
@@ -206,6 +218,12 @@ function page_start(string $title): void
                     <h1><?= h($title) ?></h1>
                 </div>
                 <div class="topbar-tools">
+                    <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Switch theme" title="Switch theme">
+                        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 13a8.5 8.5 0 0 1-10-10 8.5 8.5 0 1 0 10 10Z"/></svg>
+                        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                            stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+                    </button>
                     <button class="search-trigger" type="button" id="palette-open">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                             stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/></svg>
@@ -283,6 +301,19 @@ function page_end(): void
                     }
                 });
             });
+        });
+
+        /* Theme: an explicit choice wins, otherwise the system decides. */
+        document.getElementById('theme-toggle')?.addEventListener('click', () => {
+            const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const current = document.documentElement.dataset.theme || (systemDark ? 'dark' : 'light');
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.dataset.theme = next;
+            try {
+                localStorage.setItem('theme', next);
+            } catch (error) {
+                /* storage unavailable */
+            }
         });
 
         const densityStore = 'rowDensity';
