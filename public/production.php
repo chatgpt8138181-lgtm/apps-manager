@@ -67,8 +67,13 @@ $selectedDomainUrl = $selected ? app_domain_url_for($selected) : null;
 page_start('Prepare Production');
 ?>
 <?php if (!$selected): ?>
-<section class="form-panel">
-    <h2>Add App to Prepare Production</h2>
+<section class="form-panel add-panel">
+    <div class="app-group" data-group-key="add-form">
+        <button class="app-group-toggle" type="button" aria-expanded="false">
+            <span>+ Add App to Prepare Production</span>
+            <span class="nav-chevron" aria-hidden="true"></span>
+        </button>
+        <div class="app-group-body">
     <form method="post" class="stacked-form wide">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="add">
@@ -85,6 +90,8 @@ page_start('Prepare Production');
         </label>
         <button class="btn primary" type="submit">Add App</button>
     </form>
+        </div>
+    </div>
 </section>
 <?php endif; ?>
 

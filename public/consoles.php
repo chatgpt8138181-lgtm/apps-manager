@@ -33,8 +33,13 @@ $progress = cycle_progress();
 
 page_start('Play Consoles');
 ?>
-<section class="form-panel">
-    <h2>Add Console</h2>
+<section class="form-panel add-panel">
+    <div class="app-group" data-group-key="add-form">
+        <button class="app-group-toggle" type="button" aria-expanded="false">
+            <span>+ Add Console</span>
+            <span class="nav-chevron" aria-hidden="true"></span>
+        </button>
+        <div class="app-group-body">
     <form method="post" class="stacked-form wide">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="add">
@@ -49,6 +54,8 @@ page_start('Play Consoles');
         </label>
         <button class="btn primary" type="submit">Add Console</button>
     </form>
+        </div>
+    </div>
 </section>
 
 <section class="panel">

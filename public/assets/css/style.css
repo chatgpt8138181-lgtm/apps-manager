@@ -2281,3 +2281,28 @@ td.actions {
 a.stat:hover {
     border-color: var(--line-strong);
 }
+
+/* An add form that stays out of the way until it is wanted. */
+.add-panel {
+    padding: 0;
+}
+
+.add-panel .app-group {
+    border: 0;
+    margin-bottom: 0;
+}
+
+.add-panel .app-group-toggle {
+    background: var(--panel);
+    border-radius: var(--r-md);
+    font-size: 15px;
+}
+
+.add-panel .app-group-toggle:hover {
+    background: var(--surface);
+}
+
+.add-panel .app-group.open .app-group-toggle {
+    border-bottom: 1px solid var(--line);
+    border-radius: var(--r-md) var(--r-md) 0 0;
+}

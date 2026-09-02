@@ -25,7 +25,13 @@ $counts = category_counts();
 
 page_start('Console Names');
 ?>
-<section class="form-panel">
+<section class="form-panel add-panel">
+    <div class="app-group" data-group-key="add-form">
+        <button class="app-group-toggle" type="button" aria-expanded="false">
+            <span>+ Add Console Name</span>
+            <span class="nav-chevron" aria-hidden="true"></span>
+        </button>
+        <div class="app-group-body">
     <form method="post" class="inline-form">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="add">
@@ -34,6 +40,8 @@ page_start('Console Names');
         </label>
         <button class="btn primary" type="submit">Add Console Name</button>
     </form>
+        </div>
+    </div>
 </section>
 
 <section class="panel">
