@@ -191,6 +191,12 @@ function page_start(string $title): void
                     <h1><?= h($title) ?></h1>
                 </div>
                 <div class="topbar-tools">
+                    <button class="search-trigger" type="button" id="palette-open">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                            stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/></svg>
+                        <span>Search</span>
+                        <kbd>&#8984;K</kbd>
+                    </button>
                     <div class="density-toggle" role="group" aria-label="Row density">
                         <button type="button" data-density="comfortable">Comfortable</button>
                         <button type="button" data-density="compact">Compact</button>
@@ -222,6 +228,13 @@ function page_end(): void
 {
     ?>
         </main>
+    </div>
+    <div class="palette" id="palette" hidden>
+        <div class="palette-box" role="dialog" aria-modal="true" aria-label="Search">
+            <input type="search" id="palette-input" placeholder="Search pages and apps&hellip;" autocomplete="off">
+            <ul class="palette-results" id="palette-results"></ul>
+            <p class="palette-hint">Enter to open &middot; Esc to close</p>
+        </div>
     </div>
     <script>
     (() => {
@@ -331,6 +344,141 @@ function page_end(): void
                 button?.classList.remove('is-loading');
             }, 12000);
         });
+
+        /* Command palette: pages come from the sidebar, apps from the server. */
+        const palette = document.getElementById('palette');
+        const paletteInput = document.getElementById('palette-input');
+        const paletteResults = document.getElementById('palette-results');
+
+        if (palette && paletteInput && paletteResults) {
+            const pages = [...document.querySelectorAll('.sidebar nav a')].map((link) => ({
+                group: 'Page',
+                title: link.querySelector('.nav-label')?.textContent.trim() || link.textContent.trim(),
+                sub: link.getAttribute('href'),
+                url: link.getAttribute('href'),
+            }));
+
+            let items = [];
+            let cursor = 0;
+            let requestId = 0;
+
+            const draw = () => {
+                paletteResults.innerHTML = '';
+                if (!items.length) {
+                    const empty = document.createElement('li');
+                    empty.className = 'palette-empty';
+                    empty.textContent = paletteInput.value.trim() ? 'Nothing found.' : 'Type to search.';
+                    paletteResults.appendChild(empty);
+                    return;
+                }
+
+                items.forEach((item, index) => {
+                    const row = document.createElement('li');
+                    row.className = 'palette-item' + (index === cursor ? ' active' : '');
+                    row.innerHTML = '<span class="palette-title"></span><span class="palette-sub"></span>'
+                        + '<span class="palette-group"></span>';
+                    row.querySelector('.palette-title').textContent = item.title;
+                    row.querySelector('.palette-sub').textContent = item.sub || '';
+                    row.querySelector('.palette-group').textContent = item.group;
+                    row.addEventListener('click', () => { window.location.href = item.url; });
+                    row.addEventListener('mousemove', () => {
+                        if (cursor !== index) {
+                            cursor = index;
+                            draw();
+                        }
+                    });
+                    paletteResults.appendChild(row);
+                });
+            };
+
+            const search = async (term) => {
+                const needle = term.trim().toLowerCase();
+                cursor = 0;
+
+                if (!needle) {
+                    items = [];
+                    draw();
+                    return;
+                }
+
+                items = pages.filter((page) => page.title.toLowerCase().includes(needle)).slice(0, 5);
+                draw();
+
+                const mine = ++requestId;
+                try {
+                    const response = await fetch('palette.php?q=' + encodeURIComponent(term), {
+                        credentials: 'same-origin',
+                    });
+                    const data = await response.json();
+                    if (mine !== requestId) {
+                        return;
+                    }
+                    items = items.concat(data.results || []);
+                    draw();
+                } catch (error) {
+                    /* keep whatever matched locally */
+                }
+            };
+
+            const openPalette = () => {
+                palette.hidden = false;
+                paletteInput.value = '';
+                items = [];
+                cursor = 0;
+                draw();
+                paletteInput.focus();
+            };
+
+            const closePalette = () => {
+                palette.hidden = true;
+            };
+
+            document.getElementById('palette-open')?.addEventListener('click', openPalette);
+            palette.addEventListener('click', (event) => {
+                if (event.target === palette) {
+                    closePalette();
+                }
+            });
+
+            let typingTimer = null;
+            paletteInput.addEventListener('input', () => {
+                clearTimeout(typingTimer);
+                const term = paletteInput.value;
+                typingTimer = setTimeout(() => search(term), 160);
+            });
+
+            paletteInput.addEventListener('keydown', (event) => {
+                if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    cursor = Math.min(cursor + 1, items.length - 1);
+                    draw();
+                } else if (event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    cursor = Math.max(cursor - 1, 0);
+                    draw();
+                } else if (event.key === 'Enter') {
+                    event.preventDefault();
+                    if (items[cursor]) {
+                        window.location.href = items[cursor].url;
+                    }
+                } else if (event.key === 'Escape') {
+                    closePalette();
+                }
+            });
+
+            document.addEventListener('keydown', (event) => {
+                const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName);
+                if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+                    event.preventDefault();
+                    palette.hidden ? openPalette() : closePalette();
+                } else if (event.key === '/' && !typing && palette.hidden) {
+                    event.preventDefault();
+                    openPalette();
+                } else if (event.key === 'Escape' && !palette.hidden) {
+                    closePalette();
+                }
+            });
+        }
 
         const menuToggle = document.querySelector('.menu-toggle');
         const menuPanel = document.querySelector('.menu-panel');

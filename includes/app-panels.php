@@ -6,6 +6,44 @@ declare(strict_types=1);
  * Ready Apps, Sent Apps, and Live Apps manage views.
  */
 
+/* Where this app sits in the four-stage flow. */
+function render_workflow_stepper(array $app): void
+{
+    $steps = [
+        'prepare' => 'Prepare',
+        'ready' => 'Ready',
+        'sent' => 'Production',
+        'live' => 'Live',
+    ];
+    $order = array_keys($steps);
+    $status = (string) ($app['status'] ?? 'prepare');
+    $current = array_search($status, $order, true);
+    $offTrack = $current === false;
+    ?>
+    <ol class="stepper<?= $offTrack ? ' stepper-off' : '' ?>">
+        <?php foreach ($order as $index => $key): ?>
+            <?php
+            $state = 'todo';
+            if (!$offTrack) {
+                if ($index < $current) {
+                    $state = 'done';
+                } elseif ($index === $current) {
+                    $state = 'current';
+                }
+            }
+            ?>
+            <li class="step step-<?= $state ?>">
+                <span class="step-dot"><?= $state === 'done' ? '&check;' : (int) $index + 1 ?></span>
+                <span class="step-name"><?= h($steps[$key]) ?></span>
+            </li>
+        <?php endforeach; ?>
+    </ol>
+    <?php if ($offTrack): ?>
+        <p class="hint">This app is <?= h($status) ?>, so it sits outside the normal flow.</p>
+    <?php endif; ?>
+    <?php
+}
+
 function render_app_details_panel(array $app, array $consoles, string $backUrl): void
 {
     $domainUrl = app_domain_url_for($app);
@@ -15,6 +53,8 @@ function render_app_details_panel(array $app, array $consoles, string $backUrl):
             <h2>App Details — <?= h($app['name']) ?></h2>
             <a class="btn small" href="<?= h($backUrl) ?>">Close</a>
         </div>
+
+        <?php render_workflow_stepper($app); ?>
 
         <p class="hint app-detail-meta">
             Status: <?= render_production_badge($app['status']) ?>
