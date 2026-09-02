@@ -237,6 +237,7 @@ function render_checklist_summary_panel(array $app): void
 {
     $items = checklist_items();
     $state = checklist_state((int) $app['id']);
+    $times = checklist_done_times((int) $app['id']);
     $done = (int) ($app['checklist_done'] ?? 0);
     $total = count($items);
     ?>
@@ -259,6 +260,9 @@ function render_checklist_summary_panel(array $app): void
                         <span>
                             <strong><?= h($item['label']) ?></strong>
                             <small><?= h($item['description']) ?></small>
+                            <?php if ($isDone && !empty($times[$key])): ?>
+                                <small class="checklist-done-at">Done <?= h($times[$key]) ?></small>
+                            <?php endif; ?>
                         </span>
                     </div>
                 </div>

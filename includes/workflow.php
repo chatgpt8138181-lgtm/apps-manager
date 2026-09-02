@@ -230,6 +230,22 @@ function checklist_state(int $appId): array
     return $state;
 }
 
+/* When each item was first ticked, keyed the same way as checklist_state(). */
+function checklist_done_times(int $appId): array
+{
+    $stmt = db()->prepare('SELECT item_key, done_at FROM production_checklist WHERE app_id = ?');
+    $stmt->execute([$appId]);
+
+    $times = [];
+    foreach ($stmt->fetchAll() as $row) {
+        if (!empty($row['done_at'])) {
+            $times[$row['item_key']] = (string) $row['done_at'];
+        }
+    }
+
+    return $times;
+}
+
 function save_checklist(int $appId, array $doneKeys, array $fieldValues = []): void
 {
     $app = get_production_app($appId);
@@ -244,7 +260,9 @@ function save_checklist(int $appId, array $doneKeys, array $fieldValues = []): v
     $stmt = db()->prepare(
         'INSERT INTO production_checklist (app_id, item_key, is_done, done_at)
          VALUES (?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE is_done = VALUES(is_done), done_at = VALUES(done_at)'
+         ON DUPLICATE KEY UPDATE
+            is_done = VALUES(is_done),
+            done_at = IF(VALUES(is_done) = 1, IFNULL(done_at, VALUES(done_at)), NULL)'
     );
 
     foreach (array_keys(checklist_items()) as $key) {

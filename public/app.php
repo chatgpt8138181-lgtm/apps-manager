@@ -114,6 +114,7 @@ $status = (string) $app['status'];
 $consoles = all_consoles();
 $items = checklist_items();
 $state = checklist_state($appId);
+$doneTimes = checklist_done_times($appId);
 $done = (int) $app['checklist_done'];
 $total = count($items);
 $complete = $done >= $total;
@@ -363,6 +364,9 @@ page_start($app['name']);
                     <span>
                         <strong><?= h($item['label']) ?></strong>
                         <small><?= h($item['description']) ?></small>
+                        <?php if ($isDone && !empty($doneTimes[$key])): ?>
+                            <small class="checklist-done-at">Done <?= h($doneTimes[$key]) ?></small>
+                        <?php endif; ?>
                     </span>
                 </div>
             </div>

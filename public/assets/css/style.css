@@ -2464,3 +2464,10 @@ tbody tr.is-picked {
     flex-wrap: wrap;
     gap: 10px;
 }
+
+/* When a checklist item was first ticked. */
+.checklist-done-at {
+    color: var(--green-text);
+    font-family: var(--font-mono);
+    font-size: 11px;
+}

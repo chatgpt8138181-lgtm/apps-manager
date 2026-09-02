@@ -73,6 +73,7 @@ if ($selectedId > 0) {
 }
 
 $selectedState = $selected ? checklist_state((int) $selected['id']) : [];
+$selectedTimes = $selected ? checklist_done_times((int) $selected['id']) : [];
 $selectedDone = $selected ? (int) $selected['checklist_done'] : 0;
 $selectedDomainUrl = $selected ? app_domain_url_for($selected) : null;
 
@@ -133,6 +134,9 @@ page_start('Prepare Production');
                         <span>
                             <strong><?= h($item['label']) ?></strong>
                             <small><?= h($item['description']) ?></small>
+                            <?php if ($isDone && !empty($selectedTimes[$key])): ?>
+                                <small class="checklist-done-at">Done <?= h($selectedTimes[$key]) ?></small>
+                            <?php endif; ?>
                         </span>
                     </label>
                     <?php if ($fieldName): ?>
