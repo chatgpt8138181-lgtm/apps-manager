@@ -11,6 +11,7 @@ require_once $appRoot . '/includes/activity.php';
 require_once $appRoot . '/includes/store.php';
 require_once $appRoot . '/includes/rotation.php';
 require_once $appRoot . '/includes/workflow.php';
+require_once $appRoot . '/includes/ads.php';
 require_once $appRoot . '/includes/app-panels.php';
 
 function app_root_path(): string

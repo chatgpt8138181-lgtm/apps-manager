@@ -2789,3 +2789,106 @@ tbody tr.is-picked {
     display: inline-block;
     margin-left: 6px;
 }
+
+/* --- Ads config: the app's own ads.json, as fields or as the file --- */
+
+.tabs button {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+    min-height: 0;
+    padding: 9px 14px;
+    width: auto;
+}
+
+.tabs button:hover {
+    color: var(--text);
+}
+
+.tabs button.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+.ads-target code {
+    background: var(--surface-strong);
+    border-radius: var(--r-sm);
+    padding: 2px 6px;
+}
+
+.ads-rows {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 16px;
+    max-width: 760px;
+}
+
+.ads-row {
+    align-items: center;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: 160px minmax(0, 1fr);
+}
+
+.ads-row.is-custom {
+    grid-template-columns: 160px minmax(0, 1fr) auto;
+}
+
+.ads-key {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.ads-row input {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    min-height: 38px;
+}
+
+.ads-row input:disabled {
+    background: var(--surface-strong);
+    color: var(--muted);
+}
+
+.ads-raw-label textarea {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 12px;
+    width: 100%;
+}
+
+.ads-raw-form[hidden],
+.ads-form[hidden] {
+    display: none;
+}
+
+.ads-foot {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 18px;
+}
+
+@media (max-width: 700px) {
+    .ads-row,
+    .ads-row.is-custom {
+        gap: 6px;
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ads-row .ads-remove {
+        justify-self: start;
+    }
+}

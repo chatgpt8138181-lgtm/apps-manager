@@ -111,6 +111,8 @@ function activity_label(string $action): string
         'store_synced' => 'Updated from Play Store',
         'domain_url_changed' => 'Domain URL changed',
         'urls_rebuilt' => 'Domain URLs rebuilt',
+        'ads_saved' => 'Ads config saved',
+        'ads_downloaded' => 'Ads folder downloaded',
     ];
 
     return $labels[$action] ?? ucfirst(str_replace('_', ' ', $action));

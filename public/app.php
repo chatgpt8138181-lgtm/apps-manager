@@ -50,6 +50,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect_with($self, 'success', 'Domain URL saved. Its check status is back to pending.');
         }
 
+        if ($action === 'save_ads') {
+            $current = get_production_app($appId);
+            $existing = $current ? ads_config_for($current) : [];
+            $keys = (array) ($_POST['ads_key'] ?? []);
+            $values = (array) ($_POST['ads_value'] ?? []);
+            $locked = (array) ($_POST['ads_locked'] ?? []);
+
+            $config = [];
+            foreach ($keys as $index => $key) {
+                $key = trim((string) $key);
+                if ($key === '') {
+                    continue;
+                }
+                /* A value the form cannot edit keeps whatever it already had. */
+                if (!empty($locked[$index]) && array_key_exists($key, $existing)) {
+                    $config[$key] = $existing[$key];
+                    continue;
+                }
+                $value = trim((string) ($values[$index] ?? ''));
+                $config[$key] = $key === 'versionCode' ? (int) $value : $value;
+            }
+
+            if (!$config) {
+                throw new RuntimeException('Add at least one field before saving.');
+            }
+
+            save_app_ads($appId, $config);
+            redirect_with($self, 'success', 'Ads config saved.');
+        }
+
+        if ($action === 'save_ads_raw') {
+            save_app_ads_raw($appId, (string) ($_POST['ads_raw'] ?? ''));
+            redirect_with($self, 'success', 'Ads config saved.');
+        }
+
+        if ($action === 'reset_ads') {
+            save_app_ads($appId, ads_default_template());
+            redirect_with($self, 'success', 'Ads config reset to the default template.');
+        }
+
         if ($action === 'rebuild_domain_url') {
             $app = get_production_app($appId);
             $built = $app ? build_app_domain_url($app) : null;
@@ -163,6 +203,10 @@ $done = (int) $app['checklist_done'];
 $total = count($items);
 $complete = $done >= $total;
 $domainUrl = app_domain_url_for($app);
+$adsConfig = ads_config_for($app);
+$adsFile = ads_file_for($app);
+$adsLabels = ads_placement_labels();
+$adsPath = ads_folder_path($app);
 $privacyUrl = $app['console_privacy_policy_url'] ?? null;
 $backList = $stageLists[$status] ?? 'production.php';
 
@@ -453,6 +497,108 @@ page_start($app['name']);
     <?php endif; ?>
 </section>
 
+<section class="panel ads-panel">
+    <div class="panel-heading">
+        <h2>Ads Config</h2>
+        <div class="inline-actions">
+            <?php if ($adsPath !== null): ?>
+                <a class="btn small primary" href="ads-download.php?app=<?= $appId ?>">Download folder (ZIP)</a>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <?php if ($adsPath !== null): ?>
+        <p class="hint ads-target">
+            Folder <code><?= h($adsPath) ?>/</code>
+            &middot; served at <code><?= h((string) ads_file_url($app)) ?></code>
+        </p>
+    <?php else: ?>
+        <p class="hint ads-target">
+            Set a Domain URL above to give this app a folder. The file can be written now either way.
+        </p>
+    <?php endif; ?>
+
+    <div class="tabs ads-tabs">
+        <button type="button" class="active" data-ads-tab="fields">Fields</button>
+        <button type="button" data-ads-tab="raw">Raw JSON</button>
+    </div>
+
+    <form method="post" class="ads-form" data-ads-panel="fields">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="save_ads">
+        <input type="hidden" name="app_id" value="<?= $appId ?>">
+
+        <div class="ads-rows">
+            <?php $rowIndex = 0; ?>
+            <?php foreach ($adsConfig as $key => $value): ?>
+                <?php
+                $known = isset($adsLabels[$key]) || $key === 'versionCode';
+                $editable = is_scalar($value) || $value === null;
+                ?>
+                <div class="ads-row<?= $known ? '' : ' is-custom' ?>">
+                    <?php if ($known): ?>
+                        <span class="ads-key"><?= h($adsLabels[$key] ?? 'Version code') ?></span>
+                        <input type="hidden" name="ads_key[<?= $rowIndex ?>]" value="<?= h((string) $key) ?>">
+                    <?php else: ?>
+                        <input class="ads-key-input" type="text" name="ads_key[<?= $rowIndex ?>]"
+                               value="<?= h((string) $key) ?>" maxlength="80" aria-label="Field name">
+                    <?php endif; ?>
+
+                    <?php if (!$editable): ?>
+                        <input type="text" value="<?= h(json_encode($value, JSON_UNESCAPED_SLASHES)) ?>" disabled>
+                        <input type="hidden" name="ads_locked[<?= $rowIndex ?>]" value="1">
+                        <span class="hint">Edit in Raw JSON</span>
+                    <?php elseif ($key === 'versionCode'): ?>
+                        <input type="number" name="ads_value[<?= $rowIndex ?>]" value="<?= (int) $value ?>" min="0" step="1">
+                    <?php else: ?>
+                        <input type="text" name="ads_value[<?= $rowIndex ?>]" value="<?= h((string) $value) ?>"
+                               placeholder="ca-app-pub-…" spellcheck="false">
+                    <?php endif; ?>
+
+                    <?php if (!$known): ?>
+                        <button class="btn small ads-remove" type="button" aria-label="Remove field">Remove</button>
+                    <?php endif; ?>
+                </div>
+                <?php $rowIndex++; ?>
+            <?php endforeach; ?>
+        </div>
+
+        <div class="inline-actions ads-actions" data-next-index="<?= $rowIndex ?>">
+            <button class="btn primary" type="submit">Save</button>
+            <button class="btn ads-add" type="button">+ Add field</button>
+        </div>
+    </form>
+
+    <form method="post" class="ads-raw-form" data-ads-panel="raw" hidden>
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="save_ads_raw">
+        <input type="hidden" name="app_id" value="<?= $appId ?>">
+        <label class="ads-raw-label">ads.json
+            <textarea name="ads_raw" rows="12" spellcheck="false"><?= h($adsFile) ?></textarea>
+        </label>
+        <p class="hint">Whatever is written here is exactly what the file will hold.</p>
+        <div class="inline-actions">
+            <button class="btn primary" type="submit">Save</button>
+            <button class="btn copy-url" type="button" data-url="<?= h($adsFile) ?>">Copy</button>
+        </div>
+    </form>
+
+    <div class="hint ads-foot">
+        <?php if (!empty($app['ads_updated_at'])): ?>
+            Saved <?= h((string) $app['ads_updated_at']) ?>.
+        <?php else: ?>
+            Not saved yet — this is the default template.
+        <?php endif; ?>
+        <form method="post" class="inline-post"
+              onsubmit="return confirm('Replace this app\'s ads.json with the default template?');">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="reset_ads">
+            <input type="hidden" name="app_id" value="<?= $appId ?>">
+            <button class="btn small" type="submit">Reset to template</button>
+        </form>
+    </div>
+</section>
+
 <section class="form-panel">
     <div class="panel-heading">
         <h2>Edit Details</h2>
@@ -546,6 +692,47 @@ page_start($app['name']);
 </section>
 
 <script>
+/* The ads config is one file, shown either as fields or as itself. */
+document.querySelectorAll('[data-ads-tab]').forEach((tab) => {
+    tab.addEventListener('click', () => {
+        const panel = tab.closest('.ads-panel');
+        const wanted = tab.dataset.adsTab;
+
+        panel.querySelectorAll('[data-ads-tab]').forEach((other) => {
+            other.classList.toggle('active', other === tab);
+        });
+        panel.querySelectorAll('[data-ads-panel]').forEach((form) => {
+            form.hidden = form.dataset.adsPanel !== wanted;
+        });
+    });
+});
+
+document.querySelectorAll('.ads-add').forEach((button) => {
+    const actions = button.closest('.ads-actions');
+    const rows = button.closest('form').querySelector('.ads-rows');
+
+    button.addEventListener('click', () => {
+        const index = Number(actions.dataset.nextIndex);
+        actions.dataset.nextIndex = String(index + 1);
+
+        const row = document.createElement('div');
+        row.className = 'ads-row is-custom';
+        row.innerHTML = '<input class="ads-key-input" type="text" name="ads_key[' + index + ']"'
+            + ' maxlength="80" placeholder="Field name" aria-label="Field name">'
+            + '<input type="text" name="ads_value[' + index + ']" placeholder="Value" spellcheck="false">'
+            + '<button class="btn small ads-remove" type="button">Remove</button>';
+        rows.appendChild(row);
+        row.querySelector('input').focus();
+    });
+});
+
+document.addEventListener('click', (event) => {
+    const remove = event.target.closest('.ads-remove');
+    if (remove) {
+        remove.closest('.ads-row').remove();
+    }
+});
+
 /* The domain URL reads like the rows above it until you ask to change it. */
 document.querySelectorAll('.domain-url-toggle').forEach((button) => {
     const row = button.closest('.publish-row');
