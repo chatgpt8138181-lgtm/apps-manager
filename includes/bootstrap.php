@@ -568,7 +568,9 @@ function page_end(): void
         document.querySelectorAll('.bulk-form').forEach((scope) => {
             const bar = scope.querySelector('.bulk-bar');
             const sender = scope.querySelector('form.bulk-submit');
+            const downloader = scope.querySelector('form.bulk-download');
             const number = scope.querySelector('.bulk-number');
+            const note = scope.querySelector('.bulk-note');
             const all = scope.querySelector('.bulk-all');
             const rows = [...scope.querySelectorAll('.bulk-row')];
             if (!bar || !sender || !rows.length) {
@@ -584,6 +586,12 @@ function page_end(): void
                 if (all) {
                     all.checked = picked.length === rows.length;
                     all.indeterminate = picked.length > 0 && picked.length < rows.length;
+                }
+                if (note) {
+                    /* An app with no domain URL has no folder to put in a zip. */
+                    const without = picked.filter((row) => row.dataset.noUrl === '1').length;
+                    note.hidden = without === 0;
+                    note.textContent = without + ' without a domain URL';
                 }
                 rows.forEach((row) => row.closest('tr')?.classList.toggle('is-picked', row.checked));
             };
@@ -611,18 +619,28 @@ function page_end(): void
                         return;
                     }
 
-                    sender.querySelectorAll('.bulk-id').forEach((old) => old.remove());
+                    /* A download answers with a file, so it posts to its own form
+                       and the page stays where it is. */
+                    const target = button.dataset.bulkDownload && downloader ? downloader : sender;
+
+                    target.querySelectorAll('.bulk-id').forEach((old) => old.remove());
                     picked.forEach((row) => {
                         const field = document.createElement('input');
                         field.type = 'hidden';
                         field.name = 'app_ids[]';
                         field.value = row.value;
                         field.className = 'bulk-id';
-                        sender.appendChild(field);
+                        target.appendChild(field);
                     });
-                    sender.querySelector('[name="bulk_action"]').value = button.dataset.bulkAction;
-                    button.classList.add('is-loading');
-                    sender.submit();
+                    target.querySelector('[name="bulk_action"]')?.setAttribute('value', button.dataset.bulkAction);
+
+                    if (target === downloader) {
+                        button.classList.add('is-loading');
+                        setTimeout(() => button.classList.remove('is-loading'), 2500);
+                    } else {
+                        button.classList.add('is-loading');
+                    }
+                    target.submit();
                 });
             });
 

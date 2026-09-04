@@ -219,11 +219,13 @@ function render_bulk_bar(array $actions): void
     ?>
     <div class="bulk-bar" hidden>
         <span class="bulk-count"><strong class="bulk-number">0</strong> selected</span>
+        <span class="bulk-note" hidden></span>
         <div class="bulk-bar-actions">
             <?php foreach ($actions as $action): ?>
                 <button class="btn small <?= h($action['class'] ?? '') ?>"
                         type="button"
                         data-bulk-action="<?= h($action['value']) ?>"
+                        <?= !empty($action['download']) ? 'data-bulk-download="1"' : '' ?>
                         <?= !empty($action['confirm'])
                             ? 'data-confirm="' . h($action['confirm']) . '"'
                             : '' ?>>

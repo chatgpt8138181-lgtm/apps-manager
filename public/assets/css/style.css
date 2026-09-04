@@ -2893,3 +2893,17 @@ tbody tr.is-picked {
         justify-self: start;
     }
 }
+
+/* A selection that cannot be fully zipped says so before you press the button. */
+.bulk-note {
+    background: var(--surface-strong);
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+}
+
+.bulk-note[hidden] {
+    display: none;
+}

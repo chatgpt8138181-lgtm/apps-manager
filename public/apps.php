@@ -208,6 +208,9 @@ page_start('Apps');
             </button>
             <div class="app-group-body">
                 <div class="bulk-form">
+                    <form method="post" action="ads-download.php" class="bulk-download" hidden>
+                        <?= csrf_field() ?>
+                    </form>
                     <form method="post" class="bulk-submit" hidden>
                         <?= csrf_field() ?>
                         <input type="hidden" name="action" value="bulk">
@@ -225,6 +228,7 @@ page_start('Apps');
                         ['value' => 'tag_ready', 'label' => 'Tag Ready for Work'],
                         ['value' => 'untag_ready', 'label' => 'Remove Tag'],
                         ['value' => 'store_sync', 'label' => 'Fetch from Play Store'],
+                        ['value' => 'ads_zip', 'label' => 'Download ads folders (ZIP)', 'download' => true],
                     ]); ?>
 
                     <div class="table-wrap">
@@ -242,7 +246,8 @@ page_start('Apps');
                             <tbody>
                             <?php foreach ($group['apps'] as $app): ?>
                                 <tr>
-                                    <td class="col-select"><input type="checkbox" class="bulk-row" value="<?= (int) $app['id'] ?>"></td>
+                                    <td class="col-select"><input type="checkbox" class="bulk-row" value="<?= (int) $app['id'] ?>"
+                                            <?= trim((string) ($app['domain_url'] ?? '')) === '' ? 'data-no-url="1"' : '' ?>></td>
                                     <td class="app-icon-cell"><img class="app-icon" src="<?= h(app_icon_url($app['icon_path'] ?? null)) ?>" alt=""></td>
                                     <td>
                                         <span class="cell-title">

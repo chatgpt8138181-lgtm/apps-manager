@@ -805,6 +805,42 @@ function console_app_url_names(int $consoleId, ?string $baseUrl): array
     return $rows;
 }
 
+/* The apps behind a set of checkboxes, in the order the list shows them. */
+function apps_by_ids(array $ids): array
+{
+    $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+    if (!$ids) {
+        return [];
+    }
+
+    $marks = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = db()->prepare(
+        "SELECT a.*, a.app_name AS name, a.stage AS status, c.name AS console_name,
+            c.app_domain_url AS console_app_domain_url
+         FROM apps a LEFT JOIN consoles c ON c.id = a.console_id
+         WHERE a.id IN ($marks)
+         ORDER BY c.created_at ASC, c.id ASC, a.created_at ASC, a.id ASC"
+    );
+    $stmt->execute($ids);
+
+    return $stmt->fetchAll();
+}
+
+/* Everything a console has live, which is what a folder drop is made of. */
+function console_live_apps(int $consoleId): array
+{
+    $stmt = db()->prepare(
+        "SELECT a.*, a.app_name AS name, a.stage AS status, c.name AS console_name,
+            c.app_domain_url AS console_app_domain_url
+         FROM apps a JOIN consoles c ON c.id = a.console_id
+         WHERE a.console_id = ? AND a.stage = 'live'
+         ORDER BY a.created_at ASC, a.id ASC"
+    );
+    $stmt->execute([$consoleId]);
+
+    return $stmt->fetchAll();
+}
+
 function set_url_checked(int $appId, bool $checked): void
 {
     $stmt = db()->prepare('UPDATE apps SET url_checked = ? WHERE id = ?');
@@ -831,6 +867,15 @@ function url_checked_counts(): array
     }
 
     return $counts;
+}
+
+function get_console(int $consoleId): ?array
+{
+    $stmt = db()->prepare('SELECT * FROM consoles WHERE id = ? LIMIT 1');
+    $stmt->execute([$consoleId]);
+    $console = $stmt->fetch();
+
+    return $console ?: null;
 }
 
 function all_consoles(): array
@@ -911,6 +956,9 @@ function console_overview(): array
              WHERE pa.console_id = c.id AND pa.stage = 'live') AS live_total,
             (SELECT COUNT(*) FROM apps pa
              WHERE pa.console_id = c.id AND pa.stage = 'live' AND pa.ready_for_work = 1) AS ready_total,
+            (SELECT COUNT(*) FROM apps pa
+             WHERE pa.console_id = c.id AND pa.stage = 'live'
+               AND (pa.domain_url IS NULL OR pa.domain_url = '')) AS live_without_url,
             (SELECT COUNT(*) FROM apps a WHERE a.console_id = c.id) AS loading_total,
             (SELECT COUNT(*) FROM apps a
              WHERE a.console_id = c.id AND a.loading_status = 'Active') AS loading_active

@@ -135,6 +135,11 @@ page_start('Play Consoles');
 
                 <div class="inline-actions console-actions">
                     <button class="btn primary" type="submit" form="<?= h($formId) ?>">Save</button>
+                    <?php if ((int) $console['live_total'] > 0): ?>
+                        <a class="btn" href="ads-download.php?console=<?= $consoleId ?>">
+                            Download live apps ZIP (<?= (int) $console['live_total'] - (int) $console['live_without_url'] ?>)
+                        </a>
+                    <?php endif; ?>
                     <form method="post" onsubmit="return confirm('Rebuild this console\'s app URLs from its domain? Any URL that changes goes back to pending.');">
                         <?= csrf_field() ?>
                         <input type="hidden" name="action" value="rebuild_urls">
@@ -148,6 +153,13 @@ page_start('Play Consoles');
                         <button class="btn danger" type="submit">Delete</button>
                     </form>
                 </div>
+
+                <?php if ((int) $console['live_without_url'] > 0): ?>
+                    <p class="hint">
+                        <?= (int) $console['live_without_url'] ?> live app(s) have no domain URL,
+                        so they have no folder and stay out of the zip.
+                    </p>
+                <?php endif; ?>
             </div>
         </div>
     <?php endforeach; ?>
