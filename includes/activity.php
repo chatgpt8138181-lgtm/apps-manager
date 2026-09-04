@@ -113,6 +113,7 @@ function activity_label(string $action): string
         'urls_rebuilt' => 'Domain URLs rebuilt',
         'ads_saved' => 'Ads config saved',
         'ads_downloaded' => 'Ads folder downloaded',
+        'ads_template_saved' => 'Ads template saved',
     ];
 
     return $labels[$action] ?? ucfirst(str_replace('_', ' ', $action));

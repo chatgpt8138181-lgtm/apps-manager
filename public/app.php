@@ -86,8 +86,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($action === 'reset_ads') {
-            save_app_ads($appId, ads_default_template());
-            redirect_with($self, 'success', 'Ads config reset to the default template.');
+            $current = get_production_app($appId);
+            save_app_ads($appId, $current ? ads_template_for($current) : ads_default_template());
+            redirect_with($self, 'success', 'Ads config reset to the template.');
         }
 
         if ($action === 'rebuild_domain_url') {
@@ -588,10 +589,10 @@ page_start($app['name']);
         <?php if (!empty($app['ads_updated_at'])): ?>
             Saved <?= h((string) $app['ads_updated_at']) ?>.
         <?php else: ?>
-            Not saved yet — this is the default template.
+            Not saved yet — this is the template it starts from.
         <?php endif; ?>
         <form method="post" class="inline-post"
-              onsubmit="return confirm('Replace this app\'s ads.json with the default template?');">
+              onsubmit="return confirm('Replace this app\'s ads.json with the template?');">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="reset_ads">
             <input type="hidden" name="app_id" value="<?= $appId ?>">

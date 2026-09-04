@@ -19,6 +19,7 @@ function checklist_items(): array
         'new_data' => ['label' => 'New Data Updated', 'description' => "App's new content/data (JSON, assets, config) updated"],
         'privacy_policy_url' => ['label' => 'Privacy Policy URL Change', 'description' => "Console's privacy policy URL applied", 'console_url' => 'privacy_policy_url'],
         'app_domain_url' => ['label' => 'App Domain URL Change', 'description' => "Console's domain URL applied", 'console_url' => 'app_domain_url'],
+        'ads_json' => ['label' => 'Ads Config Created', 'description' => "The app's ads.json is filled in and uploaded"],
         'save_folder' => ['label' => 'Save Folder Change', 'description' => "App's save folder updated"],
         'random_words' => ['label' => 'Random Words Change', 'description' => 'Random words/strings replaced in project'],
         'build_deleted' => ['label' => 'Build/Idea Folder Delete', 'description' => 'Old build/ and .idea/ folders removed'],
@@ -367,6 +368,30 @@ function save_checklist(int $appId, array $doneKeys, array $fieldValues = []): v
     $app = get_production_app($appId);
     log_activity('app', $appId, 'checklist', $app ? (string) $app['name'] : null,
         count($doneKeys) . ' of ' . count(checklist_items()) . ' complete');
+}
+
+/*
+ * Tick one row on its own. Unlike saving the whole checklist this does not
+ * ask what stage the app is in — it records something that already happened.
+ */
+function mark_checklist_item(int $appId, string $key, bool $done): void
+{
+    if (!array_key_exists($key, checklist_items())) {
+        return;
+    }
+
+    try {
+        $stmt = db()->prepare(
+            'INSERT INTO production_checklist (app_id, item_key, is_done, done_at)
+             VALUES (?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+                is_done = VALUES(is_done),
+                done_at = IF(VALUES(is_done) = 1, IFNULL(done_at, VALUES(done_at)), NULL)'
+        );
+        $stmt->execute([$appId, $key, $done ? 1 : 0, $done ? date('Y-m-d H:i:s') : null]);
+    } catch (Throwable $e) {
+        /* A checklist row is never worth failing the action it followed. */
+    }
 }
 
 function checklist_is_complete(int $appId): bool
@@ -952,7 +977,7 @@ function delete_console(int $consoleId): void
 function console_overview(): array
 {
     $stmt = db()->query(
-        "SELECT c.id, c.name, c.privacy_policy_url, c.app_domain_url, c.created_at,
+        "SELECT c.id, c.name, c.privacy_policy_url, c.app_domain_url, c.ads_template, c.created_at,
             (SELECT COUNT(*) FROM apps pa
              WHERE pa.console_id = c.id AND pa.stage = 'live') AS live_total,
             (SELECT COUNT(*) FROM apps pa

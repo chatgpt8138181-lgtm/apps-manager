@@ -19,6 +19,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect_with('consoles.php', 'success', 'Console updated.');
         }
 
+        if ($action === 'save_ads_template') {
+            save_console_ads_template(
+                (int) ($_POST['console_id'] ?? 0),
+                (string) ($_POST['ads_template'] ?? '')
+            );
+            redirect_with('consoles.php', 'success', 'Ads template saved.');
+        }
+
         if ($action === 'rebuild_urls') {
             $result = rebuild_console_domain_urls((int) ($_POST['console_id'] ?? 0));
             $message = $result['changed'] . ' of ' . $result['total'] . ' app URL(s) rebuilt.';
@@ -132,6 +140,28 @@ page_start('Play Consoles');
                         </span>
                     </label>
                 </form>
+
+                <div class="app-group console-ads" data-group-key="ads-<?= $consoleId ?>">
+                    <button class="app-group-toggle" type="button" aria-expanded="false">
+                        <span>Default ads.json<?= empty($console['ads_template']) ? ' (built-in)' : ' (this console\'s own)' ?></span>
+                        <span class="nav-chevron" aria-hidden="true"></span>
+                    </button>
+                    <div class="app-group-body">
+                        <form method="post" class="ads-raw-form">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="save_ads_template">
+                            <input type="hidden" name="console_id" value="<?= $consoleId ?>">
+                            <label class="ads-raw-label">Template
+                                <textarea name="ads_template" rows="10" spellcheck="false"><?= h((string) ($console['ads_template'] ?? '')) ?></textarea>
+                            </label>
+                            <p class="hint">
+                                Every app under this console starts from this file. Leave it empty
+                                to use the built-in template.
+                            </p>
+                            <button class="btn primary" type="submit">Save template</button>
+                        </form>
+                    </div>
+                </div>
 
                 <div class="inline-actions console-actions">
                     <button class="btn primary" type="submit" form="<?= h($formId) ?>">Save</button>

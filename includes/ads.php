@@ -32,17 +32,70 @@ function ads_placement_labels(): array
     ];
 }
 
-/* An app's saved config, or the default template when it has none yet. */
+/*
+ * A console can keep its own default, so a whole console's apps start from
+ * the same file. Consoles without one fall back to the built-in template.
+ */
+function ads_console_template(?int $consoleId): array
+{
+    static $cache = [];
+
+    if (!$consoleId) {
+        return ads_default_template();
+    }
+    if (array_key_exists($consoleId, $cache)) {
+        return $cache[$consoleId];
+    }
+
+    $stmt = db()->prepare('SELECT ads_template FROM consoles WHERE id = ? LIMIT 1');
+    $stmt->execute([$consoleId]);
+    $raw = trim((string) ($stmt->fetchColumn() ?: ''));
+
+    $parsed = $raw !== '' ? json_decode($raw, true) : null;
+
+    return $cache[$consoleId] = is_array($parsed) ? $parsed : ads_default_template();
+}
+
+/* The template this app would start from. */
+function ads_template_for(array $app): array
+{
+    return ads_console_template(isset($app['console_id']) ? (int) $app['console_id'] : null);
+}
+
+function save_console_ads_template(int $consoleId, string $raw): void
+{
+    $raw = trim($raw);
+
+    if ($raw === '') {
+        $stmt = db()->prepare('UPDATE consoles SET ads_template = NULL WHERE id = ?');
+        $stmt->execute([$consoleId]);
+        log_activity('console', $consoleId, 'ads_template_saved', null, 'Back to the built-in template');
+
+        return;
+    }
+
+    $parsed = json_decode($raw, true);
+    if (!is_array($parsed)) {
+        throw new RuntimeException('This is not valid JSON: ' . json_last_error_msg() . '.');
+    }
+
+    $stmt = db()->prepare('UPDATE consoles SET ads_template = ? WHERE id = ?');
+    $stmt->execute([ads_encode($parsed), $consoleId]);
+
+    log_activity('console', $consoleId, 'ads_template_saved');
+}
+
+/* An app's saved config, or the template it would start from. */
 function ads_config_for(array $app): array
 {
     $raw = trim((string) ($app['ads_json'] ?? ''));
     if ($raw === '') {
-        return ads_default_template();
+        return ads_template_for($app);
     }
 
     $parsed = json_decode($raw, true);
 
-    return is_array($parsed) ? $parsed : ads_default_template();
+    return is_array($parsed) ? $parsed : ads_template_for($app);
 }
 
 function ads_encode(array $config): string
@@ -76,6 +129,9 @@ function save_app_ads(int $appId, array $config): void
     if ($stmt->rowCount() < 1 && !get_production_app($appId)) {
         throw new RuntimeException('App was not found.');
     }
+
+    /* The checklist asks whether this file exists; now it does. */
+    mark_checklist_item($appId, 'ads_json', true);
 
     log_activity('app', $appId, 'ads_saved');
 }
