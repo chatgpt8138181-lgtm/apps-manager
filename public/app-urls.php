@@ -91,7 +91,7 @@ page_start('App URLs');
                         <tr>
                             <th>App Name</th>
                             <th>URL Name</th>
-                            <th>Full URL</th>
+                            <th>Domain URL</th>
                             <th>Status</th>
                             <th>Action</th>
                         </tr>

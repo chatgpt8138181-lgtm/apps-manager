@@ -124,6 +124,7 @@ function add_production_app(array $data): int
     ]);
 
     $newId = (int) db()->lastInsertId();
+    ensure_app_domain_url($newId);
     log_activity('app', $newId, 'created', $name);
 
     return $newId;
@@ -153,6 +154,7 @@ function update_production_app_details(int $appId, array $data): void
         $appId,
     ]);
 
+    ensure_app_domain_url($appId);
     log_activity('app', $appId, 'updated', $name);
 }
 
@@ -261,6 +263,7 @@ function add_app_record(string $name, int $consoleId, bool $publishing): int
     ]);
 
     $newId = (int) db()->lastInsertId();
+    ensure_app_domain_url($newId);
     log_activity('app', $newId, 'created', $name, $publishing ? 'Publishing' : 'Loading');
 
     return $newId;
@@ -645,7 +648,24 @@ function app_slug(string $name): string
  * Duplicate app names in the same console get a number suffix in
  * creation order: car_wallpaper, car_wallpaper1, car_wallpaper2.
  */
+/*
+ * An app's domain URL is stored on the app. It is only ever built from the
+ * console base and the app's name when there is nothing stored yet, which
+ * means renaming an app — or reading its name off the Play Store — cannot
+ * move a URL that is already in use.
+ */
 function app_domain_url_for(array $app): ?string
+{
+    $stored = trim((string) ($app['domain_url'] ?? ''));
+    if ($stored !== '') {
+        return $stored;
+    }
+
+    return build_app_domain_url($app);
+}
+
+/* What the URL would be, from the console base and the app's name. */
+function build_app_domain_url(array $app): ?string
 {
     $base = $app['console_app_domain_url'] ?? null;
     if (!$base || empty($app['console_id'])) {
@@ -677,24 +697,102 @@ function app_domain_url_for(array $app): ?string
  * All apps of a console with their generated URL names, in creation
  * order — the same numbering app_domain_url_for() produces.
  */
+/* Store a URL the person typed. A changed URL has not been checked yet. */
+function set_app_domain_url(int $appId, string $url): void
+{
+    $app = get_production_app($appId);
+    if (!$app) {
+        throw new RuntimeException('App was not found.');
+    }
+
+    $url = trim($url);
+    if ($url !== '') {
+        if (text_length($url) > 255) {
+            throw new RuntimeException('Domain URL must be 255 characters or fewer.');
+        }
+        if (!preg_match('~^https?://~i', $url)) {
+            throw new RuntimeException('Domain URL must start with http:// or https://.');
+        }
+    }
+
+    $current = trim((string) ($app['domain_url'] ?? ''));
+    if ($current === $url) {
+        return;
+    }
+
+    $stmt = db()->prepare('UPDATE apps SET domain_url = ?, url_checked = 0 WHERE id = ?');
+    $stmt->execute([$url === '' ? null : $url, $appId]);
+
+    log_activity('app', $appId, 'domain_url_changed', (string) $app['name'], $url !== '' ? $url : 'cleared');
+}
+
+/* Fill the URL in once, when the app first has a console to belong to. */
+function ensure_app_domain_url(int $appId): void
+{
+    $app = get_production_app($appId);
+    if (!$app || trim((string) ($app['domain_url'] ?? '')) !== '') {
+        return;
+    }
+
+    $built = build_app_domain_url($app);
+    if ($built === null) {
+        return;
+    }
+
+    $stmt = db()->prepare('UPDATE apps SET domain_url = ? WHERE id = ?');
+    $stmt->execute([$built, $appId]);
+}
+
+/* Rebuild a whole console's URLs on its current domain base. */
+function rebuild_console_domain_urls(int $consoleId): array
+{
+    $stmt = db()->prepare(
+        'SELECT a.*, a.app_name AS name, a.stage AS status, c.app_domain_url AS console_app_domain_url
+         FROM apps a JOIN consoles c ON c.id = a.console_id
+         WHERE a.console_id = ?
+         ORDER BY a.created_at ASC, a.id ASC'
+    );
+    $stmt->execute([$consoleId]);
+    $apps = $stmt->fetchAll();
+
+    $update = db()->prepare('UPDATE apps SET domain_url = ?, url_checked = 0 WHERE id = ?');
+    $changed = 0;
+    $wasChecked = 0;
+
+    foreach ($apps as $app) {
+        $built = build_app_domain_url($app);
+        if ($built === null || $built === trim((string) ($app['domain_url'] ?? ''))) {
+            continue;
+        }
+
+        $update->execute([$built, (int) $app['id']]);
+        $changed++;
+        $wasChecked += (int) $app['url_checked'] === 1 ? 1 : 0;
+    }
+
+    if ($changed > 0) {
+        log_activity('console', $consoleId, 'urls_rebuilt', null, $changed . ' app URL(s) rebuilt');
+    }
+
+    return ['changed' => $changed, 'was_checked' => $wasChecked, 'total' => count($apps)];
+}
+
 function console_app_url_names(int $consoleId, ?string $baseUrl): array
 {
     $stmt = db()->prepare(
-        "SELECT id, app_name AS name, stage AS status, url_checked FROM apps
+        "SELECT id, app_name AS name, stage AS status, url_checked, domain_url FROM apps
          WHERE console_id = ? AND stage <> 'none' ORDER BY id ASC"
     );
     $stmt->execute([$consoleId]);
     $rows = $stmt->fetchAll();
 
-    $counts = [];
     foreach ($rows as &$row) {
-        $slug = app_slug((string) $row['name']);
-        $seen = $counts[$slug] ?? 0;
-        $counts[$slug] = $seen + 1;
-
-        $urlName = $slug === '' ? '' : $slug . ($seen > 0 ? $seen : '');
-        $row['url_name'] = $urlName;
-        $row['full_url'] = ($baseUrl && $urlName !== '') ? rtrim($baseUrl, '/') . '/' . $urlName : null;
+        $stored = trim((string) ($row['domain_url'] ?? ''));
+        $row['full_url'] = $stored !== '' ? $stored : null;
+        /* The tail of the URL, shown on its own so the list stays readable. */
+        $row['url_name'] = $stored !== '' ? ltrim((string) parse_url($stored, PHP_URL_PATH), '/') : '';
+        $row['off_base'] = $stored !== '' && $baseUrl
+            && strpos($stored, rtrim((string) $baseUrl, '/') . '/') !== 0;
     }
     unset($row);
 

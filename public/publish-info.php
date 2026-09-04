@@ -60,7 +60,7 @@ function render_publish_apps(array $apps, array $console): void
         $block = "App Name: " . (string) $app['name'] . "\n"
             . "Package: " . (string) ($app['package_name'] ?? '') . "\n"
             . "Privacy Policy: " . (string) ($privacy ?? '') . "\n"
-            . "App URL: " . (string) ($domainUrl ?? '');
+            . "Domain URL: " . (string) ($domainUrl ?? '');
         ?>
         <div class="publish-app">
             <div class="publish-app-head">
@@ -69,7 +69,7 @@ function render_publish_apps(array $apps, array $console): void
             </div>
             <?php publish_copy_row('App Name', $app['name']); ?>
             <?php publish_copy_row('Package Name', $app['package_name'] ?? null, 'Package not set'); ?>
-            <?php publish_copy_row('App URL', $domainUrl, 'Console domain URL missing'); ?>
+            <?php publish_copy_row('Domain URL', $domainUrl, 'Domain URL not set'); ?>
         </div>
         <?php
     }

@@ -2741,3 +2741,33 @@ tbody tr.is-picked {
         flex: 1 1 100%;
     }
 }
+
+/* The app's own domain URL, edited in place. */
+.domain-url-form {
+    align-items: center;
+    display: flex;
+    flex: 1 1 420px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.domain-url-form input {
+    flex: 1 1 280px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+}
+
+.domain-url-hint {
+    margin-top: 0;
+}
+
+.domain-url-hint code {
+    background: var(--surface-strong);
+    border-radius: var(--r-sm);
+    padding: 2px 6px;
+}
+
+.inline-post {
+    display: inline-block;
+    margin-left: 6px;
+}

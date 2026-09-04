@@ -109,6 +109,8 @@ function activity_label(string $action): string
         'url_pending' => 'URL moved to pending',
         'console_assigned' => 'Console assigned',
         'store_synced' => 'Updated from Play Store',
+        'domain_url_changed' => 'Domain URL changed',
+        'urls_rebuilt' => 'Domain URLs rebuilt',
     ];
 
     return $labels[$action] ?? ucfirst(str_replace('_', ' ', $action));

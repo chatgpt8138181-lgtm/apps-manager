@@ -19,6 +19,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect_with('consoles.php', 'success', 'Console updated.');
         }
 
+        if ($action === 'rebuild_urls') {
+            $result = rebuild_console_domain_urls((int) ($_POST['console_id'] ?? 0));
+            $message = $result['changed'] . ' of ' . $result['total'] . ' app URL(s) rebuilt.';
+            if ($result['was_checked'] > 0) {
+                $message .= ' ' . $result['was_checked'] . ' were marked checked and are pending again.';
+            }
+            redirect_with('consoles.php', 'success', $message);
+        }
+
         if ($action === 'delete') {
             delete_console((int) ($_POST['console_id'] ?? 0));
             redirect_with('consoles.php', 'success', 'Console deleted.');
@@ -126,6 +135,12 @@ page_start('Play Consoles');
 
                 <div class="inline-actions console-actions">
                     <button class="btn primary" type="submit" form="<?= h($formId) ?>">Save</button>
+                    <form method="post" onsubmit="return confirm('Rebuild this console\'s app URLs from its domain? Any URL that changes goes back to pending.');">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="rebuild_urls">
+                        <input type="hidden" name="console_id" value="<?= $consoleId ?>">
+                        <button class="btn" type="submit">Rebuild app URLs</button>
+                    </form>
                     <form method="post" onsubmit="return confirm('Delete this console? Its publishing and loading apps will be unassigned, and its task history will be removed.');">
                         <?= csrf_field() ?>
                         <input type="hidden" name="action" value="delete">

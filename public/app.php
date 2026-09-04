@@ -45,6 +45,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect_with($self, 'success', 'App removed from the publishing flow.');
         }
 
+        if ($action === 'save_domain_url') {
+            set_app_domain_url($appId, (string) ($_POST['domain_url'] ?? ''));
+            redirect_with($self, 'success', 'Domain URL saved. Its check status is back to pending.');
+        }
+
+        if ($action === 'rebuild_domain_url') {
+            $app = get_production_app($appId);
+            $built = $app ? build_app_domain_url($app) : null;
+            if ($built === null) {
+                throw new RuntimeException('Assign a console with a domain URL first.');
+            }
+            set_app_domain_url($appId, $built);
+            redirect_with($self, 'success', 'Domain URL rebuilt from the console domain.');
+        }
+
         if ($action === 'store_sync') {
             $link = trim((string) ($_POST['store_url'] ?? ''));
             if ($link !== '') {
@@ -154,7 +169,7 @@ $backList = $stageLists[$status] ?? 'production.php';
 $copyBlock = "App Name: " . (string) $app['name'] . "\n"
     . "Package: " . (string) ($app['package_name'] ?? '') . "\n"
     . "Privacy Policy: " . (string) ($privacyUrl ?? '') . "\n"
-    . "App URL: " . (string) ($domainUrl ?? '');
+    . "Domain URL: " . (string) ($domainUrl ?? '');
 
 function app_fact_row(string $label, ?string $value, string $empty = 'Not set'): void
 {
@@ -394,7 +409,37 @@ page_start($app['name']);
     <?php app_fact_row('Package Name', $app['package_name'] ?? null, 'Package not set'); ?>
     <?php app_fact_row('Application ID', $app['application_id'] ?? null, 'Not set'); ?>
     <?php app_fact_row('Privacy Policy', $privacyUrl, 'Console URL missing'); ?>
-    <?php app_fact_row('App URL', $domainUrl, 'Console domain URL missing'); ?>
+    <div class="publish-row">
+        <span class="publish-label">Domain URL</span>
+        <form method="post" class="domain-url-form">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="save_domain_url">
+            <input type="hidden" name="app_id" value="<?= $appId ?>">
+            <input type="text" name="domain_url" value="<?= h($app['domain_url'] ?? '') ?>"
+                   maxlength="255" placeholder="https://">
+            <button class="btn small" type="submit">Save</button>
+            <?php if (!empty($domainUrl)): ?>
+                <button class="btn small copy-url" type="button" data-url="<?= h($domainUrl) ?>">Copy</button>
+            <?php endif; ?>
+        </form>
+    </div>
+    <p class="hint domain-url-hint">
+        <?php if (!empty($app['console_app_domain_url'])): ?>
+            Console domain: <code><?= h($app['console_app_domain_url']) ?></code>
+            <?php $suggested = build_app_domain_url($app); ?>
+            <?php if ($suggested !== null && $suggested !== trim((string) ($app['domain_url'] ?? ''))): ?>
+                &middot; from the app's current name it would be <code><?= h($suggested) ?></code>
+                <form method="post" class="inline-post">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="action" value="rebuild_domain_url">
+                    <input type="hidden" name="app_id" value="<?= $appId ?>">
+                    <button class="btn small" type="submit">Use that</button>
+                </form>
+            <?php endif; ?>
+        <?php else: ?>
+            Assign a console with a domain URL to fill this automatically.
+        <?php endif; ?>
+    </p>
     <?php if (empty($app['console_id'])): ?>
         <p class="hint">Assign a Play Console below to fill the console URLs.</p>
     <?php endif; ?>
