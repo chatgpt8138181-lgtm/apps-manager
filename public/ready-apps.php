@@ -10,6 +10,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = $_POST['action'] ?? '';
         $appId = (int) ($_POST['app_id'] ?? 0);
 
+        if ($action === 'bulk') {
+            $result = apply_bulk_production_action(
+                (string) ($_POST['bulk_action'] ?? ''),
+                (array) ($_POST['app_ids'] ?? [])
+            );
+            redirect_with('ready-apps.php', 'success', bulk_result_message($result, 'updated'));
+        }
+
         if ($action === 'send') {
             send_app_to_production($appId);
             redirect_with('sent-production.php', 'success', 'App sent for production.');
@@ -37,10 +45,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 function render_ready_apps_table(array $apps): void
 {
     ?>
+    <div class="bulk-form">
+    <form method="post" class="bulk-submit" hidden>
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="bulk">
+        <input type="hidden" name="bulk_action" value="">
+    </form>
+    <?php render_bulk_bar([
+        ['value' => 'send', 'label' => 'Send for Production', 'class' => 'primary'],
+        ['value' => 'to_prepare', 'label' => 'Back to Prepare'],
+        ['value' => 'delete', 'label' => 'Delete', 'class' => 'danger',
+         'confirm' => 'Delete the selected apps? Their checklists and task history go too.'],
+    ]); ?>
     <div class="table-wrap">
         <table>
             <thead>
             <tr>
+                <th class="col-select"><input type="checkbox" class="bulk-all" aria-label="Select all"></th>
                 <th>App Name</th>
                 <th>Package</th>
                 <th>Status</th>
@@ -51,6 +72,7 @@ function render_ready_apps_table(array $apps): void
             <tbody>
             <?php foreach ($apps as $app): ?>
                 <tr>
+                    <td class="col-select"><input type="checkbox" class="bulk-row" value="<?= (int) $app['id'] ?>"></td>
                     <td><?= h($app['name']) ?></td>
                     <td>
                         <?php if (!empty($app['package_name'])): ?>
@@ -65,7 +87,7 @@ function render_ready_apps_table(array $apps): void
                     <td><?= render_production_badge($app['status']) ?></td>
                     <td><?= h($app['created_at']) ?></td>
                     <td class="actions">
-                        <a class="btn small" href="ready-apps.php?app_id=<?= (int) $app['id'] ?>">Manage</a>
+                        <a class="btn small" href="app.php?id=<?= (int) $app['id'] ?>">Open</a>
                         <form method="post">
                             <?= csrf_field() ?>
                             <input type="hidden" name="action" value="send">
@@ -95,11 +117,15 @@ function render_ready_apps_table(array $apps): void
             </tbody>
         </table>
     </div>
+    </div>
     <?php
 }
 
 $consoles = all_consoles();
-$apps = production_apps_by_status('ready');
+$listQuery = trim((string) ($_GET['q'] ?? ''));
+$listConsole = (int) ($_GET['console'] ?? 0);
+$readyPage = paginate(filter_production_apps(production_apps_by_status('ready'), $listQuery, $listConsole));
+$apps = $readyPage['rows'];
 $unassigned = array_values(array_filter($apps, fn($app) => empty($app['console_id'])));
 
 $selectedId = (int) ($_GET['app_id'] ?? 0);
@@ -111,20 +137,25 @@ if ($selectedId > 0) {
     }
 }
 
-page_start('Ready for Production');
+page_start('Ready Apps');
 ?>
 <?php if ($selected): ?>
     <?php render_app_details_panel($selected, $consoles, 'ready-apps.php'); ?>
     <?php render_checklist_summary_panel($selected); ?>
 <?php else: ?>
 <section class="panel">
+    <?php render_list_filters('ready-apps.php', $listQuery, $listConsole, $consoles); ?>
     <div class="panel-heading">
-        <h2>Ready for Production (<?= count($apps) ?>)</h2>
+        <h2>Ready Apps (<?= (int) $readyPage['total'] ?>)</h2>
         <span class="hint">Checklist-complete apps waiting to be sent. Send each app when its console is ready.</span>
     </div>
 
     <?php if (!$apps): ?>
-        <p class="empty block">No apps are marked Ready for Production. Complete a checklist in Production, then use "Ready for Production".</p>
+        <?php if ($listQuery !== '' || $listConsole > 0): ?>
+            <p class="empty block">No app matches this filter.</p>
+        <?php else: ?>
+            <p class="empty block">No apps are ready yet.<br><a class="btn small" href="production.php">Finish a checklist in Prepare Production</a></p>
+        <?php endif; ?>
     <?php endif; ?>
 
     <?php foreach ($consoles as $console): ?>
@@ -160,6 +191,8 @@ page_start('Ready for Production');
             </div>
         </div>
     <?php endif; ?>
+
+    <?php render_pager($readyPage, 'ready-apps.php', ['q' => $listQuery, 'console' => $listConsole]); ?>
 </section>
 <?php endif; ?>
 

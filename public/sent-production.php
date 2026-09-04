@@ -4,7 +4,12 @@ require_once $root . '/includes/bootstrap.php';
 require_login();
 
 $status = (string) ($_GET['status'] ?? 'sent');
-if (!in_array($status, ['sent', 'live', 'rejected', 'suspended'], true)) {
+if ($status === 'live') {
+    /* Live apps have their own page, so send the reader there. */
+    header('Location: live-apps.php');
+    exit;
+}
+if (!in_array($status, ['sent', 'rejected', 'suspended'], true)) {
     $status = 'sent';
 }
 
@@ -13,10 +18,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $return = 'sent-production.php?status=' . urlencode((string) ($_POST['return_status'] ?? 'sent'));
 
     try {
+        if (($_POST['action'] ?? '') === 'bulk') {
+            $bulkAction = (string) ($_POST['bulk_action'] ?? '');
+            $result = apply_bulk_production_action($bulkAction, (array) ($_POST['app_ids'] ?? []));
+            $to = $bulkAction === 'live' ? 'live-apps.php' : $return;
+            redirect_with($to, 'success', bulk_result_message($result, 'updated'));
+        }
+
         if (($_POST['action'] ?? '') === 'set_result') {
             $result = (string) ($_POST['result'] ?? '');
             set_production_result((int) ($_POST['app_id'] ?? 0), $result);
-            redirect_with($return, 'success', 'App marked as ' . ucfirst($result) . '.');
+            $to = $result === 'live' ? 'live-apps.php' : $return;
+            redirect_with($to, 'success', 'App marked as ' . ucfirst($result) . '.');
         }
 
         if (($_POST['action'] ?? '') === 'delete') {
@@ -36,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (($_POST['action'] ?? '') === 'to_sent') {
             revert_app_to_sent((int) ($_POST['app_id'] ?? 0));
-            redirect_with($return, 'success', 'App moved back to Sent.');
+            redirect_with($return, 'success', 'App moved back to Production Apps.');
         }
 
         if (($_POST['action'] ?? '') === 'update_details') {
@@ -51,11 +64,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 function render_sent_apps_table(array $apps, string $status): void
 {
+    $bulk = $status === 'sent'
+        ? [
+            ['value' => 'live', 'label' => 'Mark Live', 'class' => 'primary'],
+            ['value' => 'rejected', 'label' => 'Reject'],
+            ['value' => 'suspended', 'label' => 'Suspend'],
+            ['value' => 'to_ready', 'label' => 'Back to Ready'],
+        ]
+        : [
+            ['value' => 'live', 'label' => 'Mark Live', 'class' => 'primary'],
+            ['value' => 'to_sent', 'label' => 'Back to Production Apps'],
+        ];
     ?>
+    <div class="bulk-form">
+    <form method="post" class="bulk-submit" hidden>
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="bulk">
+        <input type="hidden" name="bulk_action" value="">
+        <input type="hidden" name="return_status" value="<?= h($status) ?>">
+    </form>
+    <?php render_bulk_bar($bulk); ?>
     <div class="table-wrap">
         <table>
             <thead>
             <tr>
+                <th class="col-select"><input type="checkbox" class="bulk-all" aria-label="Select all"></th>
                 <th>App Name</th>
                 <th>Package</th>
                 <th>Status</th>
@@ -67,6 +100,7 @@ function render_sent_apps_table(array $apps, string $status): void
             <tbody>
             <?php foreach ($apps as $app): ?>
                 <tr>
+                    <td class="col-select"><input type="checkbox" class="bulk-row" value="<?= (int) $app['id'] ?>"></td>
                     <td><?= h($app['name']) ?></td>
                     <td>
                         <?php if (!empty($app['package_name'])): ?>
@@ -82,7 +116,7 @@ function render_sent_apps_table(array $apps, string $status): void
                     <td><?= h($app['sent_at'] ?? '—') ?></td>
                     <td><?= h($app['live_at'] ?? '—') ?></td>
                     <td class="actions">
-                        <a class="btn small" href="sent-production.php?status=<?= h($status) ?>&app_id=<?= (int) $app['id'] ?>">Manage</a>
+                        <a class="btn small" href="app.php?id=<?= (int) $app['id'] ?>">Open</a>
                         <?php if ($app['status'] === 'sent'): ?>
                             <form method="post">
                                 <?= csrf_field() ?>
@@ -129,7 +163,7 @@ function render_sent_apps_table(array $apps, string $status): void
                                         <input type="hidden" name="action" value="to_sent">
                                         <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
                                         <input type="hidden" name="return_status" value="<?= h($status) ?>">
-                                        <button class="menu-item" type="submit">Back to Sent</button>
+                                        <button class="menu-item" type="submit">Back to Production Apps</button>
                                     </form>
                                 <?php endif; ?>
                                 <form method="post" onsubmit="return confirm('Delete this app? Its checklist and task history will also be removed.');">
@@ -147,16 +181,19 @@ function render_sent_apps_table(array $apps, string $status): void
             </tbody>
         </table>
     </div>
+    </div>
     <?php
 }
 
 $counts = production_status_counts();
 $consoles = all_consoles();
-$apps = production_apps_by_status($status);
+$listQuery = trim((string) ($_GET['q'] ?? ''));
+$listConsole = (int) ($_GET['console'] ?? 0);
+$sentPage = paginate(filter_production_apps(production_apps_by_status($status), $listQuery, $listConsole));
+$apps = $sentPage['rows'];
 $unassigned = array_values(array_filter($apps, fn($app) => empty($app['console_id'])));
 $tabs = [
     'sent' => 'Sent for Production',
-    'live' => 'Live',
     'rejected' => 'Rejected',
     'suspended' => 'Suspended',
 ];
@@ -165,7 +202,11 @@ $selectedId = (int) ($_GET['app_id'] ?? 0);
 $selected = null;
 if ($selectedId > 0) {
     $selected = get_production_app($selectedId);
-    if (!$selected || !in_array($selected['status'], ['sent', 'live', 'rejected', 'suspended'], true)) {
+    if ($selected && $selected['status'] === 'live') {
+        header('Location: live-apps.php?app_id=' . $selectedId);
+        exit;
+    }
+    if (!$selected || !in_array($selected['status'], ['sent', 'rejected', 'suspended'], true)) {
         $selected = null;
     }
 }
@@ -182,20 +223,24 @@ page_start('Production Apps');
             <?= h($label) ?> (<?= (int) $counts[$key] ?>)
         </a>
     <?php endforeach; ?>
+    <a class="tab-link" href="live-apps.php">Live (<?= (int) $counts['live'] ?>) &rarr;</a>
 </div>
 
 <section class="panel">
+    <?php render_list_filters('sent-production.php', $listQuery, $listConsole, $consoles, ['status' => $status]); ?>
     <div class="panel-heading">
-        <h2><?= h($tabs[$status]) ?> (<?= count($apps) ?>)</h2>
+        <h2><?= h($tabs[$status]) ?> (<?= (int) $sentPage['total'] ?>)</h2>
         <?php if ($status === 'sent'): ?>
-            <span class="hint">Set the Play Console review result for each app.</span>
-        <?php elseif ($status === 'live'): ?>
-            <a class="btn small" href="live-apps.php">Manage in Live Apps</a>
+            <span class="hint">Set the Play Console review result. Marking an app Live moves it to Live Apps.</span>
         <?php endif; ?>
     </div>
 
     <?php if (!$apps): ?>
-        <p class="empty block">No apps in this list.</p>
+        <?php if ($listQuery !== '' || $listConsole > 0): ?>
+            <p class="empty block">No app matches this filter.</p>
+        <?php else: ?>
+            <p class="empty block">No apps in this list.</p>
+        <?php endif; ?>
     <?php endif; ?>
 
     <?php foreach ($consoles as $console): ?>
@@ -231,6 +276,8 @@ page_start('Production Apps');
             </div>
         </div>
     <?php endif; ?>
+
+    <?php render_pager($sentPage, 'sent-production.php', ['status' => $status, 'q' => $listQuery, 'console' => $listConsole]); ?>
 </section>
 <?php endif; ?>
 

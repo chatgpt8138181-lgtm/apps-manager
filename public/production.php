@@ -11,6 +11,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $action = $_POST['action'] ?? '';
 
+        if ($action === 'bulk') {
+            $result = apply_bulk_production_action(
+                (string) ($_POST['bulk_action'] ?? ''),
+                (array) ($_POST['app_ids'] ?? [])
+            );
+            redirect_with('production.php', 'success', bulk_result_message($result, 'updated'));
+        }
+
         if ($action === 'add') {
             $newId = add_production_app($_POST);
             redirect_with('production.php?app_id=' . $newId, 'success', 'App added to Prepare Production. Complete the checklist.');
@@ -47,9 +55,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $items = checklist_items();
-$totalItems = count($items);
+$totalItems = count(checklist_required_keys());
 $consoles = all_consoles();
-$prepareApps = production_apps_by_status('prepare');
+$listQuery = trim((string) ($_GET['q'] ?? ''));
+$listConsole = (int) ($_GET['console'] ?? 0);
+$prepareAll = filter_production_apps(production_apps_by_status('prepare'), $listQuery, $listConsole);
+$preparePage = paginate($prepareAll);
+$prepareApps = $preparePage['rows'];
 $selectedId = (int) ($_GET['app_id'] ?? 0);
 $selected = null;
 
@@ -61,14 +73,20 @@ if ($selectedId > 0) {
 }
 
 $selectedState = $selected ? checklist_state((int) $selected['id']) : [];
+$selectedTimes = $selected ? checklist_done_times((int) $selected['id']) : [];
 $selectedDone = $selected ? (int) $selected['checklist_done'] : 0;
 $selectedDomainUrl = $selected ? app_domain_url_for($selected) : null;
 
 page_start('Prepare Production');
 ?>
 <?php if (!$selected): ?>
-<section class="form-panel">
-    <h2>Add App to Prepare Production</h2>
+<section class="form-panel add-panel">
+    <div class="app-group" data-group-key="add-form">
+        <button class="app-group-toggle" type="button" aria-expanded="false">
+            <span>+ Add App to Prepare Production</span>
+            <span class="nav-chevron" aria-hidden="true"></span>
+        </button>
+        <div class="app-group-body">
     <form method="post" class="stacked-form wide">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="add">
@@ -85,6 +103,8 @@ page_start('Prepare Production');
         </label>
         <button class="btn primary" type="submit">Add App</button>
     </form>
+        </div>
+    </div>
 </section>
 <?php endif; ?>
 
@@ -113,7 +133,13 @@ page_start('Prepare Production');
                         <input type="checkbox" name="items[<?= h($key) ?>]" value="1" <?= $isDone ? 'checked' : '' ?>>
                         <span>
                             <strong><?= h($item['label']) ?></strong>
+                        <?php if (!empty($item['optional'])): ?>
+                            <span class="badge badge-gray">Optional</span>
+                        <?php endif; ?>
                             <small><?= h($item['description']) ?></small>
+                            <?php if ($isDone && !empty($selectedTimes[$key])): ?>
+                                <small class="checklist-done-at">Done <?= h($selectedTimes[$key]) ?></small>
+                            <?php endif; ?>
                         </span>
                     </label>
                     <?php if ($fieldName): ?>
@@ -221,10 +247,23 @@ page_start('Prepare Production');
 function render_prepare_apps_table(array $apps, int $totalItems): void
 {
     ?>
+    <div class="bulk-form">
+    <form method="post" class="bulk-submit" hidden>
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="bulk">
+        <input type="hidden" name="bulk_action" value="">
+    </form>
+    <?php render_bulk_bar([
+        ['value' => 'ready', 'label' => 'Mark Ready'],
+        ['value' => 'send', 'label' => 'Send for Production', 'class' => 'primary'],
+        ['value' => 'delete', 'label' => 'Delete', 'class' => 'danger',
+         'confirm' => 'Delete the selected apps? Their checklists and task history go too.'],
+    ]); ?>
     <div class="table-wrap">
         <table>
             <thead>
             <tr>
+                <th class="col-select"><input type="checkbox" class="bulk-all" aria-label="Select all"></th>
                 <th>App Name</th>
                 <th>Package</th>
                 <th>Checklist</th>
@@ -236,6 +275,7 @@ function render_prepare_apps_table(array $apps, int $totalItems): void
             <?php foreach ($apps as $app): ?>
                 <?php $done = (int) $app['checklist_done']; ?>
                 <tr>
+                    <td class="col-select"><input type="checkbox" class="bulk-row" value="<?= (int) $app['id'] ?>"></td>
                     <td><?= h($app['name']) ?></td>
                     <td><?= h($app['package_name'] ?? '—') ?></td>
                     <td>
@@ -244,7 +284,7 @@ function render_prepare_apps_table(array $apps, int $totalItems): void
                     </td>
                     <td><?= h($app['created_at']) ?></td>
                     <td class="actions">
-                        <a class="btn small" href="production.php?app_id=<?= (int) $app['id'] ?>">Manage</a>
+                        <a class="btn small" href="app.php?id=<?= (int) $app['id'] ?>">Open</a>
                         <form method="post">
                             <?= csrf_field() ?>
                             <input type="hidden" name="action" value="ready">
@@ -274,19 +314,25 @@ function render_prepare_apps_table(array $apps, int $totalItems): void
             </tbody>
         </table>
     </div>
+    </div>
     <?php
 }
 
 $unassignedPrepare = array_values(array_filter($prepareApps, fn($app) => empty($app['console_id'])));
 ?>
 <section class="panel">
+    <?php render_list_filters('production.php', $listQuery, $listConsole, $consoles); ?>
     <div class="panel-heading">
-        <h2>Prepare Production (<?= count($prepareApps) ?>)</h2>
+        <h2>Prepare Production (<?= (int) $preparePage['total'] ?>)</h2>
         <span class="hint">Send for Production unlocks at <?= $totalItems ?>/<?= $totalItems ?>.</span>
     </div>
 
     <?php if (!$prepareApps): ?>
-        <p class="empty block">No apps in Prepare Production.</p>
+        <?php if ($listQuery !== '' || $listConsole > 0): ?>
+            <p class="empty block">No app matches this filter.</p>
+        <?php else: ?>
+            <p class="empty block">No apps in Prepare Production yet.<br><a class="btn small primary" href="production.php">Add your first app above</a></p>
+        <?php endif; ?>
     <?php endif; ?>
 
     <?php foreach ($consoles as $console): ?>
@@ -322,6 +368,7 @@ $unassignedPrepare = array_values(array_filter($prepareApps, fn($app) => empty($
             </div>
         </div>
     <?php endif; ?>
+    <?php render_pager($preparePage, 'production.php', ['q' => $listQuery, 'console' => $listConsole]); ?>
 </section>
 <?php endif; ?>
 

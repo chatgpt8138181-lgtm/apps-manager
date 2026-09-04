@@ -19,6 +19,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect_with('consoles.php', 'success', 'Console updated.');
         }
 
+        if ($action === 'rebuild_urls') {
+            $result = rebuild_console_domain_urls((int) ($_POST['console_id'] ?? 0));
+            $message = $result['changed'] . ' of ' . $result['total'] . ' app URL(s) rebuilt.';
+            if ($result['was_checked'] > 0) {
+                $message .= ' ' . $result['was_checked'] . ' were marked checked and are pending again.';
+            }
+            redirect_with('consoles.php', 'success', $message);
+        }
+
         if ($action === 'delete') {
             delete_console((int) ($_POST['console_id'] ?? 0));
             redirect_with('consoles.php', 'success', 'Console deleted.');
@@ -33,8 +42,13 @@ $progress = cycle_progress();
 
 page_start('Play Consoles');
 ?>
-<section class="form-panel">
-    <h2>Add Console</h2>
+<section class="form-panel add-panel">
+    <div class="app-group" data-group-key="add-form">
+        <button class="app-group-toggle" type="button" aria-expanded="false">
+            <span>+ Add Console</span>
+            <span class="nav-chevron" aria-hidden="true"></span>
+        </button>
+        <div class="app-group-body">
     <form method="post" class="stacked-form wide">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="add">
@@ -49,6 +63,8 @@ page_start('Play Consoles');
         </label>
         <button class="btn primary" type="submit">Add Console</button>
     </form>
+        </div>
+    </div>
 </section>
 
 <section class="panel">
@@ -69,17 +85,27 @@ page_start('Play Consoles');
         ?>
         <div class="app-group" data-group-key="console-<?= $consoleId ?>">
             <button class="app-group-toggle" type="button" aria-expanded="false">
-                <span>
-                    <?= h($console['name']) ?>
-                    <?= $urlsSet
-                        ? '<span class="badge badge-green">URLs set</span>'
-                        : '<span class="badge badge-amber">URLs missing</span>' ?>
+                <span class="console-head">
+                    <span class="console-head-name">
+                        <?= h($console['name']) ?>
+                        <?= $urlsSet
+                            ? '<span class="badge badge-green">URLs set</span>'
+                            : '<span class="badge badge-amber">URLs missing</span>' ?>
+                    </span>
+                    <span class="console-head-meta">
+                        <?= (int) $console['loading_total'] ?> loading
+                        (<?= (int) $console['loading_active'] ?> active)
+                        &middot; <?= (int) $console['live_total'] ?> live
+                        &middot; <?= (int) $console['ready_total'] ?> ready
+                    </span>
                 </span>
                 <span class="nav-chevron" aria-hidden="true"></span>
             </button>
             <div class="app-group-body">
                 <div class="console-stats">
                     <span><strong>Cycle <?= (int) $console['cycle_no'] ?></strong></span>
+                    <span><strong><?= (int) $console['loading_total'] ?></strong> Loading Apps</span>
+                    <span><strong><?= (int) $console['loading_active'] ?></strong> Active</span>
                     <span><strong><?= (int) $console['live_total'] ?></strong> Live Apps</span>
                     <span><strong><?= (int) $console['ready_total'] ?></strong> Ready for Work</span>
                     <span><strong><?= (int) $console['shown_total'] ?></strong> Shown This Cycle</span>
@@ -109,7 +135,13 @@ page_start('Play Consoles');
 
                 <div class="inline-actions console-actions">
                     <button class="btn primary" type="submit" form="<?= h($formId) ?>">Save</button>
-                    <form method="post" onsubmit="return confirm('Delete this console? Its apps will be unassigned and leave the task pool, and its task history will be removed.');">
+                    <form method="post" onsubmit="return confirm('Rebuild this console\'s app URLs from its domain? Any URL that changes goes back to pending.');">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="rebuild_urls">
+                        <input type="hidden" name="console_id" value="<?= $consoleId ?>">
+                        <button class="btn" type="submit">Rebuild app URLs</button>
+                    </form>
+                    <form method="post" onsubmit="return confirm('Delete this console? Its publishing and loading apps will be unassigned, and its task history will be removed.');">
                         <?= csrf_field() ?>
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="console_id" value="<?= $consoleId ?>">

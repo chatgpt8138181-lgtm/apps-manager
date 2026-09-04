@@ -44,10 +44,10 @@ $apps = sorted_apps();
 page_start('Dashboard');
 ?>
 <section class="stats-grid">
-    <div class="stat"><span><?= count($categories) ?></span><p>Categories</p></div>
+    <div class="stat"><span><?= count($categories) ?></span><p>Consoles</p></div>
     <div class="stat"><span><?= count($apps) ?></span><p>Total Apps</p></div>
     <div class="stat"><span><?= count(array_filter($apps, fn($app) => $app['loading_status'] === 'Active')) ?></span><p>Active Apps</p></div>
-    <div class="stat"><span><?= count(array_filter($apps, fn($app) => $app['ready_loading_status'] === 'Ready')) ?></span><p>Ready Apps</p></div>
+    <div class="stat"><span><?= count(array_filter($apps, fn($app) => $app['ready_loading_status'] === 'Ready')) ?></span><p>Ready to Load</p></div>
 </section>
 
 <section class="panel">
@@ -144,7 +144,7 @@ page_start('Dashboard');
                                 <?php foreach ($categoryApps as $app): ?>
                                     <?php $appId = (int) $app['id']; ?>
                                     <tr>
-                                        <td class="col-id"><?= (int) $app['display_id'] ?></td>
+                                        <td class="col-id">#<?= (int) $app['id'] ?></td>
                                         <td class="app-icon-cell"><img class="app-icon" src="<?= h(app_icon_url($app['icon_path'])) ?>" alt=""></td>
                                         <td class="col-name"><?= h($app['app_name']) ?></td>
                                         <td class="status-cell">

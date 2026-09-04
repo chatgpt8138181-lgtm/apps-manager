@@ -7,7 +7,11 @@ require_once $appRoot . '/config/database.php';
 require_once $appRoot . '/includes/functions.php';
 require_once $appRoot . '/includes/auth.php';
 require_once $appRoot . '/includes/csrf.php';
+require_once $appRoot . '/includes/activity.php';
+require_once $appRoot . '/includes/store.php';
+require_once $appRoot . '/includes/rotation.php';
 require_once $appRoot . '/includes/workflow.php';
+require_once $appRoot . '/includes/ads.php';
 require_once $appRoot . '/includes/app-panels.php';
 
 function app_root_path(): string
@@ -39,16 +43,20 @@ function nav_icon(string $key): string
         'ready-apps.php' => '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
         'sent-production.php' => '<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>',
         'live-apps.php' => '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18"/>',
+        'ads-config.php' => '<path d="M4 7h16"/><path d="M4 12h10"/><path d="M4 17h7"/><path d="m16 15 2 2 4-4"/>',
         'publish-info.php' => '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5h10"/>',
         'consoles.php' => '<rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/>',
-        'app-urls.php' => '<path d="M10 13a4 4 0 0 0 5.6.6l2.6-2.6a4 4 0 0 0-5.6-5.6L11 6.9"/><path d="M14 11a4 4 0 0 0-5.6-.6L5.8 13a4 4 0 0 0 5.6 5.6l1.5-1.5"/>',
         'tasks.php' => '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="m9 15 2 2 4-4"/>',
         'dashboard.php' => '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="11" width="7" height="10" rx="1"/><rect x="3" y="15" width="7" height="6" rx="1"/>',
         'active-apps.php' => '<circle cx="12" cy="12" r="9"/><path d="m10 9 5 3-5 3z"/>',
+        'rotations.php' => '<path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/>',
         'add-app.php' => '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/>',
         'search.php' => '<circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/>',
         'categories.php' => '<path d="M3 12V5a2 2 0 0 1 2-2h7l9 9-9 9z"/><path d="M7.5 7.5h.01"/>',
+        'activity.php' => '<path d="M3 12h4l3 8 4-16 3 8h4"/>',
         'admins.php' => '<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 11a3 3 0 1 0 0-6"/><path d="M18 20a6 6 0 0 0-3-5.2"/>',
+        'home.php' => '<path d="m3 11 9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+        'apps.php' => '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
         'App Workflow' => '<path d="M4 7h9"/><path d="m10 4 3 3-3 3"/><path d="M20 17h-9"/><path d="m14 14-3 3 3 3"/>',
     ];
 
@@ -74,11 +82,19 @@ function nav_counts(): array
         'ready-apps.php' => (int) ($counts['ready'] ?? 0),
         'sent-production.php' => (int) ($counts['sent'] ?? 0),
         'live-apps.php' => (int) ($counts['live'] ?? 0),
+        'ads-config.php' => ads_pending_count(),
     ];
 }
 
 /* Nav entries are either "file.php" => "Label" or "Group" => [ ...entries ],
    so a group can hold a group. */
+/* The app page belongs to the workflow group even though it is not a
+   menu entry of its own. */
+function nav_group_page(): string
+{
+    return current_page() === 'app.php' ? 'apps.php' : current_page();
+}
+
 function nav_items_contain_page(array $items): bool
 {
     foreach ($items as $key => $value) {
@@ -89,7 +105,7 @@ function nav_items_contain_page(array $items): bool
             continue;
         }
 
-        if ($key === current_page()) {
+        if ($key === nav_group_page()) {
             return true;
         }
     }
@@ -130,43 +146,56 @@ function render_nav_group(string $label, array $items, array $counts = [], bool 
 function page_start(string $title): void
 {
     $navGroups = [
-        'Publishing' => [
-            /* The four stages an app moves through, in order. */
+        'Apps' => [
+            'apps.php' => 'All Apps',
+            /* The publishing stages, in order. */
             'App Workflow' => [
-                'production.php' => 'Production',
+                'production.php' => 'Prepare Production',
                 'ready-apps.php' => 'Ready Apps',
                 'sent-production.php' => 'Production Apps',
                 'live-apps.php' => 'Live Apps',
+                'ads-config.php' => 'Ads Config',
             ],
             'publish-info.php' => 'Publish Info',
-            'consoles.php' => 'Consoles',
-            'app-urls.php' => 'App URLs',
-            'tasks.php' => 'Daily Tasks',
         ],
-        'Loading' => [
-            'dashboard.php' => 'Dashboard',
-            'active-apps.php' => 'Active Apps',
-            'add-app.php' => 'Add App',
+        'Rotations' => [
+            'rotations.php' => 'Today',
+            'dashboard.php' => 'Loading Board',
             'search.php' => 'Search/Edit',
-            'categories.php' => 'Console Names',
+        ],
+        'Setup' => [
+            'consoles.php' => 'Play Consoles',
+            'activity.php' => 'Activity',
         ],
     ];
     $navCounts = nav_counts();
     $flash = flash();
     ?>
     <!doctype html>
-    <html lang="en">
+    <html lang="en" data-theme="light">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title><?= h($title) ?> | App Manager</title>
         <link rel="stylesheet" href="assets/css/style.css?v=<?= asset_version('assets/css/style.css') ?>">
+        <script>
+        /* Light unless this browser has been switched to dark. */
+        (() => {
+            try {
+                if (localStorage.getItem('theme') === 'dark') {
+                    document.documentElement.dataset.theme = 'dark';
+                }
+            } catch (error) {
+                /* storage unavailable */
+            }
+        })();
+        </script>
     </head>
     <body>
     <div class="app-shell">
         <aside class="sidebar">
             <div class="sidebar-head">
-                <a class="brand" href="dashboard.php">App Manager</a>
+                <a class="brand" href="home.php">App Manager</a>
                 <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu">
                     <span class="menu-icon" aria-hidden="true"></span>
                     <span>Menu</span>
@@ -174,6 +203,9 @@ function page_start(string $title): void
             </div>
             <div class="menu-panel" id="mobile-menu">
                 <nav>
+                    <a class="nav-single <?= current_page() === 'home.php' ? 'active' : '' ?>" href="home.php">
+                        <span class="nav-label"><?= nav_icon('home.php') ?>Home</span>
+                    </a>
                     <?php foreach ($navGroups as $group => $items): ?>
                         <?php render_nav_group($group, $items, $navCounts); ?>
                     <?php endforeach; ?>
@@ -191,6 +223,12 @@ function page_start(string $title): void
                     <h1><?= h($title) ?></h1>
                 </div>
                 <div class="topbar-tools">
+                    <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Switch theme" title="Switch theme">
+                        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 13a8.5 8.5 0 0 1-10-10 8.5 8.5 0 1 0 10 10Z"/></svg>
+                        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                            stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+                    </button>
                     <button class="search-trigger" type="button" id="palette-open">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                             stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/></svg>
@@ -228,6 +266,20 @@ function page_end(): void
 {
     ?>
         </main>
+    </div>
+    <div class="palette" id="shortcuts" hidden>
+        <div class="palette-box" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+            <div class="shortcuts-head"><strong>Keyboard shortcuts</strong></div>
+            <ul class="shortcuts-list">
+                <li><kbd>&#8984;K</kbd> <span>Search pages and apps</span></li>
+                <li><kbd>/</kbd> <span>Search, without the modifier</span></li>
+                <li><kbd>?</kbd> <span>This list</span></li>
+                <li><kbd>Esc</kbd> <span>Close search or this list</span></li>
+                <li><kbd>&uarr;</kbd> <kbd>&darr;</kbd> <span>Move through search results</span></li>
+                <li><kbd>Enter</kbd> <span>Open the highlighted result</span></li>
+            </ul>
+            <p class="palette-hint">Esc to close</p>
+        </div>
     </div>
     <div class="palette" id="palette" hidden>
         <div class="palette-box" role="dialog" aria-modal="true" aria-label="Search">
@@ -268,6 +320,17 @@ function page_end(): void
                     }
                 });
             });
+        });
+
+        /* Theme: light is the ground state, dark is a choice this browser keeps. */
+        document.getElementById('theme-toggle')?.addEventListener('click', () => {
+            const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+            document.documentElement.dataset.theme = next;
+            try {
+                localStorage.setItem('theme', next);
+            } catch (error) {
+                /* storage unavailable */
+            }
         });
 
         const densityStore = 'rowDensity';
@@ -440,6 +503,12 @@ function page_end(): void
                 }
             });
 
+            document.getElementById('shortcuts')?.addEventListener('click', (event) => {
+                if (event.target.id === 'shortcuts') {
+                    event.target.hidden = true;
+                }
+            });
+
             let typingTimer = null;
             paletteInput.addEventListener('input', () => {
                 clearTimeout(typingTimer);
@@ -466,8 +535,23 @@ function page_end(): void
                 }
             });
 
+            /* The shortcuts card, opened with ? and closed with Esc. */
+            const shortcuts = document.getElementById('shortcuts');
+
             document.addEventListener('keydown', (event) => {
                 const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName);
+
+                if (event.key === '?' && !typing) {
+                    event.preventDefault();
+                    if (shortcuts) {
+                        shortcuts.hidden = !shortcuts.hidden;
+                    }
+                    return;
+                }
+                if (event.key === 'Escape' && shortcuts && !shortcuts.hidden) {
+                    shortcuts.hidden = true;
+                    return;
+                }
                 if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
                     event.preventDefault();
                     palette.hidden ? openPalette() : closePalette();
@@ -479,6 +563,90 @@ function page_end(): void
                 }
             });
         }
+
+        /* Row selection. The table holds its own per-row forms, so the bulk
+           submit is a separate form that this fills in on click. */
+        document.querySelectorAll('.bulk-form').forEach((scope) => {
+            const bar = scope.querySelector('.bulk-bar');
+            const sender = scope.querySelector('form.bulk-submit');
+            const downloader = scope.querySelector('form.bulk-download');
+            const number = scope.querySelector('.bulk-number');
+            const note = scope.querySelector('.bulk-note');
+            const all = scope.querySelector('.bulk-all');
+            const rows = [...scope.querySelectorAll('.bulk-row')];
+            if (!bar || !sender || !rows.length) {
+                return;
+            }
+
+            const sync = () => {
+                const picked = rows.filter((row) => row.checked);
+                bar.hidden = picked.length === 0;
+                if (number) {
+                    number.textContent = String(picked.length);
+                }
+                if (all) {
+                    all.checked = picked.length === rows.length;
+                    all.indeterminate = picked.length > 0 && picked.length < rows.length;
+                }
+                if (note) {
+                    /* An app with no folder cannot go into a zip; say so up front. */
+                    const without = picked.filter((row) => row.dataset.noUrl === '1').length;
+                    note.hidden = without === 0;
+                    note.textContent = without + ' with no folder — left out of a ZIP';
+                }
+                rows.forEach((row) => row.closest('tr')?.classList.toggle('is-picked', row.checked));
+            };
+
+            rows.forEach((row) => row.addEventListener('change', sync));
+
+            all?.addEventListener('change', () => {
+                rows.forEach((row) => { row.checked = all.checked; });
+                sync();
+            });
+
+            scope.querySelector('.bulk-clear')?.addEventListener('click', () => {
+                rows.forEach((row) => { row.checked = false; });
+                sync();
+            });
+
+            scope.querySelectorAll('[data-bulk-action]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const picked = rows.filter((row) => row.checked);
+                    if (!picked.length) {
+                        return;
+                    }
+                    const question = button.dataset.confirm;
+                    if (question && !window.confirm(question)) {
+                        return;
+                    }
+
+                    /* A download answers with a file, so it posts to its own form
+                       and the page stays where it is. */
+                    const target = button.dataset.bulkDownload && downloader ? downloader : sender;
+
+                    target.querySelectorAll('.bulk-id').forEach((old) => old.remove());
+                    picked.forEach((row) => {
+                        const field = document.createElement('input');
+                        field.type = 'hidden';
+                        field.name = 'app_ids[]';
+                        field.value = row.value;
+                        field.className = 'bulk-id';
+                        target.appendChild(field);
+                    });
+                    target.querySelector('[name="bulk_action"]')?.setAttribute('value', button.dataset.bulkAction);
+
+                    if (target === downloader) {
+                        button.classList.add('is-loading');
+                        setTimeout(() => button.classList.remove('is-loading'), 2500);
+                    } else {
+                        button.classList.add('is-loading');
+                    }
+                    target.submit();
+                });
+            });
+
+            sync();
+        });
 
         const menuToggle = document.querySelector('.menu-toggle');
         const menuPanel = document.querySelector('.menu-panel');

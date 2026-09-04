@@ -7,12 +7,115 @@ declare(strict_types=1);
  */
 
 /* Where this app sits in the four-stage flow. */
+/* Long lists are shown a page at a time, so the browser never has to
+   draw hundreds of rows at once. */
+function paginate(array $rows, int $perPage = 50): array
+{
+    $total = count($rows);
+    $perPage = max(10, $perPage);
+    $pages = max(1, (int) ceil($total / $perPage));
+    $page = max(1, min($pages, (int) ($_GET['page'] ?? 1)));
+
+    return [
+        'rows' => array_slice($rows, ($page - 1) * $perPage, $perPage),
+        'page' => $page,
+        'pages' => $pages,
+        'total' => $total,
+        'per_page' => $perPage,
+        'from' => $total === 0 ? 0 : ($page - 1) * $perPage + 1,
+        'to' => min($total, $page * $perPage),
+    ];
+}
+
+function render_pager(array $info, string $page, array $params = []): void
+{
+    if ((int) $info['pages'] < 2) {
+        return;
+    }
+
+    $link = function (int $target) use ($page, $params): string {
+        $params['page'] = $target;
+
+        return $page . '?' . http_build_query($params);
+    };
+    ?>
+    <nav class="pager" aria-label="Pages">
+        <span class="pager-count">
+            <?= (int) $info['from'] ?>&ndash;<?= (int) $info['to'] ?> of <?= (int) $info['total'] ?>
+        </span>
+        <span class="pager-links">
+            <?php if ((int) $info['page'] > 1): ?>
+                <a class="btn small" href="<?= h($link((int) $info['page'] - 1)) ?>">&laquo; Previous</a>
+            <?php endif; ?>
+            <span class="pager-position">Page <?= (int) $info['page'] ?> of <?= (int) $info['pages'] ?></span>
+            <?php if ((int) $info['page'] < (int) $info['pages']): ?>
+                <a class="btn small" href="<?= h($link((int) $info['page'] + 1)) ?>">Next &raquo;</a>
+            <?php endif; ?>
+        </span>
+    </nav>
+    <?php
+}
+
+/* Narrow a list by free text (name or package) and by console. */
+function filter_production_apps(array $apps, string $query, int $consoleId): array
+{
+    $needle = mb_strtolower(trim($query));
+
+    return array_values(array_filter($apps, function (array $app) use ($needle, $consoleId) {
+        if ($consoleId > 0 && (int) ($app['console_id'] ?? 0) !== $consoleId) {
+            return false;
+        }
+        if ($needle === '') {
+            return true;
+        }
+
+        $haystack = mb_strtolower(($app['name'] ?? '') . ' ' . ($app['package_name'] ?? ''));
+
+        return mb_strpos($haystack, $needle) !== false;
+    }));
+}
+
+/* The search + console bar every publishing list carries. */
+function render_list_filters(
+    string $page,
+    string $query,
+    int $consoleId,
+    array $consoles,
+    array $hidden = []
+): void {
+    $active = $query !== '' || $consoleId > 0;
+    ?>
+    <form method="get" action="<?= h($page) ?>" class="list-filters">
+        <?php foreach ($hidden as $name => $value): ?>
+            <input type="hidden" name="<?= h((string) $name) ?>" value="<?= h((string) $value) ?>">
+        <?php endforeach; ?>
+        <label>Search
+            <input type="search" name="q" value="<?= h($query) ?>" placeholder="App name or package">
+        </label>
+        <label>Console
+            <select name="console">
+                <option value="0">All consoles</option>
+                <?php foreach ($consoles as $console): ?>
+                    <option value="<?= (int) $console['id'] ?>" <?= $consoleId === (int) $console['id'] ? 'selected' : '' ?>>
+                        <?= h($console['name']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <button class="btn primary" type="submit">Filter</button>
+        <?php if ($active): ?>
+            <a class="btn" href="<?= h($page . ($hidden ? '?' . http_build_query($hidden) : '')) ?>">Clear</a>
+        <?php endif; ?>
+    </form>
+    <?php
+}
+
 function render_workflow_stepper(array $app): void
 {
     $steps = [
         'prepare' => 'Prepare',
         'ready' => 'Ready',
-        'sent' => 'Production',
+        'sent' => 'Sent',
         'live' => 'Live',
     ];
     $order = array_keys($steps);
@@ -39,7 +142,11 @@ function render_workflow_stepper(array $app): void
         <?php endforeach; ?>
     </ol>
     <?php if ($offTrack): ?>
-        <p class="hint">This app is <?= h($status) ?>, so it sits outside the normal flow.</p>
+        <p class="hint">
+            <?= $status === 'none'
+                ? 'This app is not in the publishing flow yet.'
+                : 'This app is ' . h($status) . ', so it sits outside the normal flow.' ?>
+        </p>
     <?php endif; ?>
     <?php
 }
@@ -105,12 +212,40 @@ function render_app_details_panel(array $app, array $consoles, string $backUrl):
     <?php
 }
 
+/* The bar that appears once rows are ticked. $actions is a list of
+   ['value' => ..., 'label' => ..., 'class' => ..., 'confirm' => ...]. */
+function render_bulk_bar(array $actions): void
+{
+    ?>
+    <div class="bulk-bar" hidden>
+        <span class="bulk-count"><strong class="bulk-number">0</strong> selected</span>
+        <span class="bulk-note" hidden></span>
+        <div class="bulk-bar-actions">
+            <?php foreach ($actions as $action): ?>
+                <button class="btn small <?= h($action['class'] ?? '') ?>"
+                        type="button"
+                        data-bulk-action="<?= h($action['value']) ?>"
+                        <?= !empty($action['download']) ? 'data-bulk-download="1"' : '' ?>
+                        <?= !empty($action['confirm'])
+                            ? 'data-confirm="' . h($action['confirm']) . '"'
+                            : '' ?>>
+                    <?= h($action['label']) ?>
+                </button>
+            <?php endforeach; ?>
+            <button class="btn small bulk-clear" type="button">Clear</button>
+        </div>
+    </div>
+    <?php
+}
+
+/* Where this comment sits, the checklist panel follows. */
 function render_checklist_summary_panel(array $app): void
 {
     $items = checklist_items();
     $state = checklist_state((int) $app['id']);
+    $times = checklist_done_times((int) $app['id']);
     $done = (int) ($app['checklist_done'] ?? 0);
-    $total = count($items);
+    $total = count(checklist_required_keys());
     ?>
     <section class="panel">
         <div class="panel-heading">
@@ -130,7 +265,13 @@ function render_checklist_summary_panel(array $app): void
                             : '<span class="badge badge-gray">Pending</span>' ?>
                         <span>
                             <strong><?= h($item['label']) ?></strong>
+                        <?php if (!empty($item['optional'])): ?>
+                            <span class="badge badge-gray">Optional</span>
+                        <?php endif; ?>
                             <small><?= h($item['description']) ?></small>
+                            <?php if ($isDone && !empty($times[$key])): ?>
+                                <small class="checklist-done-at">Done <?= h($times[$key]) ?></small>
+                            <?php endif; ?>
                         </span>
                     </div>
                 </div>

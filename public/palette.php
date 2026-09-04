@@ -16,20 +16,11 @@ if ($query === '') {
 $like = '%' . $query . '%';
 $results = [];
 
-$stagePages = [
-    'prepare' => 'production.php',
-    'ready' => 'ready-apps.php',
-    'sent' => 'sent-production.php',
-    'live' => 'live-apps.php',
-    'rejected' => 'sent-production.php',
-    'suspended' => 'sent-production.php',
-];
-
 $stmt = db()->prepare(
-    "SELECT pa.id, pa.name, pa.package_name, pa.status, c.name AS console_name
-     FROM production_apps pa
+    "SELECT pa.id, pa.app_name AS name, pa.package_name, pa.stage AS status, c.name AS console_name
+     FROM apps pa
      LEFT JOIN consoles c ON c.id = pa.console_id
-     WHERE pa.name LIKE ? OR pa.package_name LIKE ?
+     WHERE pa.stage <> 'none' AND (pa.app_name LIKE ? OR pa.package_name LIKE ?)
      ORDER BY pa.created_at DESC, pa.id DESC
      LIMIT 8"
 );
@@ -37,22 +28,21 @@ $stmt->execute([$like, $like]);
 
 foreach ($stmt->fetchAll() as $row) {
     $status = (string) $row['status'];
-    $page = $stagePages[$status] ?? 'production.php';
 
     $results[] = [
         'group' => 'Publishing',
         'title' => (string) $row['name'],
         'sub' => trim(((string) ($row['package_name'] ?? '')) . ' · ' . ucfirst($status)
             . (!empty($row['console_name']) ? ' · ' . $row['console_name'] : ''), ' ·'),
-        'url' => $page . '?app_id=' . (int) $row['id'],
+        'url' => 'app.php?id=' . (int) $row['id'],
     ];
 }
 
 $stmt = db()->prepare(
     "SELECT a.id, a.app_name, c.name AS category_name
      FROM apps a
-     LEFT JOIN categories c ON c.id = a.category_id
-     WHERE a.app_name LIKE ?
+     LEFT JOIN consoles c ON c.id = a.console_id
+     WHERE a.stage = 'none' AND a.app_name LIKE ?
      ORDER BY a.id DESC
      LIMIT 8"
 );

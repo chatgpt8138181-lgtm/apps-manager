@@ -1,7 +1,7 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=$HOME/public_html/servicetech.club/appmanager/
+    - export DEPLOYPATH=$HOME/public_html/servicetech.club/appmanager-dev/
     - /bin/mkdir -p $DEPLOYPATH
     - /bin/cp -R public/* $DEPLOYPATH
     - /bin/cp public/.htaccess $DEPLOYPATH

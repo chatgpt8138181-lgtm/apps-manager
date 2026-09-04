@@ -2,6 +2,13 @@
     --bg: #f4f7fb;
     --panel: #ffffff;
     --surface: #f8fafc;
+    --surface-strong: #eef2f7;
+    --btn-bg: #edf2f7;
+    --btn-bg-hover: #e5eaf2;
+    --btn-text: #243044;
+    --green-line: #bbf7d0;
+    --red-line: #fecaca;
+    --on-primary: #ffffff;
     --text: #172033;
     --muted: #667085;
     --line: #dfe6f0;
@@ -69,7 +76,7 @@ img {
 
 .app-shell {
     display: grid;
-    grid-template-columns: 264px 1fr;
+    grid-template-columns: 286px 1fr;
     min-height: 100vh;
     width: 100%;
 }
@@ -503,7 +510,7 @@ th {
 }
 
 .app-icon {
-    background: #eef2f7;
+    background: var(--surface-strong);
     border: 1px solid var(--line);
     border-radius: var(--r-md);
     height: 48px;
@@ -628,13 +635,13 @@ select.status-select {
 
 select.status-select.is-green {
     background: var(--green-bg);
-    border-color: #bbf7d0;
+    border-color: var(--green-line);
     color: var(--green-text);
 }
 
 select.status-select.is-red {
     background: var(--red-bg);
-    border-color: #fecaca;
+    border-color: var(--red-line);
     color: var(--red-text);
 }
 
@@ -672,7 +679,7 @@ select.status-select.is-red {
 }
 
 .progress {
-    background: #e5eaf2;
+    background: var(--btn-bg-hover);
     border-radius: 999px;
     height: 8px;
     min-width: 110px;
@@ -754,7 +761,7 @@ select.status-select.is-red {
 }
 
 .console-url code {
-    background: #eef2f7;
+    background: var(--surface-strong);
     border-radius: 6px;
     padding: 6px 10px;
     word-break: break-all;
@@ -808,7 +815,7 @@ input[readonly] {
 
 .checklist-item.done {
     background: var(--green-bg);
-    border-color: #bbf7d0;
+    border-color: var(--green-line);
 }
 
 .btn:disabled {
@@ -849,7 +856,7 @@ input[readonly] {
 
 .app-group-toggle {
     align-items: center;
-    background: #f8fafc;
+    background: var(--surface);
     border: 0;
     color: var(--text);
     cursor: pointer;
@@ -864,7 +871,7 @@ input[readonly] {
 }
 
 .app-group-toggle:hover {
-    background: #eef2f7;
+    background: var(--surface-strong);
 }
 
 .app-group-toggle .nav-chevron {
@@ -896,17 +903,17 @@ input[readonly] {
 
 /* Nested groups (month > day) sit flush inside their parent. */
 .app-group .app-group-body .app-group {
-    background: #fff;
+    background: var(--panel);
 }
 
 .app-group .app-group-body .app-group-toggle {
-    background: #fff;
+    background: var(--panel);
     font-size: 14px;
     padding: 12px 14px;
 }
 
 .app-group .app-group-body .app-group-toggle:hover {
-    background: #f4f7fb;
+    background: var(--bg);
 }
 
 .app-group .app-group-body .app-group:last-child {
@@ -935,7 +942,7 @@ label {
 
 input,
 select {
-    background: #fff;
+    background: var(--panel);
     border: 1px solid var(--line);
     border-radius: var(--r-md);
     color: var(--text);
@@ -986,10 +993,10 @@ select {
 
 .btn {
     align-items: center;
-    background: #edf2f7;
+    background: var(--btn-bg);
     border: 0;
     border-radius: var(--r-md);
-    color: #243044;
+    color: var(--btn-text);
     cursor: pointer;
     display: inline-flex;
     font: inherit;
@@ -1413,7 +1420,7 @@ select:focus {
 }
 
 .publish-console-urls {
-    background: #f8fafc;
+    background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--r-md);
     margin-bottom: 14px;
@@ -1871,7 +1878,7 @@ body.density-compact .form-panel {
 }
 
 .toast-undo button:hover {
-    background: #fff;
+    background: var(--panel);
 }
 
 .toast-close {
@@ -1926,7 +1933,7 @@ button.is-loading::after {
 }
 
 .btn.is-loading:not(.primary):not(.danger)::after {
-    color: #243044;
+    color: var(--btn-text);
 }
 
 @keyframes btn-spin {
@@ -2150,4 +2157,768 @@ td.actions {
 
 .stepper-off .step-dot {
     opacity: 0.5;
+}
+
+/* A tab that leads to another page, not another view of this one. */
+.tabs .tab-link {
+    color: var(--muted);
+}
+
+.tabs .tab-link:hover {
+    color: var(--primary);
+}
+
+/* Grid items refuse to shrink below their text by default, which pushed
+   long menu labels past the sidebar edge. */
+.nav-group-items > .collapse-inner,
+.nav-group-items > .collapse-inner > *,
+.sidebar nav a,
+.nav-group-toggle {
+    min-width: 0;
+}
+
+/* Sub-menu rows carry an icon and a count, so give the label a little
+   more room by tightening its own spacing. */
+.nav-group-items .nav-group-items a {
+    font-size: 13.5px;
+    padding: 11px 12px;
+}
+
+.nav-group-items .nav-group-items .nav-label {
+    gap: 8px;
+}
+
+/* The app page's stage buttons sit on one row and wrap as a group. */
+.app-stage-actions {
+    border-top: 1px solid var(--line);
+    flex-wrap: wrap;
+    margin-top: 14px;
+    padding-top: 14px;
+}
+
+/* --- Home: what is due today and what is waiting --- */
+
+.home-grid {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    margin-bottom: 14px;
+}
+
+.home-card {
+    margin-bottom: 0;
+}
+
+.home-list {
+    display: grid;
+    gap: 2px;
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+}
+
+.home-list li {
+    align-items: center;
+    border-top: 1px solid var(--line);
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    padding: 9px 2px;
+}
+
+.home-list-name {
+    font-weight: 700;
+}
+
+.home-list-meta {
+    color: var(--muted);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.attention-list {
+    display: grid;
+    gap: 8px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.attention-list a {
+    align-items: center;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    display: flex;
+    gap: 12px;
+    padding: 12px 14px;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.attention-list a:hover {
+    background: var(--surface);
+    border-color: var(--line-strong);
+}
+
+.attention-count {
+    flex: 0 0 auto;
+    font-size: 13px;
+    min-width: 36px;
+    text-align: center;
+}
+
+.attention-label {
+    flex: 1;
+    font-weight: 700;
+}
+
+.attention-list .nav-chevron {
+    color: var(--muted);
+    transform: rotate(-45deg);
+}
+
+.attention-list li.is-clear a {
+    opacity: 0.65;
+}
+
+.attention-list li.is-clear .attention-label {
+    font-weight: 400;
+}
+
+/* Pipeline tiles are links, so they should feel like it. */
+a.stat:hover {
+    border-color: var(--line-strong);
+}
+
+/* An add form that stays out of the way until it is wanted. */
+.add-panel {
+    padding: 0;
+}
+
+.add-panel .app-group {
+    border: 0;
+    margin-bottom: 0;
+}
+
+.add-panel .app-group-toggle {
+    background: var(--panel);
+    border-radius: var(--r-md);
+    font-size: 15px;
+}
+
+.add-panel .app-group-toggle:hover {
+    background: var(--surface);
+}
+
+.add-panel .app-group.open .app-group-toggle {
+    border-bottom: 1px solid var(--line);
+    border-radius: var(--r-md) var(--r-md) 0 0;
+}
+
+/* --- Bulk selection --- */
+
+.col-select {
+    width: 38px;
+}
+
+.col-select input {
+    cursor: pointer;
+    height: 16px;
+    width: 16px;
+}
+
+tbody tr.is-picked {
+    background: var(--primary-soft);
+}
+
+.bulk-bar {
+    align-items: center;
+    background: var(--primary-soft);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+}
+
+/* display:flex would otherwise beat the hidden attribute. */
+.bulk-bar[hidden] {
+    display: none;
+}
+
+.bulk-count {
+    color: var(--primary);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.bulk-bar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+@media (max-width: 760px) {
+    .bulk-bar {
+        position: sticky;
+        top: 8px;
+        z-index: 5;
+    }
+
+    .table-wrap td.col-select {
+        background: var(--surface);
+        justify-content: flex-start;
+    }
+
+    .table-wrap td.col-select::before {
+        content: "Select";
+    }
+}
+
+/* The search + console bar above a list. */
+.list-filters {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.list-filters label {
+    display: grid;
+    gap: 4px;
+    min-width: 180px;
+}
+
+.list-filters label:first-of-type {
+    flex: 1 1 240px;
+}
+
+@media (max-width: 640px) {
+    .list-filters label {
+        flex: 1 1 100%;
+    }
+
+    .list-filters .btn {
+        flex: 1 1 auto;
+    }
+}
+
+/* --- Activity list --- */
+.activity-list {
+    display: grid;
+    gap: 2px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.activity-list li {
+    align-items: baseline;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 2px;
+}
+
+.activity-list li:first-child {
+    border-top: 0;
+}
+
+.activity-time {
+    color: var(--muted);
+    flex: 0 0 auto;
+    font-family: var(--font-mono);
+    font-size: 12px;
+}
+
+.activity-what {
+    flex: 1 1 260px;
+    min-width: 0;
+}
+
+.activity-what small {
+    color: var(--muted);
+    display: block;
+    font-size: 12px;
+}
+
+.activity-who {
+    color: var(--muted);
+    flex: 0 0 auto;
+    font-size: 12px;
+}
+
+/* --- Pager --- */
+.pager {
+    align-items: center;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: space-between;
+    margin-top: 14px;
+    padding-top: 12px;
+}
+
+.pager-count,
+.pager-position {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.pager-links {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* When a checklist item was first ticked. */
+.checklist-done-at {
+    color: var(--green-text);
+    font-family: var(--font-mono);
+    font-size: 11px;
+}
+
+/* --- Dark theme. The sidebar was already dark, so only the content
+   surfaces flip; every colour below is a token defined in :root. --- */
+:root[data-theme="dark"] {
+    --bg: #0f1622;
+    --panel: #172033;
+    --surface: #1c2739;
+    --surface-strong: #22304a;
+    --text: #e7edf7;
+    --muted: #9fb0c9;
+    --line: #2a3852;
+    --line-strong: #3b4c6b;
+    --primary: #4f83f1;
+    --primary-dark: #3c6cd8;
+    --primary-soft: #1e2c47;
+    --btn-bg: #22304a;
+    --btn-bg-hover: #2b3c5b;
+    --btn-text: #e7edf7;
+    --on-primary: #0f1622;
+
+    --green-bg: #123524;
+    --green-text: #86efac;
+    --green-line: #1d4f36;
+    --red-bg: #3a1618;
+    --red-text: #fca5a5;
+    --red-line: #55242a;
+    --amber-bg: #3a2b10;
+    --amber-text: #fcd34d;
+    --blue-bg: #14273f;
+    --blue-text: #93c5fd;
+    --gray-bg: #253145;
+    --gray-text: #c7d2e4;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.55);
+    --ring: 0 0 0 3px rgba(79, 131, 241, 0.35);
+
+    color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --bg: #0f1622;
+        --panel: #172033;
+        --surface: #1c2739;
+        --surface-strong: #22304a;
+        --text: #e7edf7;
+        --muted: #9fb0c9;
+        --line: #2a3852;
+        --line-strong: #3b4c6b;
+        --primary: #4f83f1;
+        --primary-dark: #3c6cd8;
+        --primary-soft: #1e2c47;
+        --btn-bg: #22304a;
+        --btn-bg-hover: #2b3c5b;
+        --btn-text: #e7edf7;
+        --on-primary: #0f1622;
+
+        --green-bg: #123524;
+        --green-text: #86efac;
+        --green-line: #1d4f36;
+        --red-bg: #3a1618;
+        --red-text: #fca5a5;
+        --red-line: #55242a;
+        --amber-bg: #3a2b10;
+        --amber-text: #fcd34d;
+        --blue-bg: #14273f;
+        --blue-text: #93c5fd;
+        --gray-bg: #253145;
+        --gray-text: #c7d2e4;
+
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+        --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.45);
+        --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.55);
+        --ring: 0 0 0 3px rgba(79, 131, 241, 0.35);
+
+        color-scheme: dark;
+    }
+}
+
+/* Primary buttons keep readable text in both themes. */
+.btn.primary,
+.btn.danger {
+    color: var(--on-primary);
+}
+
+.theme-toggle {
+    align-items: center;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
+    color: var(--muted);
+    cursor: pointer;
+    display: inline-flex;
+    height: 34px;
+    justify-content: center;
+    padding: 0;
+    width: 34px;
+}
+
+.theme-toggle:hover {
+    border-color: var(--line-strong);
+    color: var(--text);
+}
+
+.theme-toggle svg {
+    height: 16px;
+    width: 16px;
+}
+
+.theme-toggle .icon-sun { display: none; }
+:root[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+:root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .theme-toggle .icon-sun { display: block; }
+    :root:not([data-theme="light"]) .theme-toggle .icon-moon { display: none; }
+}
+
+/* --- Console health, empty states, shortcuts card --- */
+
+.console-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    align-items: baseline;
+    min-width: 0;
+}
+
+.console-head-name {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.console-head-meta {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.empty.block {
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--r-md);
+    line-height: 1.9;
+}
+
+.empty.block .btn {
+    margin-top: 8px;
+}
+
+.shortcuts-head {
+    border-bottom: 1px solid var(--line);
+    padding: 14px 16px;
+}
+
+.shortcuts-list {
+    display: grid;
+    gap: 4px;
+    list-style: none;
+    margin: 0;
+    padding: 10px 16px;
+}
+
+.shortcuts-list li {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+    padding: 6px 0;
+}
+
+.shortcuts-list kbd {
+    background: var(--surface-strong);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    font-size: 12px;
+    min-width: 30px;
+    padding: 3px 7px;
+    text-align: center;
+}
+
+.shortcuts-list span {
+    color: var(--muted);
+}
+
+/* The loading controls sit in a row, not stretched across the panel. */
+.loading-form {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.loading-form label {
+    display: grid;
+    gap: 4px;
+    min-width: 180px;
+}
+
+@media (max-width: 640px) {
+    .loading-form label,
+    .loading-form .btn {
+        flex: 1 1 100%;
+    }
+}
+
+/* A rotation's name inside a console group. */
+.rotation-title {
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    margin: 14px 0 8px;
+    text-transform: uppercase;
+}
+
+.app-group-body > .rotation-title:first-child {
+    margin-top: 0;
+}
+
+/* The app's own icon, and the store fetch row. */
+.app-title {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+}
+
+.app-title .app-icon {
+    height: 32px;
+    width: 32px;
+}
+
+.store-form {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.store-form label {
+    display: grid;
+    flex: 1 1 340px;
+    gap: 4px;
+}
+
+.store-form label small {
+    color: var(--muted);
+    font-weight: 400;
+}
+
+@media (max-width: 640px) {
+    .store-form label,
+    .store-form .btn {
+        flex: 1 1 100%;
+    }
+}
+
+/* The app's own domain URL: it reads like the rows above, and edits in place. */
+.domain-url-form {
+    align-items: center;
+    display: flex;
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-left: 132px;
+}
+
+.domain-url-form[hidden] {
+    display: none;
+}
+
+.domain-url-form input {
+    background: var(--surface-strong);
+    flex: 1 1 280px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    min-height: 34px;
+    padding: 6px 10px;
+}
+
+.console-url[hidden] {
+    display: none;
+}
+
+@media (max-width: 700px) {
+    .domain-url-form {
+        padding-left: 0;
+    }
+}
+
+.domain-url-hint {
+    margin-top: 0;
+}
+
+.domain-url-hint code {
+    background: var(--surface-strong);
+    border-radius: var(--r-sm);
+    padding: 2px 6px;
+}
+
+.inline-post {
+    display: inline-block;
+    margin-left: 6px;
+}
+
+/* --- Ads config: the app's own ads.json, as fields or as the file --- */
+
+.tabs button {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+    min-height: 0;
+    padding: 9px 14px;
+    width: auto;
+}
+
+.tabs button:hover {
+    color: var(--text);
+}
+
+.tabs button.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+.ads-target code {
+    background: var(--surface-strong);
+    border-radius: var(--r-sm);
+    overflow-wrap: anywhere;
+    padding: 2px 6px;
+}
+
+.ads-rows {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 16px;
+    max-width: 760px;
+}
+
+.ads-row {
+    align-items: center;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: 160px minmax(0, 1fr);
+}
+
+.ads-row.is-custom {
+    grid-template-columns: 160px minmax(0, 1fr) auto;
+}
+
+.ads-key {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.ads-row input {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    min-height: 38px;
+}
+
+.ads-row input:disabled {
+    background: var(--surface-strong);
+    color: var(--muted);
+}
+
+.ads-raw-label textarea {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 12px;
+    width: 100%;
+}
+
+.ads-raw-form[hidden],
+.ads-form[hidden] {
+    display: none;
+}
+
+.ads-foot {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 18px;
+}
+
+@media (max-width: 700px) {
+    .ads-row,
+    .ads-row.is-custom {
+        gap: 6px;
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ads-row .ads-remove {
+        justify-self: start;
+    }
+}
+
+/* A selection that cannot be fully zipped says so before you press the button. */
+.bulk-note {
+    background: var(--surface-strong);
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+}
+
+.bulk-note[hidden] {
+    display: none;
+}
+
+/* A name that carries its own icon reads faster in a long list. */
+.cell-with-icon {
+    align-items: center;
+    display: inline-flex;
+    gap: 10px;
+    min-width: 0;
+}
+
+/* A path in a cell wraps rather than running past the card edge. */
+@media (max-width: 900px) {
+    .table-wrap td code {
+        overflow-wrap: anywhere;
+    }
 }
