@@ -44,7 +44,6 @@ function nav_icon(string $key): string
         'live-apps.php' => '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18"/>',
         'publish-info.php' => '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5h10"/>',
         'consoles.php' => '<rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/>',
-        'app-urls.php' => '<path d="M10 13a4 4 0 0 0 5.6.6l2.6-2.6a4 4 0 0 0-5.6-5.6L11 6.9"/><path d="M14 11a4 4 0 0 0-5.6-.6L5.8 13a4 4 0 0 0 5.6 5.6l1.5-1.5"/>',
         'tasks.php' => '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="m9 15 2 2 4-4"/>',
         'dashboard.php' => '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="11" width="7" height="10" rx="1"/><rect x="3" y="15" width="7" height="6" rx="1"/>',
         'active-apps.php' => '<circle cx="12" cy="12" r="9"/><path d="m10 9 5 3-5 3z"/>',
@@ -154,7 +153,6 @@ function page_start(string $title): void
                 'live-apps.php' => 'Live Apps',
             ],
             'publish-info.php' => 'Publish Info',
-            'app-urls.php' => 'App URLs',
         ],
         'Rotations' => [
             'rotations.php' => 'Today',

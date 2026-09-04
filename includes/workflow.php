@@ -206,7 +206,7 @@ function production_apps_by_status(string $status): array
 }
 
 /* The one list behind the Apps page. */
-function all_apps_overview(string $stage, int $consoleId, string $loading, string $search): array
+function all_apps_overview(string $stage, int $consoleId, string $loading, string $search, string $url = ''): array
 {
     $where = [];
     $params = [];
@@ -222,6 +222,10 @@ function all_apps_overview(string $stage, int $consoleId, string $loading, strin
     if ($loading !== '') {
         $where[] = 'a.loading_status = ?';
         $params[] = $loading;
+    }
+    if ($url === 'pending' || $url === 'checked') {
+        $where[] = 'a.url_checked = ?';
+        $params[] = $url === 'checked' ? 1 : 0;
     }
     if (trim($search) !== '') {
         $where[] = '(a.app_name LIKE ? OR a.package_name LIKE ?)';

@@ -68,7 +68,7 @@ $attention = [
     [
         'count' => (int) $urlCounts['pending'],
         'label' => 'App URLs still to check',
-        'href' => 'app-urls.php',
+        'href' => 'apps.php?url=pending',
         'tone' => 'amber',
     ],
     [

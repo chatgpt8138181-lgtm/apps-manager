@@ -2742,19 +2742,37 @@ tbody tr.is-picked {
     }
 }
 
-/* The app's own domain URL, edited in place. */
+/* The app's own domain URL: it reads like the rows above, and edits in place. */
 .domain-url-form {
     align-items: center;
     display: flex;
-    flex: 1 1 420px;
+    flex: 1 1 100%;
     flex-wrap: wrap;
     gap: 8px;
+    padding-left: 132px;
+}
+
+.domain-url-form[hidden] {
+    display: none;
 }
 
 .domain-url-form input {
+    background: var(--surface-strong);
     flex: 1 1 280px;
     font-family: var(--font-mono);
     font-size: 13px;
+    min-height: 34px;
+    padding: 6px 10px;
+}
+
+.console-url[hidden] {
+    display: none;
+}
+
+@media (max-width: 700px) {
+    .domain-url-form {
+        padding-left: 0;
+    }
 }
 
 .domain-url-hint {

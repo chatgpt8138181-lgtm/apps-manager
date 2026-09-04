@@ -411,16 +411,24 @@ page_start($app['name']);
     <?php app_fact_row('Privacy Policy', $privacyUrl, 'Console URL missing'); ?>
     <div class="publish-row">
         <span class="publish-label">Domain URL</span>
-        <form method="post" class="domain-url-form">
+        <div class="console-url">
+            <?php if (!empty($domainUrl)): ?>
+                <code><?= h($domainUrl) ?></code>
+                <button class="btn small copy-url" type="button" data-url="<?= h($domainUrl) ?>">Copy</button>
+                <button class="btn small domain-url-toggle" type="button">Edit</button>
+            <?php else: ?>
+                <span class="badge badge-gray">Not set</span>
+                <button class="btn small domain-url-toggle" type="button">Set URL</button>
+            <?php endif; ?>
+        </div>
+        <form method="post" class="domain-url-form" hidden>
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="save_domain_url">
             <input type="hidden" name="app_id" value="<?= $appId ?>">
             <input type="text" name="domain_url" value="<?= h($app['domain_url'] ?? '') ?>"
                    maxlength="255" placeholder="https://">
-            <button class="btn small" type="submit">Save</button>
-            <?php if (!empty($domainUrl)): ?>
-                <button class="btn small copy-url" type="button" data-url="<?= h($domainUrl) ?>">Copy</button>
-            <?php endif; ?>
+            <button class="btn small primary" type="submit">Save</button>
+            <button class="btn small domain-url-cancel" type="button">Cancel</button>
         </form>
     </div>
     <p class="hint domain-url-hint">
@@ -538,6 +546,24 @@ page_start($app['name']);
 </section>
 
 <script>
+/* The domain URL reads like the rows above it until you ask to change it. */
+document.querySelectorAll('.domain-url-toggle').forEach((button) => {
+    const row = button.closest('.publish-row');
+    const form = row.querySelector('.domain-url-form');
+    const view = row.querySelector('.console-url');
+
+    button.addEventListener('click', () => {
+        view.hidden = true;
+        form.hidden = false;
+        form.querySelector('input[name="domain_url"]').focus();
+    });
+
+    form.querySelector('.domain-url-cancel').addEventListener('click', () => {
+        form.hidden = true;
+        view.hidden = false;
+    });
+});
+
 document.querySelectorAll('.copy-url').forEach((button) => {
     button.addEventListener('click', () => {
         navigator.clipboard.writeText(button.dataset.url).then(() => {

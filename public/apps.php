@@ -25,12 +25,19 @@ $loadingFilters = [
     'Inactive' => 'Inactive',
 ];
 
+$urlFilters = [
+    '' => 'Any URL state',
+    'pending' => 'URL pending',
+    'checked' => 'URL checked',
+];
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $return = 'apps.php?' . http_build_query(array_filter([
         'stage' => (string) ($_POST['return_stage'] ?? ''),
         'console' => (int) ($_POST['return_console'] ?? 0),
         'loading' => (string) ($_POST['return_loading'] ?? ''),
+        'url' => (string) ($_POST['return_url'] ?? ''),
         'q' => (string) ($_POST['return_q'] ?? ''),
     ]));
 
@@ -64,11 +71,15 @@ $loading = (string) ($_GET['loading'] ?? '');
 if (!array_key_exists($loading, $loadingFilters)) {
     $loading = '';
 }
+$urlState = (string) ($_GET['url'] ?? '');
+if (!array_key_exists($urlState, $urlFilters)) {
+    $urlState = '';
+}
 $listQuery = trim((string) ($_GET['q'] ?? ''));
 $listConsole = (int) ($_GET['console'] ?? 0);
 
 $consoles = all_consoles();
-$all = all_apps_overview($stage, $listConsole, $loading, $listQuery);
+$all = all_apps_overview($stage, $listConsole, $loading, $listQuery, $urlState);
 $page = paginate($all);
 $rows = $page['rows'];
 
@@ -76,6 +87,7 @@ $filterState = array_filter([
     'stage' => $stage,
     'console' => $listConsole,
     'loading' => $loading,
+    'url' => $urlState,
     'q' => $listQuery,
 ]);
 
@@ -145,6 +157,13 @@ page_start('Apps');
                 <?php endforeach; ?>
             </select>
         </label>
+        <label>URL
+            <select name="url">
+                <?php foreach ($urlFilters as $key => $label): ?>
+                    <option value="<?= h((string) $key) ?>" <?= $urlState === (string) $key ? 'selected' : '' ?>><?= h($label) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </label>
         <button class="btn primary" type="submit">Filter</button>
         <?php if ($filterState): ?>
             <a class="btn" href="apps.php">Clear</a>
@@ -196,6 +215,7 @@ page_start('Apps');
                         <input type="hidden" name="return_stage" value="<?= h($stage) ?>">
                         <input type="hidden" name="return_console" value="<?= (int) $listConsole ?>">
                         <input type="hidden" name="return_loading" value="<?= h($loading) ?>">
+                        <input type="hidden" name="return_url" value="<?= h($urlState) ?>">
                         <input type="hidden" name="return_q" value="<?= h($listQuery) ?>">
                     </form>
                     <?php render_bulk_bar([
@@ -259,6 +279,7 @@ page_start('Apps');
         'stage' => $stage,
         'console' => $listConsole,
         'loading' => $loading,
+        'url' => $urlState,
         'q' => $listQuery,
     ]); ?>
 </section>
