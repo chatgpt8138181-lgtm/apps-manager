@@ -497,6 +497,7 @@ page_start($app['name']);
     <?php endif; ?>
 </section>
 
+<?php if ($status !== 'none'): ?>
 <section class="panel ads-panel">
     <div class="panel-heading">
         <h2>Ads Config</h2>
@@ -598,6 +599,7 @@ page_start($app['name']);
         </form>
     </div>
 </section>
+<?php endif; ?>
 
 <section class="form-panel">
     <div class="panel-heading">
