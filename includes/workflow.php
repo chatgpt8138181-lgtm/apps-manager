@@ -224,7 +224,8 @@ function all_apps_overview(string $stage, int $consoleId, string $loading, strin
         $params[] = $loading;
     }
     if ($url === 'pending' || $url === 'checked') {
-        $where[] = 'a.url_checked = ?';
+        /* Only a published app under a console has a URL worth checking. */
+        $where[] = "a.url_checked = ? AND a.console_id IS NOT NULL AND a.stage <> 'none'";
         $params[] = $url === 'checked' ? 1 : 0;
     }
     if (trim($search) !== '') {
