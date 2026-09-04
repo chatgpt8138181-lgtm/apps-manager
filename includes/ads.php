@@ -142,6 +142,14 @@ function ads_build_entries(array $apps): array
     $skipped = [];
 
     foreach ($apps as $app) {
+        if ((string) ($app['status'] ?? $app['stage'] ?? '') === 'none') {
+            $skipped[] = [
+                'name' => (string) ($app['name'] ?? $app['app_name'] ?? 'Unnamed app'),
+                'why' => 'not in the publishing flow, so it has no folder',
+            ];
+            continue;
+        }
+
         $path = ads_folder_path($app);
         if ($path === null) {
             $skipped[] = [

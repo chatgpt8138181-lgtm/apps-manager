@@ -588,10 +588,10 @@ function page_end(): void
                     all.indeterminate = picked.length > 0 && picked.length < rows.length;
                 }
                 if (note) {
-                    /* An app with no domain URL has no folder to put in a zip. */
+                    /* An app with no folder cannot go into a zip; say so up front. */
                     const without = picked.filter((row) => row.dataset.noUrl === '1').length;
                     note.hidden = without === 0;
-                    note.textContent = without + ' without a domain URL';
+                    note.textContent = without + ' with no folder — left out of a ZIP';
                 }
                 rows.forEach((row) => row.closest('tr')?.classList.toggle('is-picked', row.checked));
             };

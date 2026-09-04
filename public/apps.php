@@ -246,8 +246,9 @@ page_start('Apps');
                             <tbody>
                             <?php foreach ($group['apps'] as $app): ?>
                                 <tr>
+                                    <?php $hasFolder = $app['stage'] !== 'none' && ads_folder_path($app) !== null; ?>
                                     <td class="col-select"><input type="checkbox" class="bulk-row" value="<?= (int) $app['id'] ?>"
-                                            <?= trim((string) ($app['domain_url'] ?? '')) === '' ? 'data-no-url="1"' : '' ?>></td>
+                                            <?= $hasFolder ? '' : 'data-no-url="1"' ?>></td>
                                     <td class="app-icon-cell"><img class="app-icon" src="<?= h(app_icon_url($app['icon_path'] ?? null)) ?>" alt=""></td>
                                     <td>
                                         <span class="cell-title">

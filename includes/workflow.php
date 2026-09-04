@@ -235,7 +235,8 @@ function all_apps_overview(string $stage, int $consoleId, string $loading, strin
         $params[] = $like;
     }
 
-    $sql = 'SELECT a.*, c.name AS console_name FROM apps a
+    $sql = 'SELECT a.*, c.name AS console_name, c.app_domain_url AS console_app_domain_url
+            FROM apps a
             LEFT JOIN consoles c ON c.id = a.console_id';
     if ($where) {
         $sql .= ' WHERE ' . implode(' AND ', $where);
