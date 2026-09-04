@@ -10,3 +10,4 @@ deployment:
     - /usr/bin/test -f $DEPLOYPATH/config/database.php || /bin/cp config/database.php $DEPLOYPATH/config/database.php
     - /bin/cp -R includes $DEPLOYPATH
     - /bin/cp -R database $DEPLOYPATH
+    - /bin/rm -f $DEPLOYPATH/backfill-domain-urls.php
