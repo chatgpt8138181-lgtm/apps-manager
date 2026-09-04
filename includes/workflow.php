@@ -1007,14 +1007,11 @@ function delete_console(int $consoleId): void
 function console_overview(): array
 {
     $stmt = db()->query(
-        "SELECT c.id, c.name, c.privacy_policy_url, c.app_domain_url, c.ads_template, c.created_at,
+        "SELECT c.id, c.name, c.privacy_policy_url, c.app_domain_url, c.created_at,
             (SELECT COUNT(*) FROM apps pa
              WHERE pa.console_id = c.id AND pa.stage = 'live') AS live_total,
             (SELECT COUNT(*) FROM apps pa
              WHERE pa.console_id = c.id AND pa.stage = 'live' AND pa.ready_for_work = 1) AS ready_total,
-            (SELECT COUNT(*) FROM apps pa
-             WHERE pa.console_id = c.id AND pa.stage = 'live'
-               AND (pa.domain_url IS NULL OR pa.domain_url = '')) AS live_without_url,
             (SELECT COUNT(*) FROM apps a WHERE a.console_id = c.id) AS loading_total,
             (SELECT COUNT(*) FROM apps a
              WHERE a.console_id = c.id AND a.loading_status = 'Active') AS loading_active

@@ -86,8 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($action === 'reset_ads') {
-            $current = get_production_app($appId);
-            save_app_ads($appId, $current ? ads_template_for($current) : ads_default_template());
+            save_app_ads($appId, ads_default_template());
             redirect_with($self, 'success', 'Ads config reset to the template.');
         }
 
