@@ -789,8 +789,9 @@ function console_app_url_names(int $consoleId, ?string $baseUrl): array
     foreach ($rows as &$row) {
         $stored = trim((string) ($row['domain_url'] ?? ''));
         $row['full_url'] = $stored !== '' ? $stored : null;
-        /* The tail of the URL, shown on its own so the list stays readable. */
-        $row['url_name'] = $stored !== '' ? ltrim((string) parse_url($stored, PHP_URL_PATH), '/') : '';
+        /* The last segment, shown on its own so the list stays readable. */
+        $path = trim((string) parse_url($stored, PHP_URL_PATH), '/');
+        $row['url_name'] = $path !== '' ? substr($path, strrpos($path, '/') === false ? 0 : strrpos($path, '/') + 1) : '';
         $row['off_base'] = $stored !== '' && $baseUrl
             && strpos($stored, rtrim((string) $baseUrl, '/') . '/') !== 0;
     }
