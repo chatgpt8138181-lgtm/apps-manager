@@ -2818,6 +2818,7 @@ tbody tr.is-picked {
 .ads-target code {
     background: var(--surface-strong);
     border-radius: var(--r-sm);
+    overflow-wrap: anywhere;
     padding: 2px 6px;
 }
 
