@@ -2922,19 +2922,3 @@ tbody tr.is-picked {
         overflow-wrap: anywhere;
     }
 }
-
-/* Today: the two rotations read as one answer, side by side. */
-.today-totals {
-    display: grid;
-    gap: 18px 28px;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    margin-bottom: 18px;
-}
-
-.today-label {
-    color: var(--muted);
-    display: block;
-    font-size: 13px;
-    font-weight: 700;
-    margin-bottom: 6px;
-}

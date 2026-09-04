@@ -12,7 +12,6 @@ generate_loading_daily();
 generate_daily_tasks();
 
 $loadingGroups = todays_loading_apps();
-$taskGroups = todays_tasks();
 
 $loadingTotal = 0;
 $loadingDone = 0;
@@ -23,38 +22,17 @@ foreach ($loadingGroups as $group) {
     }
 }
 
-$taskTotal = 0;
-$taskDone = 0;
-foreach ($taskGroups as $group) {
-    foreach ($group['tasks'] as $task) {
-        $taskTotal++;
-        $taskDone += (int) $task['is_done'] === 1 ? 1 : 0;
-    }
-}
-
-/* Both rotations answer the same question, so the page asks it once. */
+/*
+ * Home shows one number for today: the loading rotation. The tasks are
+ * still generated above, and read on the Rotations page next to it.
+ */
 $todayByConsole = [];
 foreach ($loadingGroups as $consoleId => $group) {
     $todayByConsole[(int) $consoleId] = [
         'name' => $group['name'],
-        'loading_total' => count($group['apps']),
-        'loading_done' => count(array_filter($group['apps'], fn($a) => (int) $a['is_done'] === 1)),
-        'task_total' => 0,
-        'task_done' => 0,
+        'done' => count(array_filter($group['apps'], fn($a) => (int) $a['is_done'] === 1)),
+        'total' => count($group['apps']),
     ];
-}
-foreach ($taskGroups as $consoleId => $group) {
-    $consoleId = (int) $consoleId;
-    $todayByConsole[$consoleId] ??= [
-        'name' => $group['name'],
-        'loading_total' => 0,
-        'loading_done' => 0,
-        'task_total' => 0,
-        'task_done' => 0,
-    ];
-    $todayByConsole[$consoleId]['task_total'] = count($group['tasks']);
-    $todayByConsole[$consoleId]['task_done'] =
-        count(array_filter($group['tasks'], fn($t) => (int) $t['is_done'] === 1));
 }
 
 $counts = production_status_counts();
@@ -136,33 +114,18 @@ page_start('Home');
 
 <section class="panel">
     <div class="panel-heading">
-        <h2>Today</h2>
+        <h2>Today's Loading</h2>
         <a class="btn small" href="rotations.php">Open Rotations</a>
     </div>
-    <?php if ($loadingTotal === 0 && $taskTotal === 0): ?>
-        <p class="empty block">
-            Nothing due today. Mark apps Active to start loading, and tag Live apps
-            Ready for Work to start the tasks.
-        </p>
+    <?php if ($loadingTotal === 0): ?>
+        <p class="empty block">No loading apps for today. Mark apps Active to start the rotation.</p>
     <?php else: ?>
-        <div class="today-totals">
-            <div>
-                <span class="today-label">Loading</span>
-                <?php home_progress($loadingDone, $loadingTotal); ?>
-            </div>
-            <div>
-                <span class="today-label">Daily Tasks</span>
-                <?php home_progress($taskDone, $taskTotal); ?>
-            </div>
-        </div>
+        <?php home_progress($loadingDone, $loadingTotal); ?>
         <ul class="home-list">
             <?php foreach ($todayByConsole as $row): ?>
                 <li>
                     <span class="home-list-name"><?= h($row['name']) ?></span>
-                    <span class="home-list-meta">
-                        Loading <?= $row['loading_done'] ?>/<?= $row['loading_total'] ?>
-                        &middot; Tasks <?= $row['task_done'] ?>/<?= $row['task_total'] ?>
-                    </span>
+                    <span class="home-list-meta"><?= $row['done'] ?>/<?= $row['total'] ?></span>
                 </li>
             <?php endforeach; ?>
         </ul>
