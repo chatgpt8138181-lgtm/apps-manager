@@ -117,7 +117,7 @@ page_start('Publish Info');
 <section class="panel">
     <div class="panel-heading">
         <h2><?= h($tabs[$view]) ?> (<?= (int) $appsPage['total'] ?>)</h2>
-        <span class="hint">Everything a store listing needs, ready to copy. Nothing here changes an app.</span>
+        <span class="hint">Everything a store listing needs, ready to copy. A Ready app can be sent from here.</span>
     </div>
 
     <form method="get" class="inline-form publish-search">
