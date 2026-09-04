@@ -526,7 +526,7 @@ function revert_app_to_sent(int $appId): void
     }
 
     if (!in_array($app['status'], ['live', 'rejected', 'suspended'], true)) {
-        throw new RuntimeException('Only Live, Rejected, or Suspended apps can move back to Sent.');
+        throw new RuntimeException('Only Live, Rejected, or Suspended apps can move back to Production Apps.');
     }
 
     $stmt = db()->prepare("UPDATE apps SET stage = 'sent', live_at = NULL, ready_for_work = 0 WHERE id = ?");

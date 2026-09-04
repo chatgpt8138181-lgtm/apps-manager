@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($action === 'to_sent') {
             revert_app_to_sent($appId);
-            redirect_with('live-apps.php', 'success', 'App moved back to Sent.');
+            redirect_with('live-apps.php', 'success', 'App moved back to Production Apps.');
         }
     } catch (Throwable $e) {
         redirect_with('live-apps.php', 'error', $e->getMessage());
@@ -64,7 +64,7 @@ function render_live_apps_table(array $apps): void
     <?php render_bulk_bar([
         ['value' => 'tag_ready', 'label' => 'Tag Ready for Work', 'class' => 'primary'],
         ['value' => 'untag_ready', 'label' => 'Remove Tag'],
-        ['value' => 'to_sent', 'label' => 'Back to Sent'],
+        ['value' => 'to_sent', 'label' => 'Back to Production Apps'],
     ]); ?>
     <div class="table-wrap">
         <table>
@@ -83,7 +83,12 @@ function render_live_apps_table(array $apps): void
                 <?php $isReady = (int) $app['ready_for_work'] === 1; ?>
                 <tr>
                     <td class="col-select"><input type="checkbox" class="bulk-row" value="<?= (int) $app['id'] ?>"></td>
-                    <td><?= h($app['name']) ?></td>
+                    <td>
+                        <span class="cell-with-icon">
+                            <img class="app-icon" src="<?= h(app_icon_url($app['icon_path'] ?? null)) ?>" alt="">
+                            <?= h($app['name']) ?>
+                        </span>
+                    </td>
                     <td><?= h($app['package_name'] ?? '—') ?></td>
                     <td><?= h($app['live_at'] ?? '—') ?></td>
                     <td>
@@ -109,7 +114,7 @@ function render_live_apps_table(array $apps): void
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="action" value="to_sent">
                                     <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
-                                    <button class="menu-item" type="submit">Back to Sent</button>
+                                    <button class="menu-item" type="submit">Back to Production Apps</button>
                                 </form>
                                 <form method="post" onsubmit="return confirm('Delete this app? Its checklist and task history will also be removed.');">
                                     <?= csrf_field() ?>

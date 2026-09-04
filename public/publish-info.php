@@ -4,9 +4,28 @@ require_once $root . '/includes/bootstrap.php';
 require_login();
 
 /*
- * Read-only sheet for publishing an app: the four values a Play Console
- * listing needs, grouped by console so the shared URLs are stated once.
+ * The sheet for publishing an app: the values a Play Console listing needs,
+ * grouped by console so the shared URLs are stated once. A Ready app can be
+ * sent from here too, without going back to its own page first.
  */
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
+
+    $return = 'publish-info.php?' . http_build_query(array_filter([
+        'status' => (string) ($_POST['return_status'] ?? 'ready'),
+        'q' => (string) ($_POST['return_q'] ?? ''),
+    ]));
+
+    try {
+        if ((string) ($_POST['action'] ?? '') === 'send') {
+            send_app_to_production((int) ($_POST['app_id'] ?? 0));
+            redirect_with($return, 'success', 'App sent for production.');
+        }
+    } catch (Throwable $e) {
+        redirect_with($return, 'error', $e->getMessage());
+    }
+}
 
 $tabs = [
     'ready' => 'Ready Apps',
@@ -51,7 +70,7 @@ function publish_copy_row(string $label, ?string $value, string $emptyHint = 'No
     <?php
 }
 
-function render_publish_apps(array $apps, array $console): void
+function render_publish_apps(array $apps, array $console, string $view, string $search): void
 {
     $privacy = $console['privacy_policy_url'] ?? null;
 
@@ -65,7 +84,19 @@ function render_publish_apps(array $apps, array $console): void
         <div class="publish-app">
             <div class="publish-app-head">
                 <h4><?= (int) $index + 1 ?>. <?= h($app['name']) ?></h4>
-                <button class="btn small copy-url" type="button" data-url="<?= h($block) ?>">Copy All</button>
+                <div class="inline-actions">
+                    <button class="btn small copy-url" type="button" data-url="<?= h($block) ?>">Copy All</button>
+                    <?php if (($app['status'] ?? '') === 'ready'): ?>
+                        <form method="post">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="send">
+                            <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
+                            <input type="hidden" name="return_status" value="<?= h($view) ?>">
+                            <input type="hidden" name="return_q" value="<?= h($search) ?>">
+                            <button class="btn small primary" type="submit">Send for Production</button>
+                        </form>
+                    <?php endif; ?>
+                </div>
             </div>
             <?php publish_copy_row('App Name', $app['name']); ?>
             <?php publish_copy_row('Package Name', $app['package_name'] ?? null, 'Package not set'); ?>
@@ -131,7 +162,7 @@ page_start('Publish Info');
                         <p class="hint">Set the missing URL in <a href="consoles.php">Consoles</a>.</p>
                     <?php endif; ?>
                 </div>
-                <?php render_publish_apps($consoleApps, $console); ?>
+                <?php render_publish_apps($consoleApps, $console, $view, $search); ?>
             </div>
         </div>
     <?php endforeach; ?>
@@ -147,7 +178,7 @@ page_start('Publish Info');
             </button>
             <div class="app-group-body">
                 <p class="hint">Assign a Play Console from Production &rarr; Manage &rarr; Verify App Details to get its URLs.</p>
-                <?php render_publish_apps($unassigned, []); ?>
+                <?php render_publish_apps($unassigned, [], $view, $search); ?>
             </div>
         </div>
     <?php endif; ?>

@@ -191,27 +191,28 @@ function ads_file_url(array $app): ?string
 /*
  * Build the folders for a set of apps. Returns the files to zip, keyed by
  * the path they take inside it, plus the apps that could not be included.
+ *
+ * An app on its own is handed over as its own folder — app/ads.json — since
+ * that is what gets dropped next to the others. A whole console comes with
+ * the console's part of the path in front, so the zip lands at the site root
+ * in one go.
  */
-function ads_build_entries(array $apps): array
+function ads_build_entries(array $apps, bool $withConsolePath = false): array
 {
     $files = [];
     $skipped = [];
 
     foreach ($apps as $app) {
+        $name = (string) ($app['name'] ?? $app['app_name'] ?? 'Unnamed app');
+
         if ((string) ($app['status'] ?? $app['stage'] ?? '') === 'none') {
-            $skipped[] = [
-                'name' => (string) ($app['name'] ?? $app['app_name'] ?? 'Unnamed app'),
-                'why' => 'not in the publishing flow, so it has no folder',
-            ];
+            $skipped[] = ['name' => $name, 'why' => 'not in the publishing flow, so it has no folder'];
             continue;
         }
 
-        $path = ads_folder_path($app);
+        $path = $withConsolePath ? ads_folder_path($app) : ads_folder_name($app);
         if ($path === null) {
-            $skipped[] = [
-                'name' => (string) ($app['name'] ?? $app['app_name'] ?? 'Unnamed app'),
-                'why' => 'no domain URL, so it has no folder name',
-            ];
+            $skipped[] = ['name' => $name, 'why' => 'no domain URL, so it has no folder name'];
             continue;
         }
 
@@ -278,6 +279,62 @@ function ads_send_zip(array $files, string $filename): void
     readfile($tmp);
     @unlink($tmp);
     exit;
+}
+
+/*
+ * Whether an app's ads.json has been put on the server. It is a plain flag
+ * someone sets once the folder has been uploaded, not something we can see.
+ */
+function set_ads_created(int $appId, bool $created): void
+{
+    $stmt = db()->prepare('UPDATE apps SET ads_created = ?, ads_created_at = ? WHERE id = ?');
+    $stmt->execute([$created ? 1 : 0, $created ? date('Y-m-d H:i:s') : null, $appId]);
+
+    log_activity('app', $appId, $created ? 'ads_created' : 'ads_pending');
+}
+
+function mark_ads_created(array $appIds, bool $created): int
+{
+    $done = 0;
+    foreach ($appIds as $appId) {
+        $appId = (int) $appId;
+        if ($appId > 0) {
+            set_ads_created($appId, $created);
+            $done++;
+        }
+    }
+
+    return $done;
+}
+
+/* How many live apps still need their file put on the server. */
+function ads_pending_count(): int
+{
+    try {
+        $stmt = db()->query(
+            "SELECT COUNT(*) FROM apps
+             WHERE stage = 'live' AND console_id IS NOT NULL AND COALESCE(ads_created, 0) = 0"
+        );
+
+        return (int) $stmt->fetchColumn();
+    } catch (Throwable $e) {
+        return 0;
+    }
+}
+
+/* Live apps for one console, split by whether their file has been put up. */
+function ads_live_apps(bool $created): array
+{
+    $stmt = db()->prepare(
+        "SELECT a.*, a.app_name AS name, a.stage AS status, c.name AS console_name,
+            c.app_domain_url AS console_app_domain_url
+         FROM apps a JOIN consoles c ON c.id = a.console_id
+         WHERE a.stage = 'live' AND COALESCE(a.ads_created, 0) = ?
+         ORDER BY c.created_at ASC, c.id ASC, a.created_at ASC, a.id ASC"
+    );
+    $stmt->execute([$created ? 1 : 0]);
+
+    return $stmt->fetchAll();
 }
 
 /* A file name that says what is inside without needing to open it. */

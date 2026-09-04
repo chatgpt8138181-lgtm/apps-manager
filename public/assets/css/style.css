@@ -2907,3 +2907,11 @@ tbody tr.is-picked {
 .bulk-note[hidden] {
     display: none;
 }
+
+/* A name that carries its own icon reads faster in a long list. */
+.cell-with-icon {
+    align-items: center;
+    display: inline-flex;
+    gap: 10px;
+    min-width: 0;
+}

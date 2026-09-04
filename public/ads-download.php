@@ -14,6 +14,8 @@ require_login();
 $apps = [];
 $label = 'apps';
 $back = 'apps.php';
+/* Only a whole console carries the console's own folder in the path. */
+$withConsolePath = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
@@ -29,13 +31,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $apps = console_live_apps($consoleId);
     $label = $console ? (string) $console['name'] : 'console';
     $back = 'consoles.php';
+    $withConsolePath = true;
 }
 
 if (!$apps) {
     redirect_with($back, 'error', 'Nothing to download — no apps were found for this.');
 }
 
-$built = ads_build_entries($apps);
+$built = ads_build_entries($apps, $withConsolePath);
 
 if (!$built['files']) {
     $why = count($built['skipped']) === 1

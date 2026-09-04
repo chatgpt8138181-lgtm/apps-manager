@@ -144,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($action === 'to_sent') {
             revert_app_to_sent($appId);
-            redirect_with($self, 'success', 'App moved back to Sent.');
+            redirect_with($self, 'success', 'App moved back to Production Apps.');
         }
 
         if ($action === 'toggle_ready_for_work') {
@@ -207,7 +207,7 @@ $domainUrl = app_domain_url_for($app);
 $adsConfig = ads_config_for($app);
 $adsFile = ads_file_for($app);
 $adsLabels = ads_placement_labels();
-$adsPath = ads_folder_path($app);
+$adsFolder = ads_folder_name($app);
 $privacyUrl = $app['console_privacy_policy_url'] ?? null;
 $backList = $stageLists[$status] ?? 'production.php';
 
@@ -336,7 +336,7 @@ page_start($app['name']);
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="to_sent">
                 <input type="hidden" name="app_id" value="<?= $appId ?>">
-                <button class="btn" type="submit">Back to Sent</button>
+                <button class="btn" type="submit">Back to Production Apps</button>
             </form>
         <?php elseif ($status === 'none'): ?>
             <form method="post">
@@ -358,7 +358,7 @@ page_start($app['name']);
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="to_sent">
                 <input type="hidden" name="app_id" value="<?= $appId ?>">
-                <button class="btn" type="submit">Back to Sent</button>
+                <button class="btn" type="submit">Back to Production Apps</button>
             </form>
         <?php endif; ?>
 
@@ -503,15 +503,15 @@ page_start($app['name']);
     <div class="panel-heading">
         <h2>Ads Config</h2>
         <div class="inline-actions">
-            <?php if ($adsPath !== null): ?>
+            <?php if ($adsFolder !== null): ?>
                 <a class="btn small primary" href="ads-download.php?app=<?= $appId ?>">Download folder (ZIP)</a>
             <?php endif; ?>
         </div>
     </div>
 
-    <?php if ($adsPath !== null): ?>
+    <?php if ($adsFolder !== null): ?>
         <p class="hint ads-target">
-            Folder <code><?= h($adsPath) ?>/</code>
+            Zips as <code><?= h($adsFolder) ?>/ads.json</code>
             &middot; served at <code><?= h((string) ads_file_url($app)) ?></code>
         </p>
     <?php else: ?>

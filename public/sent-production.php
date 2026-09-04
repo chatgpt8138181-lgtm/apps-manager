@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (($_POST['action'] ?? '') === 'to_sent') {
             revert_app_to_sent((int) ($_POST['app_id'] ?? 0));
-            redirect_with($return, 'success', 'App moved back to Sent.');
+            redirect_with($return, 'success', 'App moved back to Production Apps.');
         }
 
         if (($_POST['action'] ?? '') === 'update_details') {
@@ -73,7 +73,7 @@ function render_sent_apps_table(array $apps, string $status): void
         ]
         : [
             ['value' => 'live', 'label' => 'Mark Live', 'class' => 'primary'],
-            ['value' => 'to_sent', 'label' => 'Back to Sent'],
+            ['value' => 'to_sent', 'label' => 'Back to Production Apps'],
         ];
     ?>
     <div class="bulk-form">
@@ -163,7 +163,7 @@ function render_sent_apps_table(array $apps, string $status): void
                                         <input type="hidden" name="action" value="to_sent">
                                         <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
                                         <input type="hidden" name="return_status" value="<?= h($status) ?>">
-                                        <button class="menu-item" type="submit">Back to Sent</button>
+                                        <button class="menu-item" type="submit">Back to Production Apps</button>
                                     </form>
                                 <?php endif; ?>
                                 <form method="post" onsubmit="return confirm('Delete this app? Its checklist and task history will also be removed.');">

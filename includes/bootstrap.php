@@ -43,6 +43,7 @@ function nav_icon(string $key): string
         'ready-apps.php' => '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
         'sent-production.php' => '<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>',
         'live-apps.php' => '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18"/>',
+        'ads-config.php' => '<path d="M4 7h16"/><path d="M4 12h10"/><path d="M4 17h7"/><path d="m16 15 2 2 4-4"/>',
         'publish-info.php' => '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5h10"/>',
         'consoles.php' => '<rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/>',
         'tasks.php' => '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="m9 15 2 2 4-4"/>',
@@ -81,6 +82,7 @@ function nav_counts(): array
         'ready-apps.php' => (int) ($counts['ready'] ?? 0),
         'sent-production.php' => (int) ($counts['sent'] ?? 0),
         'live-apps.php' => (int) ($counts['live'] ?? 0),
+        'ads-config.php' => ads_pending_count(),
     ];
 }
 
@@ -152,6 +154,7 @@ function page_start(string $title): void
                 'ready-apps.php' => 'Ready Apps',
                 'sent-production.php' => 'Production Apps',
                 'live-apps.php' => 'Live Apps',
+                'ads-config.php' => 'Ads Config',
             ],
             'publish-info.php' => 'Publish Info',
         ],

@@ -102,7 +102,7 @@ function activity_label(string $action): string
         'stage_prepare' => 'Moved back to Prepare',
         'stage_none' => 'Removed from publishing',
         'stage_back_ready' => 'Moved back to Ready',
-        'stage_back_sent' => 'Moved back to Sent',
+        'stage_back_sent' => 'Moved back to Production Apps',
         'tagged_ready' => 'Tagged Ready for Work',
         'untagged_ready' => 'Ready for Work tag removed',
         'url_checked' => 'URL marked checked',
@@ -114,6 +114,8 @@ function activity_label(string $action): string
         'ads_saved' => 'Ads config saved',
         'ads_downloaded' => 'Ads folder downloaded',
         'ads_template_saved' => 'Ads template saved',
+        'ads_created' => 'Ads JSON marked created',
+        'ads_pending' => 'Ads JSON moved back to pending',
     ];
 
     return $labels[$action] ?? ucfirst(str_replace('_', ' ', $action));
