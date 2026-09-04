@@ -19,13 +19,32 @@ function checklist_items(): array
         'new_data' => ['label' => 'New Data Updated', 'description' => "App's new content/data (JSON, assets, config) updated"],
         'privacy_policy_url' => ['label' => 'Privacy Policy URL Change', 'description' => "Console's privacy policy URL applied", 'console_url' => 'privacy_policy_url'],
         'app_domain_url' => ['label' => 'App Domain URL Change', 'description' => "Console's domain URL applied", 'console_url' => 'app_domain_url'],
-        'ads_json' => ['label' => 'Ads Config Created', 'description' => "The app's ads.json is filled in and uploaded"],
         'save_folder' => ['label' => 'Save Folder Change', 'description' => "App's save folder updated"],
         'random_words' => ['label' => 'Random Words Change', 'description' => 'Random words/strings replaced in project'],
         'build_deleted' => ['label' => 'Build/Idea Folder Delete', 'description' => 'Old build/ and .idea/ folders removed'],
         'cache_invalidated' => ['label' => 'Invalidate Cache', 'description' => 'Invalidate Caches / Restart done'],
         'project_rebuilt' => ['label' => 'Compile All Sources/Project Rebuild', 'description' => 'Clean + Rebuild completed successfully'],
+        'ads_json' => ['label' => 'Ads Config Created', 'description' => "The app's ads.json is filled in and uploaded", 'optional' => true],
     ];
+}
+
+/* The required keys as a SQL list, for the counts the lists show. */
+function checklist_required_sql(): string
+{
+    return "'" . implode("','", checklist_required_keys()) . "'";
+}
+
+/* The items an app must clear before it can be sent. */
+function checklist_required_keys(): array
+{
+    $keys = [];
+    foreach (checklist_items() as $key => $item) {
+        if (empty($item['optional'])) {
+            $keys[] = $key;
+        }
+    }
+
+    return $keys;
 }
 
 function production_statuses(): array
@@ -177,7 +196,9 @@ function get_production_app(int $appId): ?array
         'SELECT pa.*, pa.app_name AS name, pa.stage AS status, c.name AS console_name,
             c.privacy_policy_url AS console_privacy_policy_url,
             c.app_domain_url AS console_app_domain_url,
-            (SELECT COUNT(*) FROM production_checklist pc WHERE pc.app_id = pa.id AND pc.is_done = 1) AS checklist_done
+            (SELECT COUNT(*) FROM production_checklist pc
+             WHERE pc.app_id = pa.id AND pc.is_done = 1
+               AND pc.item_key IN (' . checklist_required_sql() . ')) AS checklist_done
          FROM apps pa
          LEFT JOIN consoles c ON c.id = pa.console_id
          WHERE pa.id = ?
@@ -195,7 +216,9 @@ function production_apps_by_status(string $status): array
         'SELECT pa.*, pa.app_name AS name, pa.stage AS status, c.name AS console_name,
             c.privacy_policy_url AS console_privacy_policy_url,
             c.app_domain_url AS console_app_domain_url,
-            (SELECT COUNT(*) FROM production_checklist pc WHERE pc.app_id = pa.id AND pc.is_done = 1) AS checklist_done
+            (SELECT COUNT(*) FROM production_checklist pc
+             WHERE pc.app_id = pa.id AND pc.is_done = 1
+               AND pc.item_key IN (' . checklist_required_sql() . ')) AS checklist_done
          FROM apps pa
          LEFT JOIN consoles c ON c.id = pa.console_id
          WHERE pa.stage = ?
@@ -366,8 +389,10 @@ function save_checklist(int $appId, array $doneKeys, array $fieldValues = []): v
     }
 
     $app = get_production_app($appId);
+    $required = count(checklist_required_keys());
+    $doneRequired = count(array_intersect($doneKeys, checklist_required_keys()));
     log_activity('app', $appId, 'checklist', $app ? (string) $app['name'] : null,
-        count($doneKeys) . ' of ' . count(checklist_items()) . ' complete');
+        $doneRequired . ' of ' . $required . ' required complete');
 }
 
 /*
@@ -396,10 +421,15 @@ function mark_checklist_item(int $appId, string $key, bool $done): void
 
 function checklist_is_complete(int $appId): bool
 {
-    $stmt = db()->prepare('SELECT COUNT(*) FROM production_checklist WHERE app_id = ? AND is_done = 1');
-    $stmt->execute([$appId]);
+    $state = checklist_state($appId);
 
-    return (int) $stmt->fetchColumn() >= count(checklist_items());
+    foreach (checklist_required_keys() as $key) {
+        if (empty($state[$key])) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 function send_app_to_production(int $appId): void

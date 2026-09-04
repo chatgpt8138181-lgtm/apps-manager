@@ -32,9 +32,34 @@ foreach ($taskGroups as $group) {
     }
 }
 
+/* Both rotations answer the same question, so the page asks it once. */
+$todayByConsole = [];
+foreach ($loadingGroups as $consoleId => $group) {
+    $todayByConsole[(int) $consoleId] = [
+        'name' => $group['name'],
+        'loading_total' => count($group['apps']),
+        'loading_done' => count(array_filter($group['apps'], fn($a) => (int) $a['is_done'] === 1)),
+        'task_total' => 0,
+        'task_done' => 0,
+    ];
+}
+foreach ($taskGroups as $consoleId => $group) {
+    $consoleId = (int) $consoleId;
+    $todayByConsole[$consoleId] ??= [
+        'name' => $group['name'],
+        'loading_total' => 0,
+        'loading_done' => 0,
+        'task_total' => 0,
+        'task_done' => 0,
+    ];
+    $todayByConsole[$consoleId]['task_total'] = count($group['tasks']);
+    $todayByConsole[$consoleId]['task_done'] =
+        count(array_filter($group['tasks'], fn($t) => (int) $t['is_done'] === 1));
+}
+
 $counts = production_status_counts();
 $items = checklist_items();
-$totalItems = count($items);
+$totalItems = count(checklist_required_keys());
 
 $prepareApps = production_apps_by_status('prepare');
 $prepareIncomplete = count(array_filter(
@@ -96,56 +121,52 @@ function home_progress(int $done, int $total): void
 
 page_start('Home');
 ?>
-<section class="home-grid">
-    <div class="panel home-card">
-        <div class="panel-heading">
-            <h2>Today's Loading</h2>
-            <a class="btn small" href="rotations.php">Open</a>
-        </div>
-        <?php if ($loadingTotal === 0): ?>
-            <p class="empty block">No loading apps for today. Mark apps Active to start the rotation.</p>
-        <?php else: ?>
-            <?php home_progress($loadingDone, $loadingTotal); ?>
-            <ul class="home-list">
-                <?php foreach ($loadingGroups as $categoryId => $group): ?>
-                    <?php
-                    $groupDone = count(array_filter($group['apps'], fn($a) => (int) $a['is_done'] === 1));
-                    ?>
-                    <li>
-                        <span class="home-list-name"><?= h($group['name']) ?></span>
-                        <span class="home-list-meta">
-                            <?= $groupDone ?>/<?= count($group['apps']) ?> &middot; Cycle <?= display_category_cycle((int) $categoryId) ?>
-                        </span>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
-        <?php endif; ?>
+<section class="panel">
+    <div class="panel-heading">
+        <h2>Pipeline</h2>
+        <span class="hint">Where every published app currently sits.</span>
     </div>
+    <div class="stats-grid">
+        <a class="stat" href="production.php"><span><?= (int) $counts['prepare'] ?></span><p>Prepare</p></a>
+        <a class="stat" href="ready-apps.php"><span><?= (int) $counts['ready'] ?></span><p>Ready</p></a>
+        <a class="stat" href="sent-production.php"><span><?= (int) $counts['sent'] ?></span><p>Production</p></a>
+        <a class="stat" href="live-apps.php"><span><?= (int) $counts['live'] ?></span><p>Live</p></a>
+    </div>
+</section>
 
-    <div class="panel home-card">
-        <div class="panel-heading">
-            <h2>Today's Tasks</h2>
-            <a class="btn small" href="rotations.php">Open</a>
-        </div>
-        <?php if ($taskTotal === 0): ?>
-            <p class="empty block">No tasks for today. Tag Live apps as Ready for Work to start the task system.</p>
-        <?php else: ?>
-            <?php home_progress($taskDone, $taskTotal); ?>
-            <ul class="home-list">
-                <?php foreach ($taskGroups as $consoleId => $group): ?>
-                    <?php
-                    $groupDone = count(array_filter($group['tasks'], fn($t) => (int) $t['is_done'] === 1));
-                    ?>
-                    <li>
-                        <span class="home-list-name"><?= h($group['name']) ?></span>
-                        <span class="home-list-meta">
-                            <?= $groupDone ?>/<?= count($group['tasks']) ?> &middot; Cycle <?= display_console_cycle((int) $consoleId) ?>
-                        </span>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
-        <?php endif; ?>
+<section class="panel">
+    <div class="panel-heading">
+        <h2>Today</h2>
+        <a class="btn small" href="rotations.php">Open Rotations</a>
     </div>
+    <?php if ($loadingTotal === 0 && $taskTotal === 0): ?>
+        <p class="empty block">
+            Nothing due today. Mark apps Active to start loading, and tag Live apps
+            Ready for Work to start the tasks.
+        </p>
+    <?php else: ?>
+        <div class="today-totals">
+            <div>
+                <span class="today-label">Loading</span>
+                <?php home_progress($loadingDone, $loadingTotal); ?>
+            </div>
+            <div>
+                <span class="today-label">Daily Tasks</span>
+                <?php home_progress($taskDone, $taskTotal); ?>
+            </div>
+        </div>
+        <ul class="home-list">
+            <?php foreach ($todayByConsole as $row): ?>
+                <li>
+                    <span class="home-list-name"><?= h($row['name']) ?></span>
+                    <span class="home-list-meta">
+                        Loading <?= $row['loading_done'] ?>/<?= $row['loading_total'] ?>
+                        &middot; Tasks <?= $row['task_done'] ?>/<?= $row['task_total'] ?>
+                    </span>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    <?php endif; ?>
 </section>
 
 <section class="panel">
@@ -168,16 +189,4 @@ page_start('Home');
     </ul>
 </section>
 
-<section class="panel">
-    <div class="panel-heading">
-        <h2>Pipeline</h2>
-        <span class="hint">Where every published app currently sits.</span>
-    </div>
-    <div class="stats-grid">
-        <a class="stat" href="production.php"><span><?= (int) $counts['prepare'] ?></span><p>Prepare</p></a>
-        <a class="stat" href="ready-apps.php"><span><?= (int) $counts['ready'] ?></span><p>Ready</p></a>
-        <a class="stat" href="sent-production.php"><span><?= (int) $counts['sent'] ?></span><p>Sent</p></a>
-        <a class="stat" href="live-apps.php"><span><?= (int) $counts['live'] ?></span><p>Live</p></a>
-    </div>
-</section>
 <?php page_end(); ?>

@@ -172,18 +172,18 @@ function page_start(string $title): void
     $flash = flash();
     ?>
     <!doctype html>
-    <html lang="en">
+    <html lang="en" data-theme="light">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title><?= h($title) ?> | App Manager</title>
         <link rel="stylesheet" href="assets/css/style.css?v=<?= asset_version('assets/css/style.css') ?>">
         <script>
+        /* Light unless this browser has been switched to dark. */
         (() => {
             try {
-                const saved = localStorage.getItem('theme');
-                if (saved === 'dark' || saved === 'light') {
-                    document.documentElement.dataset.theme = saved;
+                if (localStorage.getItem('theme') === 'dark') {
+                    document.documentElement.dataset.theme = 'dark';
                 }
             } catch (error) {
                 /* storage unavailable */
@@ -322,11 +322,9 @@ function page_end(): void
             });
         });
 
-        /* Theme: an explicit choice wins, otherwise the system decides. */
+        /* Theme: light is the ground state, dark is a choice this browser keeps. */
         document.getElementById('theme-toggle')?.addEventListener('click', () => {
-            const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const current = document.documentElement.dataset.theme || (systemDark ? 'dark' : 'light');
-            const next = current === 'dark' ? 'light' : 'dark';
+            const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
             document.documentElement.dataset.theme = next;
             try {
                 localStorage.setItem('theme', next);

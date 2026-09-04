@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $items = checklist_items();
-$totalItems = count($items);
+$totalItems = count(checklist_required_keys());
 $consoles = all_consoles();
 $listQuery = trim((string) ($_GET['q'] ?? ''));
 $listConsole = (int) ($_GET['console'] ?? 0);
@@ -133,6 +133,9 @@ page_start('Prepare Production');
                         <input type="checkbox" name="items[<?= h($key) ?>]" value="1" <?= $isDone ? 'checked' : '' ?>>
                         <span>
                             <strong><?= h($item['label']) ?></strong>
+                        <?php if (!empty($item['optional'])): ?>
+                            <span class="badge badge-gray">Optional</span>
+                        <?php endif; ?>
                             <small><?= h($item['description']) ?></small>
                             <?php if ($isDone && !empty($selectedTimes[$key])): ?>
                                 <small class="checklist-done-at">Done <?= h($selectedTimes[$key]) ?></small>

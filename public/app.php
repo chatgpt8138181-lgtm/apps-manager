@@ -200,8 +200,10 @@ $consoles = all_consoles();
 $items = checklist_items();
 $state = checklist_state($appId);
 $doneTimes = checklist_done_times($appId);
-$done = (int) $app['checklist_done'];
-$total = count($items);
+$required = checklist_required_keys();
+/* The progress bar counts what an app must clear; the rest is a bonus. */
+$total = count($required);
+$done = count(array_filter($required, fn($key) => !empty($state[$key])));
 $complete = $done >= $total;
 $domainUrl = app_domain_url_for($app);
 $adsConfig = ads_config_for($app);
@@ -658,6 +660,9 @@ page_start($app['name']);
                         : '<span class="badge badge-gray">Pending</span>' ?>
                     <span>
                         <strong><?= h($item['label']) ?></strong>
+                        <?php if (!empty($item['optional'])): ?>
+                            <span class="badge badge-gray">Optional</span>
+                        <?php endif; ?>
                         <small><?= h($item['description']) ?></small>
                         <?php if ($isDone && !empty($doneTimes[$key])): ?>
                             <small class="checklist-done-at">Done <?= h($doneTimes[$key]) ?></small>
