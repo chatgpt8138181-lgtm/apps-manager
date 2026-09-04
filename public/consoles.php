@@ -152,7 +152,8 @@ page_start('Play Consoles');
                             <input type="hidden" name="action" value="save_ads_template">
                             <input type="hidden" name="console_id" value="<?= $consoleId ?>">
                             <label class="ads-raw-label">Template
-                                <textarea name="ads_template" rows="10" spellcheck="false"><?= h((string) ($console['ads_template'] ?? '')) ?></textarea>
+                                <textarea name="ads_template" rows="10" spellcheck="false"
+                                          placeholder="<?= h(ads_encode(ads_default_template())) ?>"><?= h((string) ($console['ads_template'] ?? '')) ?></textarea>
                             </label>
                             <p class="hint">
                                 Every app under this console starts from this file. Leave it empty
