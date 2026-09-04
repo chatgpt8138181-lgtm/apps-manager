@@ -2915,3 +2915,10 @@ tbody tr.is-picked {
     gap: 10px;
     min-width: 0;
 }
+
+/* A path in a cell wraps rather than running past the card edge. */
+@media (max-width: 900px) {
+    .table-wrap td code {
+        overflow-wrap: anywhere;
+    }
+}
