@@ -80,8 +80,7 @@ $listConsole = (int) ($_GET['console'] ?? 0);
 
 $consoles = all_consoles();
 $all = all_apps_overview($stage, $listConsole, $loading, $listQuery, $urlState);
-$page = paginate($all);
-$rows = $page['rows'];
+$rows = $all;
 
 $filterState = array_filter([
     'stage' => $stage,
@@ -171,7 +170,7 @@ page_start('Apps');
     </form>
 
     <div class="panel-heading">
-        <h2>Apps (<?= (int) $page['total'] ?>)</h2>
+        <h2>Apps (<?= count($rows) ?>)</h2>
         <span class="hint">One row per app. Open it to work on either side.</span>
     </div>
 
@@ -192,7 +191,8 @@ page_start('Apps');
     ?>
 
     <?php foreach ($groups as $groupId => $group): ?>
-        <div class="app-group" data-group-key="console-<?= (int) $groupId ?>">
+        <?php $groupPage = paginate_group($group['apps'], 'g' . (int) $groupId); ?>
+        <div class="app-group" id="g<?= (int) $groupId ?>" data-group-key="console-<?= (int) $groupId ?>">
             <button class="app-group-toggle" type="button" aria-expanded="false">
                 <span class="console-head">
                     <span class="console-head-name"><?= h($group['name']) ?> (<?= count($group['apps']) ?>)</span>
@@ -242,7 +242,7 @@ page_start('Apps');
                             </tr>
                             </thead>
                             <tbody>
-                            <?php foreach ($group['apps'] as $app): ?>
+                            <?php foreach ($groupPage['rows'] as $app): ?>
                                 <tr>
                                     <?php $hasFolder = $app['stage'] !== 'none' && ads_folder_path($app) !== null; ?>
                                     <td class="col-select"><input type="checkbox" class="bulk-row" value="<?= (int) $app['id'] ?>"
@@ -271,17 +271,16 @@ page_start('Apps');
                             </tbody>
                         </table>
                     </div>
+                    <?php render_group_pager($groupPage, 'apps.php', [
+                        'stage' => $stage,
+                        'console' => $listConsole,
+                        'loading' => $loading,
+                        'url' => $urlState,
+                        'q' => $listQuery,
+                    ]); ?>
                 </div>
             </div>
         </div>
     <?php endforeach; ?>
-
-    <?php render_pager($page, 'apps.php', [
-        'stage' => $stage,
-        'console' => $listConsole,
-        'loading' => $loading,
-        'url' => $urlState,
-        'q' => $listQuery,
-    ]); ?>
 </section>
 <?php page_end(); ?>

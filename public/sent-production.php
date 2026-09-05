@@ -189,8 +189,7 @@ $counts = production_status_counts();
 $consoles = all_consoles();
 $listQuery = trim((string) ($_GET['q'] ?? ''));
 $listConsole = (int) ($_GET['console'] ?? 0);
-$sentPage = paginate(filter_production_apps(production_apps_by_status($status), $listQuery, $listConsole));
-$apps = $sentPage['rows'];
+$apps = filter_production_apps(production_apps_by_status($status), $listQuery, $listConsole);
 $unassigned = array_values(array_filter($apps, fn($app) => empty($app['console_id'])));
 $tabs = [
     'sent' => 'Sent for Production',
@@ -229,7 +228,7 @@ page_start('Production Apps');
 <section class="panel">
     <?php render_list_filters('sent-production.php', $listQuery, $listConsole, $consoles, ['status' => $status]); ?>
     <div class="panel-heading">
-        <h2><?= h($tabs[$status]) ?> (<?= (int) $sentPage['total'] ?>)</h2>
+        <h2><?= h($tabs[$status]) ?> (<?= count($apps) ?>)</h2>
         <?php if ($status === 'sent'): ?>
             <span class="hint">Set the Play Console review result. Marking an app Live moves it to Live Apps.</span>
         <?php endif; ?>
@@ -253,13 +252,15 @@ page_start('Production Apps');
             continue;
         }
         ?>
-        <div class="app-group" data-group-key="console-<?= (int) $console['id'] ?>">
+        <?php $groupPage = paginate_group($consoleApps, 'g' . (int) $console['id']); ?>
+        <div class="app-group" id="g<?= (int) $console['id'] ?>" data-group-key="console-<?= (int) $console['id'] ?>">
             <button class="app-group-toggle" type="button" aria-expanded="false">
                 <span><?= h($console['name']) ?> (<?= count($consoleApps) ?>)</span>
                 <span class="nav-chevron" aria-hidden="true"></span>
             </button>
             <div class="app-group-body">
-                <?php render_sent_apps_table($consoleApps, $status); ?>
+                <?php render_sent_apps_table($groupPage['rows'], $status); ?>
+                <?php render_group_pager($groupPage, 'sent-production.php', ['status' => $status, 'q' => $listQuery, 'console' => $listConsole]); ?>
             </div>
         </div>
     <?php endforeach; ?>
@@ -272,12 +273,13 @@ page_start('Production Apps');
             </button>
             <div class="app-group-body">
                 <p class="hint">Assign a Play Console from Production &rarr; Manage &rarr; Verify App Details.</p>
-                <?php render_sent_apps_table($unassigned, $status); ?>
+                <?php $noConsolePage = paginate_group($unassigned, 'gnone'); ?>
+                <?php render_sent_apps_table($noConsolePage['rows'], $status); ?>
+                <?php render_group_pager($noConsolePage, 'sent-production.php', ['status' => $status, 'q' => $listQuery, 'console' => $listConsole]); ?>
             </div>
         </div>
     <?php endif; ?>
 
-    <?php render_pager($sentPage, 'sent-production.php', ['status' => $status, 'q' => $listQuery, 'console' => $listConsole]); ?>
 </section>
 <?php endif; ?>
 

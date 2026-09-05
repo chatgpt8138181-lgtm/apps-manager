@@ -60,8 +60,7 @@ $consoles = all_consoles();
 $listQuery = trim((string) ($_GET['q'] ?? ''));
 $listConsole = (int) ($_GET['console'] ?? 0);
 $prepareAll = filter_production_apps(production_apps_by_status('prepare'), $listQuery, $listConsole);
-$preparePage = paginate($prepareAll);
-$prepareApps = $preparePage['rows'];
+$prepareApps = $prepareAll;
 $selectedId = (int) ($_GET['app_id'] ?? 0);
 $selected = null;
 
@@ -323,7 +322,7 @@ $unassignedPrepare = array_values(array_filter($prepareApps, fn($app) => empty($
 <section class="panel">
     <?php render_list_filters('production.php', $listQuery, $listConsole, $consoles); ?>
     <div class="panel-heading">
-        <h2>Prepare Production (<?= (int) $preparePage['total'] ?>)</h2>
+        <h2>Prepare Production (<?= count($prepareApps) ?>)</h2>
         <span class="hint">Send for Production unlocks at <?= $totalItems ?>/<?= $totalItems ?>.</span>
     </div>
 
@@ -345,13 +344,15 @@ $unassignedPrepare = array_values(array_filter($prepareApps, fn($app) => empty($
             continue;
         }
         ?>
-        <div class="app-group" data-group-key="console-<?= (int) $console['id'] ?>">
+        <?php $groupPage = paginate_group($consoleApps, 'g' . (int) $console['id']); ?>
+        <div class="app-group" id="g<?= (int) $console['id'] ?>" data-group-key="console-<?= (int) $console['id'] ?>">
             <button class="app-group-toggle" type="button" aria-expanded="false">
                 <span><?= h($console['name']) ?> (<?= count($consoleApps) ?>)</span>
                 <span class="nav-chevron" aria-hidden="true"></span>
             </button>
             <div class="app-group-body">
-                <?php render_prepare_apps_table($consoleApps, $totalItems); ?>
+                <?php render_prepare_apps_table($groupPage['rows'], $totalItems); ?>
+                <?php render_group_pager($groupPage, 'production.php', ['q' => $listQuery, 'console' => $listConsole]); ?>
             </div>
         </div>
     <?php endforeach; ?>
@@ -364,11 +365,12 @@ $unassignedPrepare = array_values(array_filter($prepareApps, fn($app) => empty($
             </button>
             <div class="app-group-body">
                 <p class="hint">Assign a Play Console from Manage &rarr; Verify App Details.</p>
-                <?php render_prepare_apps_table($unassignedPrepare, $totalItems); ?>
+                <?php $noConsolePage = paginate_group($unassignedPrepare, 'gnone'); ?>
+                <?php render_prepare_apps_table($noConsolePage['rows'], $totalItems); ?>
+                <?php render_group_pager($noConsolePage, 'production.php', ['q' => $listQuery, 'console' => $listConsole]); ?>
             </div>
         </div>
     <?php endif; ?>
-    <?php render_pager($preparePage, 'production.php', ['q' => $listQuery, 'console' => $listConsole]); ?>
 </section>
 <?php endif; ?>
 

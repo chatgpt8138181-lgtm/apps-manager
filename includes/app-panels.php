@@ -27,6 +27,60 @@ function paginate(array $rows, int $perPage = 50): array
     ];
 }
 
+/*
+ * Pagination inside one console's list. The console list itself is never
+ * cut short: every console shows on the page, and a long console pages
+ * through its own apps.
+ */
+function paginate_group(array $rows, string $key, int $perPage = 25): array
+{
+    $total = count($rows);
+    $perPage = max(5, $perPage);
+    $pages = max(1, (int) ceil($total / $perPage));
+    $page = max(1, min($pages, (int) ($_GET[$key] ?? 1)));
+
+    return [
+        'rows' => array_slice($rows, ($page - 1) * $perPage, $perPage),
+        'page' => $page,
+        'pages' => $pages,
+        'total' => $total,
+        'key' => $key,
+        'from' => $total === 0 ? 0 : ($page - 1) * $perPage + 1,
+        'to' => min($total, $page * $perPage),
+    ];
+}
+
+/* The pager for one group; it comes back to the group it belongs to. */
+function render_group_pager(array $info, string $page, array $params = []): void
+{
+    if ((int) $info['pages'] < 2) {
+        return;
+    }
+
+    $key = (string) $info['key'];
+    $link = function (int $target) use ($page, $params, $key): string {
+        $params[$key] = $target;
+
+        return $page . '?' . http_build_query($params) . '#' . $key;
+    };
+    ?>
+    <nav class="pager group-pager" aria-label="Pages">
+        <span class="pager-count">
+            <?= (int) $info['from'] ?>&ndash;<?= (int) $info['to'] ?> of <?= (int) $info['total'] ?>
+        </span>
+        <span class="pager-links">
+            <?php if ((int) $info['page'] > 1): ?>
+                <a class="btn small" href="<?= h($link((int) $info['page'] - 1)) ?>">&laquo; Previous</a>
+            <?php endif; ?>
+            <span class="pager-position">Page <?= (int) $info['page'] ?> of <?= (int) $info['pages'] ?></span>
+            <?php if ((int) $info['page'] < (int) $info['pages']): ?>
+                <a class="btn small" href="<?= h($link((int) $info['page'] + 1)) ?>">Next &raquo;</a>
+            <?php endif; ?>
+        </span>
+    </nav>
+    <?php
+}
+
 function render_pager(array $info, string $page, array $params = []): void
 {
     if ((int) $info['pages'] < 2) {

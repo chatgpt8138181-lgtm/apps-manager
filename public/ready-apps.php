@@ -124,8 +124,7 @@ function render_ready_apps_table(array $apps): void
 $consoles = all_consoles();
 $listQuery = trim((string) ($_GET['q'] ?? ''));
 $listConsole = (int) ($_GET['console'] ?? 0);
-$readyPage = paginate(filter_production_apps(production_apps_by_status('ready'), $listQuery, $listConsole));
-$apps = $readyPage['rows'];
+$apps = filter_production_apps(production_apps_by_status('ready'), $listQuery, $listConsole);
 $unassigned = array_values(array_filter($apps, fn($app) => empty($app['console_id'])));
 
 $selectedId = (int) ($_GET['app_id'] ?? 0);
@@ -146,7 +145,7 @@ page_start('Ready Apps');
 <section class="panel">
     <?php render_list_filters('ready-apps.php', $listQuery, $listConsole, $consoles); ?>
     <div class="panel-heading">
-        <h2>Ready Apps (<?= (int) $readyPage['total'] ?>)</h2>
+        <h2>Ready Apps (<?= count($apps) ?>)</h2>
         <span class="hint">Checklist-complete apps waiting to be sent. Send each app when its console is ready.</span>
     </div>
 
@@ -168,13 +167,15 @@ page_start('Ready Apps');
             continue;
         }
         ?>
-        <div class="app-group" data-group-key="console-<?= (int) $console['id'] ?>">
+        <?php $groupPage = paginate_group($consoleApps, 'g' . (int) $console['id']); ?>
+        <div class="app-group" id="g<?= (int) $console['id'] ?>" data-group-key="console-<?= (int) $console['id'] ?>">
             <button class="app-group-toggle" type="button" aria-expanded="false">
                 <span><?= h($console['name']) ?> (<?= count($consoleApps) ?>)</span>
                 <span class="nav-chevron" aria-hidden="true"></span>
             </button>
             <div class="app-group-body">
-                <?php render_ready_apps_table($consoleApps); ?>
+                <?php render_ready_apps_table($groupPage['rows']); ?>
+                <?php render_group_pager($groupPage, 'ready-apps.php', ['q' => $listQuery, 'console' => $listConsole]); ?>
             </div>
         </div>
     <?php endforeach; ?>
@@ -187,12 +188,13 @@ page_start('Ready Apps');
             </button>
             <div class="app-group-body">
                 <p class="hint">Assign a Play Console from Production &rarr; Manage &rarr; Verify App Details.</p>
-                <?php render_ready_apps_table($unassigned); ?>
+                <?php $noConsolePage = paginate_group($unassigned, 'gnone'); ?>
+                <?php render_ready_apps_table($noConsolePage['rows']); ?>
+                <?php render_group_pager($noConsolePage, 'ready-apps.php', ['q' => $listQuery, 'console' => $listConsole]); ?>
             </div>
         </div>
     <?php endif; ?>
 
-    <?php render_pager($readyPage, 'ready-apps.php', ['q' => $listQuery, 'console' => $listConsole]); ?>
 </section>
 <?php endif; ?>
 

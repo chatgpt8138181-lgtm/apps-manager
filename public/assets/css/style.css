@@ -2961,3 +2961,8 @@ tbody tr.is-picked {
         overflow-wrap: anywhere;
     }
 }
+
+/* A pager that belongs to one console sits under its own list. */
+.group-pager {
+    margin-top: 14px;
+}
