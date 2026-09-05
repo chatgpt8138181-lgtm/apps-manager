@@ -60,11 +60,6 @@ function normalize_status(string $status): string
     return $status === 'Inactive' ? 'Inactive' : 'Active';
 }
 
-function normalize_ready_status(string $status): string
-{
-    return $status === 'Not Ready' ? 'Not Ready' : 'Ready';
-}
-
 /* Kept as a name the loading pages already use; consoles are the one list now. */
 function all_categories(): array
 {
@@ -272,14 +267,12 @@ function add_app(array $data, ?string $iconPath): void
     }
 
     $stmt = db()->prepare(
-        'INSERT INTO apps (console_id, app_name, loading_status, ready_loading_status, icon_path)
-         VALUES (?, ?, ?, ?, ?)'
+        'INSERT INTO apps (console_id, app_name, loading_status, icon_path) VALUES (?, ?, ?, ?)'
     );
     $stmt->execute([
         $categoryId,
         $name,
         normalize_status((string) ($data['loading_status'] ?? 'Active')),
-        normalize_ready_status((string) ($data['ready_loading_status'] ?? 'Ready')),
         $iconPath,
     ]);
 }
@@ -334,26 +327,22 @@ function update_app(int $appId, array $data): void
         throw new RuntimeException('Invalid app update.');
     }
 
-    if (!isset($data['loading_status']) || !isset($data['ready_loading_status'])) {
-        $current = db()->prepare('SELECT loading_status, ready_loading_status FROM apps WHERE id = ? LIMIT 1');
+    if (!isset($data['loading_status'])) {
+        $current = db()->prepare('SELECT loading_status FROM apps WHERE id = ? LIMIT 1');
         $current->execute([$appId]);
         $row = $current->fetch();
         if (!$row) {
             throw new RuntimeException('App was not found.');
         }
-        $data['loading_status'] = $data['loading_status'] ?? $row['loading_status'];
-        $data['ready_loading_status'] = $data['ready_loading_status'] ?? $row['ready_loading_status'];
+        $data['loading_status'] = $row['loading_status'];
     }
 
     $stmt = db()->prepare(
-        'UPDATE apps
-         SET app_name = ?, loading_status = ?, ready_loading_status = ?, updated_at = NOW()
-         WHERE id = ?'
+        'UPDATE apps SET app_name = ?, loading_status = ?, updated_at = NOW() WHERE id = ?'
     );
     $stmt->execute([
         $name,
         normalize_status((string) $data['loading_status']),
-        normalize_ready_status((string) $data['ready_loading_status']),
         $appId,
     ]);
 }
@@ -364,23 +353,35 @@ function bulk_update_category_status(int $categoryId, string $field, string $val
         throw new RuntimeException('Console was not found.');
     }
 
-    if ($field === 'loading') {
-        $stmt = db()->prepare('UPDATE apps SET loading_status = ?, updated_at = NOW() WHERE console_id = ?');
-        $stmt->execute([normalize_status($value), $categoryId]);
-    } elseif ($field === 'ready') {
-        $stmt = db()->prepare('UPDATE apps SET ready_loading_status = ?, updated_at = NOW() WHERE console_id = ?');
-        $stmt->execute([normalize_ready_status($value), $categoryId]);
-    } else {
+    if ($field !== 'loading') {
         throw new RuntimeException('Invalid bulk update.');
     }
+
+    $stmt = db()->prepare('UPDATE apps SET loading_status = ?, updated_at = NOW() WHERE console_id = ?');
+    $stmt->execute([normalize_status($value), $categoryId]);
 }
 
-function update_app_statuses(int $appId, string $loading, string $ready): void
+function update_app_statuses(int $appId, string $loading): void
 {
+    $stmt = db()->prepare('UPDATE apps SET loading_status = ?, updated_at = NOW() WHERE id = ?');
+    $stmt->execute([normalize_status($loading), $appId]);
+}
+
+/* The apps someone ticked on the loading board, set in one go. */
+function bulk_set_loading_status(array $appIds, string $status): int
+{
+    $appIds = array_values(array_unique(array_filter(array_map('intval', $appIds))));
+    if (!$appIds) {
+        return 0;
+    }
+
+    $marks = implode(',', array_fill(0, count($appIds), '?'));
     $stmt = db()->prepare(
-        'UPDATE apps SET loading_status = ?, ready_loading_status = ?, updated_at = NOW() WHERE id = ?'
+        "UPDATE apps SET loading_status = ?, updated_at = NOW() WHERE id IN ($marks)"
     );
-    $stmt->execute([normalize_status($loading), normalize_ready_status($ready), $appId]);
+    $stmt->execute(array_merge([normalize_status($status)], $appIds));
+
+    return count($appIds);
 }
 
 function delete_app(int $appId): void
@@ -462,7 +463,7 @@ function todays_loading_apps(): array
 {
     $stmt = db()->prepare(
         "SELECT ld.id, ld.is_done, ld.cycle_no, c.id AS category_id, c.name AS category_name,
-                a.id AS app_id, a.app_name, a.icon_path, a.ready_loading_status
+                a.id AS app_id, a.app_name, a.icon_path
          FROM loading_daily ld
          JOIN apps a ON a.id = ld.app_id
          JOIN consoles c ON c.id = ld.console_id

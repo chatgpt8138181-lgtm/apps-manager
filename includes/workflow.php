@@ -132,9 +132,8 @@ function add_production_app(array $data): int
     $consoleId = validate_console_choice($data);
 
     $stmt = db()->prepare(
-        "INSERT INTO apps (app_name, package_name, application_id, console_id, stage,
-                            loading_status, ready_loading_status)
-         VALUES (?, ?, ?, ?, 'prepare', 'Inactive', 'Not Ready')"
+        "INSERT INTO apps (app_name, package_name, application_id, console_id, stage, loading_status)
+         VALUES (?, ?, ?, ?, 'prepare', 'Inactive')"
     );
     $stmt->execute([
         $name,
@@ -282,8 +281,8 @@ function add_app_record(string $name, int $consoleId, bool $publishing): int
     }
 
     $stmt = db()->prepare(
-        "INSERT INTO apps (app_name, console_id, stage, loading_status, ready_loading_status)
-         VALUES (?, ?, ?, ?, 'Not Ready')"
+        "INSERT INTO apps (app_name, console_id, stage, loading_status)
+         VALUES (?, ?, ?, ?)"
     );
     $stmt->execute([
         $name,

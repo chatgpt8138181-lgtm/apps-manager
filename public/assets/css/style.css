@@ -20,6 +20,8 @@
     --green-text: #166534;
     --red-bg: #fee2e2;
     --red-text: #991b1b;
+    --red-solid: #dc2626;
+    --red-solid-dark: #b91c1c;
     --amber-bg: #fef3c7;
     --amber-text: #92400e;
     --blue-bg: #dbeafe;
@@ -470,10 +472,6 @@ table {
     width: 140px;
 }
 
-.category-table .col-ready {
-    width: 160px;
-}
-
 th,
 td {
     border-bottom: 1px solid var(--line);
@@ -498,10 +496,8 @@ th {
 .category-table .col-id,
 .category-table .col-icon,
 .category-table .col-loading,
-.category-table .col-ready,
 .category-table .app-icon-cell,
-.category-table .status-cell,
-.category-table .ready-cell {
+.category-table .status-cell {
     text-align: center;
 }
 
@@ -1017,8 +1013,12 @@ select {
 }
 
 .btn.danger {
-    background: var(--red-bg);
-    color: var(--red-text);
+    background: var(--red-solid);
+    color: var(--on-primary);
+}
+
+.btn.danger:hover {
+    background: var(--red-solid-dark);
 }
 
 .btn.small {
@@ -2509,6 +2509,8 @@ tbody tr.is-picked {
     --red-bg: #3a1618;
     --red-text: #fca5a5;
     --red-line: #55242a;
+    --red-solid: #dc2626;
+    --red-solid-dark: #ef4444;
     --amber-bg: #3a2b10;
     --amber-text: #fcd34d;
     --blue-bg: #14273f;
@@ -2548,6 +2550,8 @@ tbody tr.is-picked {
         --red-bg: #3a1618;
         --red-text: #fca5a5;
         --red-line: #55242a;
+        --red-solid: #dc2626;
+        --red-solid-dark: #ef4444;
         --amber-bg: #3a2b10;
         --amber-text: #fcd34d;
         --blue-bg: #14273f;
