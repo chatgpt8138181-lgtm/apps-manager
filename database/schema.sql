@@ -16,7 +16,6 @@ CREATE TABLE IF NOT EXISTS apps (
     category_id INT UNSIGNED NOT NULL,
     app_name VARCHAR(200) NOT NULL,
     loading_status ENUM('Active', 'Inactive') NOT NULL DEFAULT 'Active',
-    ready_loading_status ENUM('Ready', 'Not Ready') NOT NULL DEFAULT 'Ready',
     icon_path VARCHAR(255) NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,

@@ -2375,6 +2375,12 @@ tbody tr.is-picked {
     .table-wrap td.col-select::before {
         content: "Select";
     }
+
+    /* An app id is short and should never be broken across lines. */
+    .table-wrap td.col-id {
+        white-space: nowrap;
+        word-break: normal;
+    }
 }
 
 /* The search + console bar above a list. */

@@ -308,12 +308,19 @@ function search_apps(string $query, int $categoryId): array
         return $all;
     }
 
-    $isNumeric = ctype_digit($query);
+    /* An id may be typed with the # that the lists show, and that # means
+       exactly that app; a bare number matches the way a name does. */
+    $exactId = str_starts_with($query, '#');
+    $idNeedle = ltrim($query, '#');
+    $isNumeric = $idNeedle !== '' && ctype_digit($idNeedle);
     $needle = text_lower($query);
 
-    return array_values(array_filter($all, static function (array $app) use ($isNumeric, $query, $needle): bool {
-        if ($isNumeric && (string) $app['id'] === $query) {
-            return true;
+    return array_values(array_filter($all, static function (array $app) use ($isNumeric, $exactId, $idNeedle, $needle): bool {
+        if ($isNumeric) {
+            $id = (string) $app['id'];
+            if ($exactId ? $id === $idNeedle : text_contains($id, $idNeedle)) {
+                return true;
+            }
         }
 
         return text_contains(text_lower($app['app_name']), $needle);
