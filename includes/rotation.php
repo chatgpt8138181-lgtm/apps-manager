@@ -2,15 +2,14 @@
 declare(strict_types=1);
 
 /*
- * One rotation engine for both modules.
+ * The rotation engine.
  *
- * Loading rotates a console's Active apps; Daily Tasks rotates a console's
- * Ready-for-Work live apps. The rules are identical: each console walks its
- * own list from a stored position, a day takes the next slice, and the list
- * starts over — one cycle further on — once it runs out.
+ * Loading rotates a console's Active apps: each console walks its own list
+ * from a stored position, a day takes the next slice, and the list starts
+ * over — one cycle further on — once it runs out.
  *
- * A rotation is described once, here, and the module-facing helpers in
- * functions.php and workflow.php are thin wrappers over these.
+ * The rotation is described once, here, and the helpers in functions.php
+ * are thin wrappers over these.
  */
 
 function rotation_config(string $kind): array
@@ -25,17 +24,6 @@ function rotation_config(string $kind): array
             'cycle_key' => 'loading_cycle_c',
             'position_key' => 'loading_pos_c',
             'base_key' => 'loading_cycle_base',
-            'owners' => 'all_consoles',
-        ],
-        'task' => [
-            'table' => 'daily_tasks',
-            'owner_column' => 'console_id',
-            'source_table' => 'apps',
-            'source_owner' => 'console_id',
-            'source_where' => "stage = 'live' AND ready_for_work = 1",
-            'cycle_key' => 'task_cycle_c',
-            'position_key' => 'task_pos_c',
-            'base_key' => 'task_cycle_base',
             'owners' => 'all_consoles',
         ],
     ];
@@ -63,16 +51,7 @@ function rotation_total(string $kind, int $ownerId): int
 /* How many of them a day takes. */
 function rotation_quota(string $kind, int $ownerId): int
 {
-    if ($kind === 'loading') {
-        return loading_apps_per_day();
-    }
-
-    $total = rotation_total($kind, $ownerId);
-    if ($total === 0) {
-        return 0;
-    }
-
-    return max(1, (int) ceil($total / cycle_days()));
+    return loading_apps_per_day();
 }
 
 function rotation_cycle(string $kind, int $ownerId): int

@@ -74,7 +74,9 @@ function unused_all_categories(): array
 
 function category_counts(): array
 {
-    $stmt = db()->query('SELECT console_id, COUNT(*) AS total FROM apps GROUP BY console_id');
+    $stmt = db()->query(
+        "SELECT console_id, COUNT(*) AS total FROM apps WHERE stage = 'live' GROUP BY console_id"
+    );
     $counts = [];
 
     foreach ($stmt->fetchAll() as $row) {
@@ -277,15 +279,17 @@ function add_app(array $data, ?string $iconPath): void
     ]);
 }
 
+/* The loading board works on apps that are live on the store. */
 function sorted_apps(?int $categoryId = null): array
 {
-    $sql = 'SELECT apps.*, apps.console_id AS category_id, consoles.name AS category_name
+    $sql = "SELECT apps.*, apps.console_id AS category_id, consoles.name AS category_name
             FROM apps
-            JOIN consoles ON consoles.id = apps.console_id';
+            JOIN consoles ON consoles.id = apps.console_id
+            WHERE apps.stage = 'live'";
     $params = [];
 
     if ($categoryId !== null) {
-        $sql .= ' WHERE apps.console_id = ?';
+        $sql .= ' AND apps.console_id = ?';
         $params[] = $categoryId;
     }
 

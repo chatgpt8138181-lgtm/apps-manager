@@ -142,21 +142,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect_with($self, 'success', 'App moved back to Production Apps.');
         }
 
-        if ($action === 'toggle_ready_for_work') {
-            $ready = (int) ($_POST['ready'] ?? 0) === 1;
-            set_ready_for_work($appId, $ready);
-            redirect_with(
-                $self,
-                'success',
-                $ready ? 'App tagged Ready for Work.' : 'Ready for Work tag removed.',
-                ['page' => $self, 'fields' => [
-                    'action' => 'toggle_ready_for_work',
-                    'app_id' => $appId,
-                    'ready' => $ready ? 0 : 1,
-                ]]
-            );
-        }
-
         if ($action === 'toggle_url_checked') {
             $checked = (int) ($_POST['checked'] ?? 0) === 1;
             set_url_checked($appId, $checked);
@@ -245,9 +230,6 @@ page_start($app['name']);
 
     <p class="hint app-detail-meta">
         <?= render_production_badge($status) ?>
-        <?php if ((int) ($app['ready_for_work'] ?? 0) === 1): ?>
-            <span class="badge badge-green">Ready for Work</span>
-        <?php endif; ?>
         <?php if ((int) ($app['url_checked'] ?? 0) === 1): ?>
             <span class="badge badge-blue">URL checked</span>
         <?php endif; ?>
@@ -319,16 +301,6 @@ page_start($app['name']);
                 <button class="btn" type="submit">Back to Ready</button>
             </form>
         <?php elseif ($status === 'live'): ?>
-            <?php $tagged = (int) ($app['ready_for_work'] ?? 0) === 1; ?>
-            <form method="post">
-                <?= csrf_field() ?>
-                <input type="hidden" name="action" value="toggle_ready_for_work">
-                <input type="hidden" name="app_id" value="<?= $appId ?>">
-                <input type="hidden" name="ready" value="<?= $tagged ? 0 : 1 ?>">
-                <button class="btn <?= $tagged ? '' : 'primary' ?>" type="submit">
-                    <?= $tagged ? 'Remove Ready for Work' : 'Tag Ready for Work' ?>
-                </button>
-            </form>
             <form method="post">
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="to_sent">

@@ -18,21 +18,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect_with('live-apps.php', 'success', bulk_result_message($result, 'updated'));
         }
 
-        if ($action === 'toggle_ready') {
-            $ready = (int) ($_POST['ready'] ?? 0) === 1;
-            set_ready_for_work($appId, $ready);
-            redirect_with(
-                'live-apps.php',
-                'success',
-                $ready ? 'App tagged Ready for Work.' : 'Ready for Work tag removed.',
-                ['page' => 'live-apps.php', 'fields' => [
-                    'action' => 'toggle_ready',
-                    'app_id' => $appId,
-                    'ready' => $ready ? 0 : 1,
-                ]]
-            );
-        }
-
         if ($action === 'delete') {
             delete_production_app($appId);
             redirect_with('live-apps.php', 'success', 'App deleted.');
@@ -62,8 +47,6 @@ function render_live_apps_table(array $apps): void
         <input type="hidden" name="bulk_action" value="">
     </form>
     <?php render_bulk_bar([
-        ['value' => 'tag_ready', 'label' => 'Tag Ready for Work', 'class' => 'primary'],
-        ['value' => 'untag_ready', 'label' => 'Remove Tag'],
         ['value' => 'to_sent', 'label' => 'Back to Production Apps'],
     ]); ?>
     <div class="table-wrap">
@@ -74,13 +57,11 @@ function render_live_apps_table(array $apps): void
                 <th>App Name</th>
                 <th>Package</th>
                 <th>Live At</th>
-                <th>Ready for Work</th>
                 <th>Actions</th>
             </tr>
             </thead>
             <tbody>
             <?php foreach ($apps as $app): ?>
-                <?php $isReady = (int) $app['ready_for_work'] === 1; ?>
                 <tr>
                     <td class="col-select"><input type="checkbox" class="bulk-row" value="<?= (int) $app['id'] ?>"></td>
                     <td>
@@ -91,22 +72,8 @@ function render_live_apps_table(array $apps): void
                     </td>
                     <td><?= h($app['package_name'] ?? '—') ?></td>
                     <td><?= h($app['live_at'] ?? '—') ?></td>
-                    <td>
-                        <?= $isReady
-                            ? '<span class="badge badge-green">Ready for Work</span>'
-                            : '<span class="badge badge-gray">Not Tagged</span>' ?>
-                    </td>
                     <td class="actions">
                         <a class="btn small" href="app.php?id=<?= (int) $app['id'] ?>">Open</a>
-                        <form method="post">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="action" value="toggle_ready">
-                            <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
-                            <input type="hidden" name="ready" value="<?= $isReady ? 0 : 1 ?>">
-                            <button class="btn small <?= $isReady ? '' : 'primary' ?>" type="submit">
-                                <?= $isReady ? 'Remove Tag' : 'Tag Ready' ?>
-                            </button>
-                        </form>
                         <div class="action-menu-wrap">
                             <button class="btn small action-menu-btn" type="button" aria-label="More actions">&#8942;</button>
                             <div class="action-menu">
@@ -116,7 +83,7 @@ function render_live_apps_table(array $apps): void
                                     <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
                                     <button class="menu-item" type="submit">Back to Production Apps</button>
                                 </form>
-                                <form method="post" onsubmit="return confirm('Delete this app? Its checklist and task history will also be removed.');">
+                                <form method="post" onsubmit="return confirm('Delete this app? Its checklist will also be removed.');">
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
@@ -141,7 +108,6 @@ $listConsole = (int) ($_GET['console'] ?? 0);
 $allLive = production_apps_by_status('live');
 $livePage = paginate(filter_production_apps($allLive, $listQuery, $listConsole));
 $apps = $livePage['rows'];
-$readyCount = count(array_filter($allLive, fn($app) => (int) $app['ready_for_work'] === 1));
 $unassigned = array_values(array_filter($apps, fn($app) => empty($app['console_id'])));
 
 $selectedId = (int) ($_GET['app_id'] ?? 0);
@@ -161,8 +127,6 @@ page_start('Live Apps');
 <?php else: ?>
 <section class="stats-grid">
     <div class="stat"><span><?= count($allLive) ?></span><p>Live Apps</p></div>
-    <div class="stat"><span><?= $readyCount ?></span><p>Ready for Work</p></div>
-    <div class="stat"><span><?= count($allLive) - $readyCount ?></span><p>Not Tagged</p></div>
     <div class="stat"><span><?= count($consoles) ?></span><p>Play Consoles</p></div>
 </section>
 
@@ -176,7 +140,7 @@ page_start('Live Apps');
     <?php render_list_filters('live-apps.php', $listQuery, $listConsole, $consoles); ?>
     <div class="panel-heading">
         <h2>Live Apps (<?= (int) $livePage['total'] ?>)</h2>
-        <span class="hint">Console is set in Production (Manage). Tag Ready for Work to enter the daily task system.</span>
+        <span class="hint">Console is set in Production (Manage).</span>
     </div>
 
     <?php if (!$apps): ?>

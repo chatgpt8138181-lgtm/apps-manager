@@ -38,7 +38,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $consoles = console_overview();
-$progress = cycle_progress();
 
 page_start('Play Consoles');
 ?>
@@ -70,7 +69,7 @@ page_start('Play Consoles');
 <section class="panel">
     <div class="panel-heading">
         <h2>Play Consoles (<?= count($consoles) ?>)</h2>
-                <span class="hint">Each console runs its own cycle; "shown" and "remaining" reset when that console restarts.</span>
+        <span class="hint">Each console's URLs, and what it holds.</span>
     </div>
 
     <?php if (!$consoles): ?>
@@ -96,20 +95,15 @@ page_start('Play Consoles');
                         <?= (int) $console['loading_total'] ?> loading
                         (<?= (int) $console['loading_active'] ?> active)
                         &middot; <?= (int) $console['live_total'] ?> live
-                        &middot; <?= (int) $console['ready_total'] ?> ready
                     </span>
                 </span>
                 <span class="nav-chevron" aria-hidden="true"></span>
             </button>
             <div class="app-group-body">
                 <div class="console-stats">
-                    <span><strong>Cycle <?= (int) $console['cycle_no'] ?></strong></span>
                     <span><strong><?= (int) $console['loading_total'] ?></strong> Loading Apps</span>
                     <span><strong><?= (int) $console['loading_active'] ?></strong> Active</span>
                     <span><strong><?= (int) $console['live_total'] ?></strong> Live Apps</span>
-                    <span><strong><?= (int) $console['ready_total'] ?></strong> Ready for Work</span>
-                    <span><strong><?= (int) $console['shown_total'] ?></strong> Shown This Cycle</span>
-                    <span><strong><?= (int) $console['remaining'] ?></strong> Remaining</span>
                 </div>
 
                 <form method="post" class="stacked-form wide" id="<?= h($formId) ?>">

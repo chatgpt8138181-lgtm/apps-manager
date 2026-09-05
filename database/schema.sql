@@ -43,7 +43,6 @@ CREATE TABLE IF NOT EXISTS production_apps (
     privacy_policy_url VARCHAR(255) NULL,
     app_domain_url VARCHAR(255) NULL,
     status ENUM('prepare', 'ready', 'sent', 'live', 'rejected', 'suspended') NOT NULL DEFAULT 'prepare',
-    ready_for_work TINYINT(1) NOT NULL DEFAULT 0,
     url_checked TINYINT(1) NOT NULL DEFAULT 0,
     console_id INT UNSIGNED NULL,
     sent_at DATETIME NULL,
@@ -71,26 +70,6 @@ CREATE TABLE IF NOT EXISTS production_checklist (
         ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS daily_tasks (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    task_date DATE NOT NULL,
-    app_id INT UNSIGNED NOT NULL,
-    console_id INT UNSIGNED NOT NULL,
-    is_done TINYINT(1) NOT NULL DEFAULT 0,
-    cycle_no INT UNSIGNED NOT NULL DEFAULT 1,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uq_daily_task (task_date, app_id, cycle_no),
-    INDEX idx_daily_tasks_date (task_date),
-    INDEX idx_daily_tasks_cycle (cycle_no),
-    CONSTRAINT fk_daily_tasks_app
-        FOREIGN KEY (app_id)
-        REFERENCES production_apps(id)
-        ON DELETE CASCADE,
-    CONSTRAINT fk_daily_tasks_console
-        FOREIGN KEY (console_id)
-        REFERENCES consoles(id)
-        ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS activity_log (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -133,7 +112,6 @@ CREATE TABLE IF NOT EXISTS loading_daily (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO workflow_settings (setting_key, setting_value) VALUES
-('cycle_days', '5'),
 ('loading_apps_per_day', '2')
 ON DUPLICATE KEY UPDATE setting_key = setting_key;
 
