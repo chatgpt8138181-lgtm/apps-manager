@@ -4,7 +4,7 @@ declare(strict_types=1);
 /*
  * App production workflow + daily task distribution.
  * Statuses: prepare -> sent -> live | rejected | suspended.
- * Only live apps tagged ready_for_work with a console enter daily tasks.
+ * A published app walks Prepare, Ready, Sent and Live.
  */
 
 function checklist_items(): array
@@ -86,11 +86,6 @@ function set_workflow_setting(string $key, string $value): void
     $stmt->execute([$key, $value]);
 }
 
-function cycle_days(): int
-{
-    return max(1, (int) workflow_setting('cycle_days', '5'));
-}
-
 function validate_production_fields(array $data): array
 {
     $name = trim((string) ($data['name'] ?? ''));
@@ -160,15 +155,13 @@ function update_production_app_details(int $appId, array $data): void
 
     $stmt = db()->prepare(
         'UPDATE apps
-         SET app_name = ?, package_name = ?, application_id = ?,
-             console_id = ?, ready_for_work = IF(? IS NULL, 0, ready_for_work)
+         SET app_name = ?, package_name = ?, application_id = ?, console_id = ?
          WHERE id = ?'
     );
     $stmt->execute([
         $name,
         $optional['package_name'],
         $optional['application_id'],
-        $consoleId,
         $consoleId,
         $appId,
     ]);
@@ -558,7 +551,7 @@ function revert_app_to_sent(int $appId): void
         throw new RuntimeException('Only Live, Rejected, or Suspended apps can move back to Production Apps.');
     }
 
-    $stmt = db()->prepare("UPDATE apps SET stage = 'sent', live_at = NULL, ready_for_work = 0 WHERE id = ?");
+    $stmt = db()->prepare("UPDATE apps SET stage = 'sent', live_at = NULL WHERE id = ?");
     $stmt->execute([$appId]);
 
     log_activity('app', $appId, 'stage_back_sent', (string) $app['name'], 'Was ' . (string) $app['status']);
@@ -598,7 +591,7 @@ function assign_console(int $appId, int $consoleId): void
     }
 
     if ($consoleId <= 0) {
-        $stmt = db()->prepare('UPDATE apps SET console_id = NULL, ready_for_work = 0 WHERE id = ?');
+        $stmt = db()->prepare('UPDATE apps SET console_id = NULL WHERE id = ?');
         $stmt->execute([$appId]);
         return;
     }
@@ -611,28 +604,6 @@ function assign_console(int $appId, int $consoleId): void
 
     $stmt = db()->prepare('UPDATE apps SET console_id = ? WHERE id = ?');
     $stmt->execute([$consoleId, $appId]);
-}
-
-function set_ready_for_work(int $appId, bool $ready): void
-{
-    $app = get_production_app($appId);
-    if (!$app) {
-        throw new RuntimeException('App was not found.');
-    }
-
-    if ($ready) {
-        if ($app['status'] !== 'live') {
-            throw new RuntimeException('Only Live apps can be tagged Ready for Work.');
-        }
-        if (empty($app['console_id'])) {
-            throw new RuntimeException('Assign a Play Console before tagging Ready for Work.');
-        }
-    }
-
-    $stmt = db()->prepare('UPDATE apps SET ready_for_work = ? WHERE id = ?');
-    $stmt->execute([$ready ? 1 : 0, $appId]);
-
-    log_activity('app', $appId, $ready ? 'tagged_ready' : 'untagged_ready', (string) $app['name']);
 }
 
 /* Apply one stage move to many apps at once. Returns how many moved and
@@ -664,8 +635,6 @@ function apply_bulk_production_action(string $action, array $appIds): array
                 $moves[$action]($appId);
             } elseif (in_array($action, $results, true)) {
                 set_production_result($appId, $action);
-            } elseif ($action === 'tag_ready' || $action === 'untag_ready') {
-                set_ready_for_work($appId, $action === 'tag_ready');
             } elseif ($action === 'store_sync') {
                 sync_app_with_store($appId);
             } else {
@@ -1009,8 +978,6 @@ function console_overview(): array
         "SELECT c.id, c.name, c.privacy_policy_url, c.app_domain_url, c.created_at,
             (SELECT COUNT(*) FROM apps pa
              WHERE pa.console_id = c.id AND pa.stage = 'live') AS live_total,
-            (SELECT COUNT(*) FROM apps pa
-             WHERE pa.console_id = c.id AND pa.stage = 'live' AND pa.ready_for_work = 1) AS ready_total,
             (SELECT COUNT(*) FROM apps a WHERE a.console_id = c.id) AS loading_total,
             (SELECT COUNT(*) FROM apps a
              WHERE a.console_id = c.id AND a.loading_status = 'Active') AS loading_active
@@ -1018,177 +985,5 @@ function console_overview(): array
          ORDER BY c.created_at ASC, c.id ASC"
     );
 
-    $consoles = $stmt->fetchAll();
-    foreach ($consoles as &$console) {
-        $consoleId = (int) $console['id'];
-        /* Shown counts the walked position, the same measure the page stats use. */
-        $shown = min((int) $console['ready_total'], console_position($consoleId));
-
-        $console['cycle_no'] = display_console_cycle($consoleId);
-        $console['shown_total'] = $shown;
-        $console['remaining'] = max(0, (int) $console['ready_total'] - $shown);
-    }
-    unset($console);
-
-    return $consoles;
+    return $stmt->fetchAll();
 }
-
-/*
- * Each console runs its own task cycle: once a console has shown all of
- * its Ready for Work apps it starts again from its first app, without
- * waiting for the other consoles.
- */
-
-/*
- * Stored cycle numbers only ever grow so past rows stay valid, while the
- * number shown to the user counts from the last "Restart All Consoles".
- */
-
-/* The cycle number a console is on: how far its rotation has walked,
-   counted in day-sized steps and starting over with each new round. */
-
-
-
-
-/* Quota is per console, so the window size can differ per console. */
-
-/* Where the console's rotation currently sits: the list position that the
-   next generated day starts from. Older installs fall back to what the
-   current cycle already showed, so nothing jumps back to the first app. */
-
-
-/* Start of the window that today's tasks were taken from. */
-
-
-
-/* Task rotation: thin names over the shared engine in rotation.php. */
-function console_cycle(int $consoleId): int
-{
-    return rotation_cycle('task', $consoleId);
-}
-
-function set_console_cycle(int $consoleId, int $cycle): void
-{
-    rotation_set_cycle('task', $consoleId, $cycle);
-}
-
-function task_cycle_base(): int
-{
-    return rotation_base('task');
-}
-
-function display_console_cycle(int $consoleId): int
-{
-    return rotation_display_cycle('task', $consoleId);
-}
-
-function console_ready_count(int $consoleId): int
-{
-    return rotation_total('task', $consoleId);
-}
-
-function console_task_quota(int $consoleId): int
-{
-    return rotation_quota('task', $consoleId);
-}
-
-function console_position(int $consoleId): int
-{
-    return rotation_position('task', $consoleId);
-}
-
-function set_console_position(int $consoleId, int $position): void
-{
-    rotation_set_position('task', $consoleId, $position);
-}
-
-function console_today_start(int $consoleId): int
-{
-    return rotation_today_start('task', $consoleId);
-}
-
-function cycle_progress(): array
-{
-    return ['cycle_days' => cycle_days()] + rotation_progress('task');
-}
-
-function generate_daily_tasks(): int
-{
-    return rotation_generate('task');
-}
-
-function toggle_task_done(int $taskId): void
-{
-    rotation_toggle_done('task', $taskId);
-}
-
-function start_new_cycle(): void
-{
-    rotation_restart_all('task');
-}
-
-function shift_console_cycle(int $consoleId, string $direction): void
-{
-    rotation_shift('task', $consoleId, $direction);
-}
-
-function restart_console_cycle(int $consoleId): void
-{
-    rotation_shift('task', $consoleId, 'restart');
-}
-
-function todays_tasks(): array
-{
-    $stmt = db()->prepare(
-        "SELECT dt.id, dt.is_done, dt.cycle_no, pa.app_name, pa.package_name,
-                c.id AS console_id, c.name AS console_name
-         FROM daily_tasks dt
-         JOIN apps pa ON pa.id = dt.app_id
-         JOIN consoles c ON c.id = dt.console_id
-         WHERE dt.task_date = ? AND pa.stage = 'live' AND pa.ready_for_work = 1
-         ORDER BY c.created_at ASC, c.id ASC, dt.id ASC"
-    );
-    $stmt->execute([date('Y-m-d')]);
-
-    $grouped = [];
-    foreach ($stmt->fetchAll() as $task) {
-        $consoleId = (int) $task['console_id'];
-        $grouped[$consoleId]['name'] = $task['console_name'];
-        $grouped[$consoleId]['cycle_no'] = (int) $task['cycle_no'];
-        $grouped[$consoleId]['tasks'][] = $task;
-    }
-
-    return $grouped;
-}
-
-function task_history(): array
-{
-    $stmt = db()->query(
-        'SELECT dt.task_date, dt.is_done, dt.cycle_no, pa.app_name, c.name AS console_name
-         FROM daily_tasks dt
-         JOIN apps pa ON pa.id = dt.app_id
-         JOIN consoles c ON c.id = dt.console_id
-         ORDER BY dt.task_date DESC, c.created_at ASC, c.id ASC, dt.id ASC'
-    );
-
-    return group_history_by_month($stmt->fetchAll());
-}
-
-
-function update_cycle_days(int $days): void
-{
-    if ($days < 1 || $days > 365) {
-        throw new RuntimeException('Cycle days must be between 1 and 365.');
-    }
-
-    set_workflow_setting('cycle_days', (string) $days);
-}
-
-/* Manual restart: every console starts again from its first app today. */
-
-/*
- * Move one console between rounds. 'restart' replays the current cycle,
- * 'next' and 'previous' step the cycle number; either way that console
- * starts again from its first app.
- */
-

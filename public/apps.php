@@ -225,8 +225,6 @@ page_start('Apps');
                         ['value' => 'ready', 'label' => 'Mark Ready'],
                         ['value' => 'send', 'label' => 'Send for Production', 'class' => 'primary'],
                         ['value' => 'live', 'label' => 'Mark Live'],
-                        ['value' => 'tag_ready', 'label' => 'Tag Ready for Work'],
-                        ['value' => 'untag_ready', 'label' => 'Remove Tag'],
                         ['value' => 'store_sync', 'label' => 'Fetch from Play Store'],
                         ['value' => 'ads_zip', 'label' => 'Download ads folders (ZIP)', 'download' => true],
                     ]); ?>
@@ -264,9 +262,6 @@ page_start('Apps');
                                     <td><?= render_production_badge((string) $app['stage']) ?></td>
                                     <td>
                                         <?= render_status_badge((string) $app['loading_status']) ?>
-                                        <?php if ((int) $app['ready_for_work'] === 1): ?>
-                                            <span class="badge badge-green">Ready for Work</span>
-                                        <?php endif; ?>
                                     </td>
                                     <td class="actions">
                                         <a class="btn small" href="app.php?id=<?= (int) $app['id'] ?>">Open</a>

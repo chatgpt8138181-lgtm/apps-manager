@@ -9,7 +9,6 @@ require_login();
  */
 
 generate_loading_daily();
-generate_daily_tasks();
 
 $loadingGroups = todays_loading_apps();
 
@@ -52,8 +51,6 @@ $consolesMissingUrls = count(array_filter(
 ));
 
 $urlCounts = url_checked_counts();
-$liveApps = production_apps_by_status('live');
-$untagged = count(array_filter($liveApps, fn($app) => (int) $app['ready_for_work'] !== 1));
 
 $attention = [
     [
@@ -79,12 +76,6 @@ $attention = [
         'label' => 'Consoles missing a URL',
         'href' => 'consoles.php',
         'tone' => 'red',
-    ],
-    [
-        'count' => $untagged,
-        'label' => 'Live apps not tagged Ready for Work',
-        'href' => 'apps.php?stage=live',
-        'tone' => 'gray',
     ],
 ];
 

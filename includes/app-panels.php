@@ -165,9 +165,6 @@ function render_app_details_panel(array $app, array $consoles, string $backUrl):
 
         <p class="hint app-detail-meta">
             Status: <?= render_production_badge($app['status']) ?>
-            <?php if ((int) ($app['ready_for_work'] ?? 0) === 1): ?>
-                <span class="badge badge-green">Ready for Work</span>
-            <?php endif; ?>
             &middot; Created: <?= h($app['created_at']) ?>
             <?php if (!empty($app['sent_at'])): ?>&middot; Sent: <?= h($app['sent_at']) ?><?php endif; ?>
             <?php if (!empty($app['live_at'])): ?>&middot; Live: <?= h($app['live_at']) ?><?php endif; ?>
