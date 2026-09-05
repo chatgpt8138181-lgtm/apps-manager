@@ -32,7 +32,7 @@ function paginate(array $rows, int $perPage = 50): array
  * cut short: every console shows on the page, and a long console pages
  * through its own apps.
  */
-function paginate_group(array $rows, string $key, int $perPage = 25): array
+function paginate_group(array $rows, string $key, int $perPage = 20): array
 {
     $total = count($rows);
     $perPage = max(5, $perPage);
