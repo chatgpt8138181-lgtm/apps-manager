@@ -16,19 +16,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect_with('dashboard.php', 'success', 'Console apps updated.');
         }
 
-        if (($_POST['action'] ?? '') === 'update_group') {
-            $apps = $_POST['apps'] ?? [];
-            if (!is_array($apps)) {
-                throw new RuntimeException('Invalid update.');
-            }
-            foreach ($apps as $id => $data) {
-                if (is_array($data)) {
-                    update_app_statuses((int) $id, (string) ($data['loading_status'] ?? ''));
-                }
-            }
-            redirect_with('dashboard.php', 'success', 'Console apps updated.');
-        }
-
         /* The apps someone ticked, set together. */
         if (($_POST['action'] ?? '') === 'bulk_selected') {
             $wanted = (string) ($_POST['bulk_action'] ?? '');
@@ -59,7 +46,7 @@ page_start('Dashboard');
 <section class="panel">
     <div class="panel-heading">
         <h2>Apps by Console (<?= count($categories) ?>)</h2>
-        <span class="hint">Open a console, tick the apps you want, or change them one by one and Update All.</span>
+        <span class="hint">Open a console, tick the apps you want, and set them together.</span>
     </div>
 
     <?php if (!$categories): ?>
@@ -116,9 +103,6 @@ page_start('Dashboard');
                             ['value' => 'set_active', 'label' => 'Set Active', 'class' => 'primary'],
                             ['value' => 'set_inactive', 'label' => 'Set Inactive', 'class' => 'danger'],
                         ]); ?>
-                    <form method="post">
-                        <?= csrf_field() ?>
-                        <input type="hidden" name="action" value="update_group">
                         <div class="table-wrap">
                             <table class="category-table">
                                 <colgroup>
@@ -145,21 +129,12 @@ page_start('Dashboard');
                                         <td class="col-id">#<?= (int) $app['id'] ?></td>
                                         <td class="app-icon-cell"><img class="app-icon" src="<?= h(app_icon_url($app['icon_path'])) ?>" alt=""></td>
                                         <td class="col-name"><?= h($app['app_name']) ?></td>
-                                        <td class="status-cell">
-                                            <select class="status-select <?= $app['loading_status'] === 'Active' ? 'is-green' : 'is-red' ?>" name="apps[<?= $appId ?>][loading_status]">
-                                                <option <?= $app['loading_status'] === 'Active' ? 'selected' : '' ?>>Active</option>
-                                                <option <?= $app['loading_status'] === 'Inactive' ? 'selected' : '' ?>>Inactive</option>
-                                            </select>
-                                        </td>
+                                        <td class="status-cell"><?= render_status_badge((string) $app['loading_status']) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
-                        <div class="bulk-actions">
-                            <button class="btn primary" type="submit">Update All</button>
-                        </div>
-                    </form>
                     </div>
                 <?php endif; ?>
             </div>
@@ -167,13 +142,4 @@ page_start('Dashboard');
     <?php endforeach; ?>
 </section>
 
-<script>
-document.querySelectorAll('.status-select').forEach((select) => {
-    select.addEventListener('change', () => {
-        const green = select.value === 'Active';
-        select.classList.toggle('is-green', green);
-        select.classList.toggle('is-red', !green);
-    });
-});
-</script>
 <?php page_end(); ?>

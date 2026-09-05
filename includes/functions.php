@@ -308,11 +308,14 @@ function search_apps(string $query, int $categoryId): array
         return $all;
     }
 
-    $isNumeric = ctype_digit($query);
+    /* An id may be typed with the # that the lists show. */
+    $idNeedle = ltrim($query, '#');
+    $isNumeric = $idNeedle !== '' && ctype_digit($idNeedle);
     $needle = text_lower($query);
 
-    return array_values(array_filter($all, static function (array $app) use ($isNumeric, $query, $needle): bool {
-        if ($isNumeric && (string) $app['id'] === $query) {
+    return array_values(array_filter($all, static function (array $app) use ($isNumeric, $idNeedle, $needle): bool {
+        /* Ids match the way names do: any app whose id contains what was typed. */
+        if ($isNumeric && text_contains((string) $app['id'], $idNeedle)) {
             return true;
         }
 
