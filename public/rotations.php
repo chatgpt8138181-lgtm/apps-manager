@@ -26,7 +26,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($action === 'save_settings') {
             update_loading_apps_per_day((int) ($_POST['apps_per_day'] ?? 0));
-            update_cycle_days((int) ($_POST['cycle_days'] ?? 0));
             redirect_with('rotations.php', 'success', 'Settings saved.');
         }
 
@@ -132,7 +131,7 @@ page_start($view === 'history' ? 'Rotation History' : 'Rotations');
     <section class="form-panel">
         <div class="panel-heading">
             <h2>Rotation Settings</h2>
-            <span class="hint">Each console runs its own cycle on both rotations.</span>
+            <span class="hint">Each console runs its own cycle.</span>
         </div>
         <div class="inline-actions cycle-controls">
             <form method="post" class="inline-form cycle-days-form">
@@ -141,9 +140,6 @@ page_start($view === 'history' ? 'Rotation History' : 'Rotations');
                 <label>Loading apps per day
                     <input type="number" name="apps_per_day" value="<?= (int) $loadingProgress['apps_per_day'] ?>" min="1" max="100" required>
                 </label>
-                <label>Task days per cycle
-                    <input type="number" name="cycle_days" value="<?= (int) $taskProgress['cycle_days'] ?>" min="1" max="365" required>
-                </label>
                 <button class="btn primary" type="submit">Save</button>
             </form>
             <form method="post">
@@ -151,12 +147,6 @@ page_start($view === 'history' ? 'Rotation History' : 'Rotations');
                 <input type="hidden" name="action" value="restart_all">
                 <input type="hidden" name="kind" value="loading">
                 <button class="btn" type="submit">Restart all loading</button>
-            </form>
-            <form method="post">
-                <?= csrf_field() ?>
-                <input type="hidden" name="action" value="restart_all">
-                <input type="hidden" name="kind" value="task">
-                <button class="btn" type="submit">Restart all tasks</button>
             </form>
         </div>
     </section>
