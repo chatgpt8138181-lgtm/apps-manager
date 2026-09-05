@@ -49,8 +49,7 @@ if ($search !== '') {
     }));
 }
 
-$appsPage = paginate($apps);
-$apps = $appsPage['rows'];
+
 $consoles = all_consoles();
 
 function publish_copy_row(string $label, ?string $value, string $emptyHint = 'Not set'): void
@@ -116,7 +115,7 @@ page_start('Publish Info');
 
 <section class="panel">
     <div class="panel-heading">
-        <h2><?= h($tabs[$view]) ?> (<?= (int) $appsPage['total'] ?>)</h2>
+        <h2><?= h($tabs[$view]) ?> (<?= count($apps) ?>)</h2>
         <span class="hint">Everything a store listing needs, ready to copy. A Ready app can be sent from here.</span>
     </div>
 
@@ -149,7 +148,8 @@ page_start('Publish Info');
             continue;
         }
         ?>
-        <div class="app-group" data-group-key="console-<?= (int) $console['id'] ?>">
+        <?php $groupPage = paginate_group($consoleApps, 'g' . (int) $console['id']); ?>
+        <div class="app-group" id="g<?= (int) $console['id'] ?>" data-group-key="console-<?= (int) $console['id'] ?>">
             <button class="app-group-toggle" type="button" aria-expanded="false">
                 <span><?= h($console['name']) ?> (<?= count($consoleApps) ?>)</span>
                 <span class="nav-chevron" aria-hidden="true"></span>
@@ -162,7 +162,8 @@ page_start('Publish Info');
                         <p class="hint">Set the missing URL in <a href="consoles.php">Consoles</a>.</p>
                     <?php endif; ?>
                 </div>
-                <?php render_publish_apps($consoleApps, $console, $view, $search); ?>
+                <?php render_publish_apps($groupPage['rows'], $console, $view, $search); ?>
+                <?php render_group_pager($groupPage, 'publish-info.php', ['status' => $view, 'q' => $search]); ?>
             </div>
         </div>
     <?php endforeach; ?>
@@ -178,11 +179,12 @@ page_start('Publish Info');
             </button>
             <div class="app-group-body">
                 <p class="hint">Assign a Play Console from Production &rarr; Manage &rarr; Verify App Details to get its URLs.</p>
-                <?php render_publish_apps($unassigned, [], $view, $search); ?>
+                <?php $noConsolePage = paginate_group($unassigned, 'gnone'); ?>
+                <?php render_publish_apps($noConsolePage['rows'], [], $view, $search); ?>
+                <?php render_group_pager($noConsolePage, 'publish-info.php', ['status' => $view, 'q' => $search]); ?>
             </div>
         </div>
     <?php endif; ?>
-    <?php render_pager($appsPage, 'publish-info.php', ['status' => $view, 'q' => $search]); ?>
 </section>
 
 <script>

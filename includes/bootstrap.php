@@ -677,7 +677,7 @@ function page_end(): void
             });
         });
 
-        const groupStore = 'openGroups:' + location.pathname + location.search;
+        const groupStore = 'openGroups:' + location.pathname;
 
         /*
          * Open-group state survives same-page actions (form posts,

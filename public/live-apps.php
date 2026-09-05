@@ -106,8 +106,7 @@ $listQuery = trim((string) ($_GET['q'] ?? ''));
 $listConsole = (int) ($_GET['console'] ?? 0);
 /* Stats describe every live app; the list below follows the filters. */
 $allLive = production_apps_by_status('live');
-$livePage = paginate(filter_production_apps($allLive, $listQuery, $listConsole));
-$apps = $livePage['rows'];
+$apps = filter_production_apps($allLive, $listQuery, $listConsole);
 $unassigned = array_values(array_filter($apps, fn($app) => empty($app['console_id'])));
 
 $selectedId = (int) ($_GET['app_id'] ?? 0);
@@ -139,7 +138,7 @@ page_start('Live Apps');
 <section class="panel">
     <?php render_list_filters('live-apps.php', $listQuery, $listConsole, $consoles); ?>
     <div class="panel-heading">
-        <h2>Live Apps (<?= (int) $livePage['total'] ?>)</h2>
+        <h2>Live Apps (<?= count($apps) ?>)</h2>
         <span class="hint">Console is set in Production (Manage).</span>
     </div>
 
@@ -161,13 +160,15 @@ page_start('Live Apps');
             continue;
         }
         ?>
-        <div class="app-group" data-group-key="console-<?= (int) $console['id'] ?>">
+        <?php $groupPage = paginate_group($consoleApps, 'g' . (int) $console['id']); ?>
+        <div class="app-group" id="g<?= (int) $console['id'] ?>" data-group-key="console-<?= (int) $console['id'] ?>">
             <button class="app-group-toggle" type="button" aria-expanded="false">
                 <span><?= h($console['name']) ?> (<?= count($consoleApps) ?>)</span>
                 <span class="nav-chevron" aria-hidden="true"></span>
             </button>
             <div class="app-group-body">
-                <?php render_live_apps_table($consoleApps); ?>
+                <?php render_live_apps_table($groupPage['rows']); ?>
+                <?php render_group_pager($groupPage, 'live-apps.php', ['q' => $listQuery, 'console' => $listConsole]); ?>
             </div>
         </div>
     <?php endforeach; ?>
@@ -180,12 +181,13 @@ page_start('Live Apps');
             </button>
             <div class="app-group-body">
                 <p class="hint">Assign a Play Console from Production &rarr; Manage &rarr; Verify App Details to make these apps taggable.</p>
-                <?php render_live_apps_table($unassigned); ?>
+                <?php $noConsolePage = paginate_group($unassigned, 'gnone'); ?>
+                <?php render_live_apps_table($noConsolePage['rows']); ?>
+                <?php render_group_pager($noConsolePage, 'live-apps.php', ['q' => $listQuery, 'console' => $listConsole]); ?>
             </div>
         </div>
     <?php endif; ?>
 
-    <?php render_pager($livePage, 'live-apps.php', ['q' => $listQuery, 'console' => $listConsole]); ?>
 </section>
 <?php endif; ?>
 <?php page_end(); ?>
