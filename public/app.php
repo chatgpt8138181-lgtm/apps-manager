@@ -27,11 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = (string) ($_POST['action'] ?? '');
 
         if ($action === 'update_loading') {
-            update_app_statuses(
-                $appId,
-                (string) ($_POST['loading_status'] ?? ''),
-                (string) ($_POST['ready_loading_status'] ?? '')
-            );
+            update_app_statuses($appId, (string) ($_POST['loading_status'] ?? ''));
             redirect_with($self, 'success', 'Loading status updated.');
         }
 
@@ -415,12 +411,6 @@ page_start($app['name']);
             <select name="loading_status">
                 <option <?= $app['loading_status'] === 'Active' ? 'selected' : '' ?>>Active</option>
                 <option <?= $app['loading_status'] === 'Inactive' ? 'selected' : '' ?>>Inactive</option>
-            </select>
-        </label>
-        <label>Ready to Load
-            <select name="ready_loading_status">
-                <option <?= $app['ready_loading_status'] === 'Ready' ? 'selected' : '' ?>>Ready</option>
-                <option <?= $app['ready_loading_status'] === 'Not Ready' ? 'selected' : '' ?>>Not Ready</option>
             </select>
         </label>
         <button class="btn primary" type="submit">Save</button>

@@ -220,7 +220,6 @@ page_start($view === 'history' ? 'Rotation History' : 'Rotations');
                                 <tr>
                                     <th>App Icon</th>
                                     <th>App Name</th>
-                                    <th>Ready to Load</th>
                                     <th>Status</th>
                                 </tr>
                                 </thead>
@@ -234,7 +233,6 @@ page_start($view === 'history' ? 'Rotation History' : 'Rotations');
                                                 <span class="cell-sub">#<?= (int) $row['app_id'] ?></span>
                                             </span>
                                         </td>
-                                        <td><?= render_status_badge($row['ready_loading_status']) ?></td>
                                         <td><?php rotation_done_toggle('loading', $row); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
