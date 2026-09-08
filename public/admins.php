@@ -15,9 +15,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             add_admin_user(
                 (string) ($_POST['username'] ?? ''),
                 (string) ($_POST['password'] ?? ''),
-                (string) ($_POST['password_confirm'] ?? '')
+                (string) ($_POST['password_confirm'] ?? ''),
+                (string) ($_POST['role'] ?? 'operator')
             );
-            redirect_with('admins.php', 'success', 'Admin user added.');
+            redirect_with('admins.php', 'success', 'Account added.');
+        }
+
+        if ($action === 'set_role') {
+            set_admin_role(
+                (int) ($_POST['admin_id'] ?? 0),
+                (string) ($_POST['role'] ?? ''),
+                $currentAdminId
+            );
+            redirect_with('admins.php', 'success', 'Role changed.');
         }
 
         if ($action === 'change_own_password') {
@@ -49,6 +59,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $admins = all_admins();
+$roles = role_labels();
+$roleNotes = role_descriptions();
 
 page_start('Admins');
 ?>
@@ -67,7 +79,17 @@ page_start('Admins');
             <label>Confirm Password
                 <input type="password" name="password_confirm" autocomplete="new-password" required>
             </label>
-            <button class="btn primary" type="submit">Add Admin</button>
+            <label>Role
+                <select name="role" id="new-admin-role">
+                    <?php foreach ($roles as $key => $label): ?>
+                        <option value="<?= h((string) $key) ?>" <?= $key === 'operator' ? 'selected' : '' ?>>
+                            <?= h($label) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+            <p class="hint role-note" id="new-admin-role-note"><?= h($roleNotes['operator']) ?></p>
+            <button class="btn primary" type="submit">Add Account</button>
         </form>
     </div>
 
@@ -91,14 +113,36 @@ page_start('Admins');
 </section>
 
 <section class="panel">
+    <div class="app-group" data-group-key="role-guide">
+        <button class="app-group-toggle" type="button" aria-expanded="false">
+            <span>What each role may do</span>
+            <span class="nav-chevron" aria-hidden="true"></span>
+        </button>
+        <div class="app-group-body">
+            <ul class="role-guide">
+                <?php foreach ($roles as $key => $label): ?>
+                    <li>
+                        <span class="badge badge-<?= $key === 'admin' ? 'blue' : ($key === 'viewer' ? 'gray' : 'green') ?>"><?= h($label) ?></span>
+                        <span><?= h($roleNotes[$key] ?? '') ?></span>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="panel">
     <div class="panel-heading">
-        <h2>Admin Users (<?= count($admins) ?>)</h2>
+        <h2>Accounts (<?= count($admins) ?>)</h2>
+        <span class="hint">A role says what an account may do. At least one Admin must remain.</span>
     </div>
     <div class="table-wrap">
         <table class="admin-table">
             <thead>
             <tr>
                 <th>Username</th>
+                <th>Role</th>
+                <th>Last login</th>
                 <th>Created</th>
                 <th>Reset Password</th>
                 <th>Delete</th>
@@ -114,6 +158,26 @@ page_start('Admins');
                             <span class="user-pill inline-pill">Current</span>
                         <?php endif; ?>
                     </td>
+                    <td>
+                        <?php if ($adminId === $currentAdminId): ?>
+                            <span class="badge badge-blue"><?= h($roles[$admin['role']] ?? $admin['role']) ?></span>
+                            <span class="cell-sub">Your own role cannot be changed here.</span>
+                        <?php else: ?>
+                            <form method="post" class="role-form">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="action" value="set_role">
+                                <input type="hidden" name="admin_id" value="<?= $adminId ?>">
+                                <select name="role" onchange="this.closest('form').submit()">
+                                    <?php foreach ($roles as $key => $label): ?>
+                                        <option value="<?= h((string) $key) ?>" <?= $admin['role'] === $key ? 'selected' : '' ?>>
+                                            <?= h($label) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </form>
+                        <?php endif; ?>
+                    </td>
+                    <td><?= !empty($admin['last_login_at']) ? h($admin['last_login_at']) : '<span class="cell-sub">Never</span>' ?></td>
                     <td><?= h($admin['created_at']) ?></td>
                     <td>
                         <?php if ($adminId !== $currentAdminId): ?>
@@ -147,4 +211,16 @@ page_start('Admins');
         </table>
     </div>
 </section>
+<script>
+/* The note under the picker says what the chosen role means. */
+(() => {
+    const notes = <?= json_encode($roleNotes, JSON_UNESCAPED_UNICODE) ?>;
+    const select = document.getElementById('new-admin-role');
+    const note = document.getElementById('new-admin-role-note');
+
+    select?.addEventListener('change', () => {
+        note.textContent = notes[select.value] || '';
+    });
+})();
+</script>
 <?php page_end(); ?>

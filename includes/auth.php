@@ -20,7 +20,7 @@ function require_login(): void
 
 function login_admin(string $username, string $password): bool
 {
-    $stmt = db()->prepare('SELECT id, username, password_hash FROM admins WHERE username = ? LIMIT 1');
+    $stmt = db()->prepare('SELECT id, username, role, password_hash FROM admins WHERE username = ? LIMIT 1');
     $stmt->execute([$username]);
     $admin = $stmt->fetch();
 
@@ -32,8 +32,78 @@ function login_admin(string $username, string $password): bool
     $_SESSION['admin_logged_in'] = true;
     $_SESSION['admin_id'] = (int) $admin['id'];
     $_SESSION['admin_username'] = $admin['username'];
+    $_SESSION['admin_role'] = (string) ($admin['role'] ?? 'operator');
+
+    try {
+        $stamp = db()->prepare('UPDATE admins SET last_login_at = NOW() WHERE id = ?');
+        $stamp->execute([(int) $admin['id']]);
+    } catch (Throwable $e) {
+        /* A missing stamp is never worth refusing a sign-in for. */
+    }
 
     return true;
+}
+
+/*
+ * What a role may do.
+ *
+ * 'work'     the day's work: rotations, IPs, checklists, ads, stage moves
+ * 'create'   bringing something new into the system
+ * 'settings' the shape of things: console URLs, rotation settings, IP lists
+ * 'delete'   taking something out for good
+ * 'users'    the Admins page
+ *
+ * A viewer holds none of these: the rotation pages, read, and nothing else.
+ */
+function role_abilities(): array
+{
+    return [
+        'admin' => ['work', 'create', 'settings', 'delete', 'users'],
+        'manager' => ['work', 'create', 'settings'],
+        'operator' => ['work'],
+        'viewer' => [],
+    ];
+}
+
+function role_labels(): array
+{
+    return [
+        'admin' => 'Admin',
+        'manager' => 'Manager',
+        'operator' => 'Operator',
+        'viewer' => 'Viewer',
+    ];
+}
+
+function role_descriptions(): array
+{
+    return [
+        'admin' => 'Everything, including these accounts.',
+        'manager' => 'Everything about apps, consoles and rotations. Cannot delete or manage accounts.',
+        'operator' => 'The day\'s work. Cannot add, change settings or delete.',
+        'viewer' => 'Rotations only, and nothing to change.',
+    ];
+}
+
+function current_role(): string
+{
+    $role = (string) ($_SESSION['admin_role'] ?? '');
+
+    return array_key_exists($role, role_abilities()) ? $role : 'operator';
+}
+
+/* Whether the person signed in may do this kind of thing. */
+function can(string $ability): bool
+{
+    return in_array($ability, role_abilities()[current_role()] ?? [], true);
+}
+
+/* The same question, answered by refusing rather than by hiding. */
+function require_can(string $ability): void
+{
+    if (!can($ability)) {
+        throw new RuntimeException('Your account does not have access to that.');
+    }
 }
 
 function logout_admin(): void

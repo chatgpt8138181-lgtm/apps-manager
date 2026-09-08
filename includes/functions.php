@@ -88,8 +88,29 @@ function category_counts(): array
 
 function all_admins(): array
 {
-    $stmt = db()->query('SELECT id, username, created_at FROM admins ORDER BY created_at ASC, id ASC');
+    $stmt = db()->query(
+        'SELECT id, username, role, last_login_at, created_at
+         FROM admins ORDER BY created_at ASC, id ASC'
+    );
+
     return $stmt->fetchAll();
+}
+
+/* How many accounts can still reach everything, this one included. */
+function admin_role_count(): int
+{
+    $stmt = db()->query("SELECT COUNT(*) FROM admins WHERE role = 'admin'");
+
+    return (int) $stmt->fetchColumn();
+}
+
+function validate_admin_role(string $role): string
+{
+    if (!array_key_exists($role, role_abilities())) {
+        throw new RuntimeException('Pick a role for this account.');
+    }
+
+    return $role;
 }
 
 function admin_count(): int
@@ -122,10 +143,11 @@ function validate_admin_password(string $password, string $confirm): string
     return $password;
 }
 
-function add_admin_user(string $username, string $password, string $confirm): void
+function add_admin_user(string $username, string $password, string $confirm, string $role = 'operator'): void
 {
     $username = validate_admin_username($username);
     $password = validate_admin_password($password, $confirm);
+    $role = validate_admin_role($role);
 
     $existing = db()->prepare('SELECT id FROM admins WHERE username = ? LIMIT 1');
     $existing->execute([$username]);
@@ -133,8 +155,43 @@ function add_admin_user(string $username, string $password, string $confirm): vo
         throw new RuntimeException('That admin username already exists.');
     }
 
-    $stmt = db()->prepare('INSERT INTO admins (username, password_hash) VALUES (?, ?)');
-    $stmt->execute([$username, password_hash($password, PASSWORD_DEFAULT)]);
+    $stmt = db()->prepare('INSERT INTO admins (username, role, password_hash) VALUES (?, ?, ?)');
+    $stmt->execute([$username, $role, password_hash($password, PASSWORD_DEFAULT)]);
+
+    log_activity('admin', (int) db()->lastInsertId(), 'admin_added', $username, role_labels()[$role]);
+}
+
+/*
+ * Changing a role. Two things are refused: leaving the system without an
+ * Admin, and changing your own, which is how someone locks themselves out.
+ */
+function set_admin_role(int $adminId, string $role, int $currentAdminId): void
+{
+    $role = validate_admin_role($role);
+
+    if ($adminId === $currentAdminId) {
+        throw new RuntimeException('You cannot change your own role.');
+    }
+
+    $stmt = db()->prepare('SELECT username, role FROM admins WHERE id = ? LIMIT 1');
+    $stmt->execute([$adminId]);
+    $admin = $stmt->fetch();
+
+    if (!$admin) {
+        throw new RuntimeException('Admin user was not found.');
+    }
+    if ($admin['role'] === $role) {
+        return;
+    }
+    if ($admin['role'] === 'admin' && admin_role_count() <= 1) {
+        throw new RuntimeException('At least one Admin account is required.');
+    }
+
+    $update = db()->prepare('UPDATE admins SET role = ? WHERE id = ?');
+    $update->execute([$role, $adminId]);
+
+    log_activity('admin', $adminId, 'role_changed', (string) $admin['username'],
+        role_labels()[(string) $admin['role']] . ' → ' . role_labels()[$role]);
 }
 
 function update_admin_password(int $adminId, string $password, string $confirm): void
@@ -151,6 +208,8 @@ function update_admin_password(int $adminId, string $password, string $confirm):
     if ($stmt->rowCount() < 1) {
         throw new RuntimeException('Admin user was not found.');
     }
+
+    log_activity('admin', $adminId, 'password_reset');
 }
 
 function change_own_admin_password(int $adminId, string $currentPassword, string $newPassword, string $confirm): void
@@ -176,8 +235,21 @@ function delete_admin_user(int $adminId, int $currentAdminId): void
         throw new RuntimeException('At least one admin account is required.');
     }
 
-    $stmt = db()->prepare('DELETE FROM admins WHERE id = ?');
+    $stmt = db()->prepare('SELECT username, role FROM admins WHERE id = ? LIMIT 1');
     $stmt->execute([$adminId]);
+    $admin = $stmt->fetch();
+
+    if (!$admin) {
+        throw new RuntimeException('Admin user was not found.');
+    }
+    if ($admin['role'] === 'admin' && admin_role_count() <= 1) {
+        throw new RuntimeException('At least one Admin account is required.');
+    }
+
+    $delete = db()->prepare('DELETE FROM admins WHERE id = ?');
+    $delete->execute([$adminId]);
+
+    log_activity('admin', $adminId, 'admin_deleted', (string) $admin['username']);
 }
 
 function add_category(string $name): void
