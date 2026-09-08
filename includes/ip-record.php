@@ -155,6 +155,31 @@ function ip_apps_by_console(string $month): array
     return $consoles;
 }
 
+/*
+ * Rows that share everything but the address read better as one line with
+ * the addresses together, rather than one line each.
+ */
+function ip_group_rows(array $rows, array $by): array
+{
+    $groups = [];
+
+    foreach ($rows as $row) {
+        $key = '';
+        foreach ($by as $field) {
+            $key .= '|' . (string) ($row[$field] ?? '');
+        }
+
+        if (!isset($groups[$key])) {
+            $groups[$key] = $row;
+            $groups[$key]['ips'] = [];
+        }
+
+        $groups[$key]['ips'][] = ['id' => (int) $row['id'], 'ip' => (string) $row['ip']];
+    }
+
+    return array_values($groups);
+}
+
 /* How often each IP turns up in the month, so a repeat can be shown as one. */
 function ip_month_usage(string $month): array
 {
