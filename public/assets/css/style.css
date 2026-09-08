@@ -3204,46 +3204,44 @@ tbody tr.is-picked {
     max-width: 760px;
 }
 
-.pool-row {
-    align-items: center;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+/* One row, one form: the fields sit in the columns their headings name. */
+.pool-table td {
+    vertical-align: middle;
 }
 
-.pool-edit {
-    align-items: center;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.pool-edit input,
-.pool-edit select {
+.pool-table input,
+.pool-table select {
     min-height: 36px;
     padding: 7px 9px;
-    width: auto;
+    width: 100%;
 }
 
-.pool-edit input[name="name"] {
-    flex: 1 1 150px;
-}
-
-.pool-edit input[name="ip"] {
-    flex: 1 1 140px;
+.pool-table input[name="ip"] {
     font-family: var(--font-mono);
     font-size: 13px;
 }
 
-.pool-edit select {
-    flex: 0 1 130px;
-}
-
-.pool-actions {
-    align-items: center;
+.pool-table td.actions {
     display: flex;
     gap: 8px;
-    margin-left: auto;
+    justify-content: flex-end;
+    white-space: nowrap;
+}
+
+.pool-table th:nth-child(1),
+.pool-table td:nth-child(1) {
+    width: 20%;
+}
+
+.pool-table th:nth-child(2),
+.pool-table td:nth-child(2) {
+    width: 17%;
+}
+
+.pool-table th:nth-child(6),
+.pool-table td:nth-child(6) {
+    text-align: center;
+    width: 60px;
 }
 
 /* Picking several IPs at once. */
@@ -3267,10 +3265,6 @@ select[name="ip_ids[]"] {
     .ip-add-form select[name="ip_ids[]"],
     .ip-add-form .btn {
         width: 100%;
-    }
-
-    .pool-actions {
-        margin-left: 0;
     }
 
     /* An open picker takes the whole card row, not the narrow value column. */
