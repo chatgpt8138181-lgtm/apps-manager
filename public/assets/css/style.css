@@ -2465,6 +2465,13 @@ tbody tr.is-picked {
         white-space: nowrap;
         word-break: normal;
     }
+
+    /* Card rows set their own width, so the desktop columns step aside. */
+    .admin-table .col-user,
+    .admin-table .col-role,
+    .admin-table .col-when {
+        width: auto;
+    }
 }
 
 /* The search + console bar above a list. */
