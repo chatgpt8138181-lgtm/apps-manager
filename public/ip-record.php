@@ -497,7 +497,7 @@ page_start('IP Record');
                                     <span class="badge badge-<?= $used > 0 ? 'blue' : 'gray' ?>"><?= $used ?></span>
                                 </td>
                                 <td class="actions" data-label="Actions">
-                                    <button class="btn small primary" type="submit" form="<?= $formId ?>">Save</button>
+                                    <button class="btn small primary" type="submit" form="<?= $formId ?>" name="action" value="update_pool_ip">Save</button>
                                     <button class="btn small danger" type="submit" form="<?= $formId ?>" name="action" value="delete_pool_ip"
                                             onclick="return confirm('Remove <?= h($entry['name']) ?> from the list?');">Delete</button>
                                 </td>
@@ -509,9 +509,9 @@ page_start('IP Record');
 
                 <?php /* The forms live outside the table; each row's fields point at their own. */ ?>
                 <?php foreach ($pool as $entry): ?>
+                    <?php /* Which button was pressed carries the action, so no hidden one competes with it. */ ?>
                     <form method="post" id="pool-<?= (int) $entry['id'] ?>" hidden>
                         <?= csrf_field() ?>
-                        <input type="hidden" name="action" value="update_pool_ip">
                         <input type="hidden" name="id" value="<?= (int) $entry['id'] ?>">
                         <input type="hidden" name="return_month" value="<?= h($month) ?>">
                         <input type="hidden" name="return_by" value="<?= h($by) ?>">
