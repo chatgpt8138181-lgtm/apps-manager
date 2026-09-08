@@ -3274,6 +3274,10 @@ tbody tr.is-picked {
     margin-top: 14px;
 }
 
+.pool-add-bar .btn[hidden] {
+    display: none;
+}
+
 /* Picking several IPs at once. */
 select[name="ip_ids[]"] {
     min-height: 0;
