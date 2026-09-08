@@ -18,16 +18,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = (string) ($_POST['action'] ?? '');
 
         if ($action === 'toggle_done') {
+            require_can('work');
             rotation_toggle_done('loading', (int) ($_POST['row_id'] ?? 0));
             redirect_with($self, 'success', 'Loading status updated.');
         }
 
         if ($action === 'save_settings') {
+            require_can('settings');
             update_loading_apps_per_day((int) ($_POST['apps_per_day'] ?? 0));
             redirect_with('rotations.php', 'success', 'Settings saved.');
         }
 
         if ($action === 'add_ip') {
+            require_can('work');
             $result = add_rotation_ips([
                 'ips' => (string) ($_POST['ips'] ?? ''),
                 'used_on' => date('Y-m-d'),
@@ -45,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($action === 'cycle_step') {
+            require_can('settings');
             $direction = (string) ($_POST['direction'] ?? 'restart');
             $consoleId = (int) ($_POST['console_id'] ?? 0);
             rotation_shift('loading', $consoleId, $direction);
@@ -65,6 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($action === 'restart_all') {
+            require_can('settings');
             rotation_restart_all('loading');
             redirect_with('rotations.php', 'success', 'Every console restarted from its first app.');
         }
@@ -116,6 +121,7 @@ function rotation_controls(string $kind, int $consoleId): void
 function rotation_ip_cell(array $row, int $count, array $options): void
 {
     $appId = (int) $row['app_id'];
+    $mayAdd = can('work');
     ?>
     <div class="ip-cell">
         <div class="ip-cell-view">
@@ -124,8 +130,11 @@ function rotation_ip_cell(array $row, int $count, array $options): void
             <?php else: ?>
                 <span class="badge badge-gray">None</span>
             <?php endif; ?>
-            <button class="btn small ip-add-toggle" type="button">+ IP</button>
+            <?php if ($mayAdd): ?>
+                <button class="btn small ip-add-toggle" type="button">+ IP</button>
+            <?php endif; ?>
         </div>
+        <?php if (!$mayAdd) { echo '</div>'; return; } ?>
         <form method="post" class="ip-add-form" hidden>
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="add_ip">
@@ -149,6 +158,14 @@ function rotation_ip_cell(array $row, int $count, array $options): void
 function rotation_done_toggle(string $kind, array $row): void
 {
     $isDone = (int) $row['is_done'] === 1;
+
+    /* Someone who only reads sees where things stand, without the box. */
+    if (!can('work')) {
+        echo $isDone
+            ? '<span class="badge badge-green">Done</span>'
+            : '<span class="badge badge-amber">Pending</span>';
+        return;
+    }
     ?>
     <form method="post">
         <?= csrf_field() ?>
@@ -178,6 +195,7 @@ page_start($view === 'history' ? 'Rotation History' : 'Rotations');
         <div class="stat"><span><?= (int) $loadingProgress['remaining'] ?></span><p>Loading remaining</p></div>
     </section>
 
+    <?php if (can('settings')): ?>
     <section class="form-panel">
         <div class="panel-heading">
             <h2>Rotation Settings</h2>
@@ -200,6 +218,7 @@ page_start($view === 'history' ? 'Rotation History' : 'Rotations');
             </form>
         </div>
     </section>
+    <?php endif; ?>
 
     <section class="panel">
         <div class="panel-heading">
@@ -239,10 +258,12 @@ page_start($view === 'history' ? 'Rotation History' : 'Rotations');
                     <span class="nav-chevron" aria-hidden="true"></span>
                 </button>
                 <div class="app-group-body">
+                        <?php if (can('settings')): ?>
                         <div class="inline-actions bulk-status-row">
                             <span class="hint">This console:</span>
                             <?php rotation_controls('loading', $consoleId); ?>
                         </div>
+                        <?php endif; ?>
                         <div class="table-wrap">
                             <table>
                                 <thead>

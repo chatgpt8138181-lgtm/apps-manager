@@ -45,6 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = (string) ($_POST['action'] ?? '');
 
         if ($action === 'add') {
+            require_can('create');
             $name = trim((string) ($_POST['name'] ?? ''));
             $consoleId = (int) ($_POST['console_id'] ?? 0);
             $newId = add_app_record($name, $consoleId, ($_POST['track'] ?? 'loading') === 'publishing');
@@ -52,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($action === 'bulk') {
+            require_can('work');
             $result = apply_bulk_production_action(
                 (string) ($_POST['bulk_action'] ?? ''),
                 (array) ($_POST['app_ids'] ?? [])
@@ -92,6 +94,7 @@ $filterState = array_filter([
 
 page_start('Apps');
 ?>
+<?php if (can('create')): ?>
 <section class="form-panel add-panel">
     <div class="app-group" data-group-key="add-form">
         <button class="app-group-toggle" type="button" aria-expanded="false">
@@ -126,6 +129,7 @@ page_start('Apps');
         </div>
     </div>
 </section>
+<?php endif; ?>
 
 <section class="panel">
     <form method="get" action="apps.php" class="list-filters">

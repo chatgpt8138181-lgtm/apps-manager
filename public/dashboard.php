@@ -8,6 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         if (($_POST['action'] ?? '') === 'bulk_status') {
+            require_can('work');
             bulk_update_category_status(
                 (int) ($_POST['category_id'] ?? 0),
                 (string) ($_POST['field'] ?? ''),
@@ -18,6 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         /* The apps someone ticked, set together. */
         if (($_POST['action'] ?? '') === 'bulk_selected') {
+            require_can('work');
             $wanted = (string) ($_POST['bulk_action'] ?? '');
             $status = $wanted === 'set_inactive' ? 'Inactive' : 'Active';
             if ($wanted !== 'set_inactive' && $wanted !== 'set_active') {

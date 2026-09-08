@@ -169,6 +169,14 @@ function page_start(string $title): void
             'activity.php' => 'Activity',
         ],
     ];
+
+    /* A menu only offers what this role may actually open. */
+    if (current_role() === 'viewer') {
+        $navGroups = ['Rotations' => $navGroups['Rotations']];
+    } elseif (!can('settings')) {
+        unset($navGroups['Setup']);
+    }
+
     $navCounts = nav_counts();
     $flash = flash();
     ?>
@@ -196,7 +204,7 @@ function page_start(string $title): void
     <div class="app-shell">
         <aside class="sidebar">
             <div class="sidebar-head">
-                <a class="brand" href="home.php">App Manager</a>
+                <a class="brand" href="<?= h(role_home()) ?>">App Manager</a>
                 <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu">
                     <span class="menu-icon" aria-hidden="true"></span>
                     <span>Menu</span>
@@ -204,15 +212,19 @@ function page_start(string $title): void
             </div>
             <div class="menu-panel" id="mobile-menu">
                 <nav>
-                    <a class="nav-single <?= current_page() === 'home.php' ? 'active' : '' ?>" href="home.php">
-                        <span class="nav-label"><?= nav_icon('home.php') ?>Home</span>
-                    </a>
+                    <?php if (can_open_page('home.php')): ?>
+                        <a class="nav-single <?= current_page() === 'home.php' ? 'active' : '' ?>" href="home.php">
+                            <span class="nav-label"><?= nav_icon('home.php') ?>Home</span>
+                        </a>
+                    <?php endif; ?>
                     <?php foreach ($navGroups as $group => $items): ?>
                         <?php render_nav_group($group, $items, $navCounts); ?>
                     <?php endforeach; ?>
-                    <a class="nav-single <?= current_page() === 'admins.php' ? 'active' : '' ?>" href="admins.php">
-                        <span class="nav-label"><?= nav_icon('admins.php') ?>Admins</span>
-                    </a>
+                    <?php if (can('users')): ?>
+                        <a class="nav-single <?= current_page() === 'admins.php' ? 'active' : '' ?>" href="admins.php">
+                            <span class="nav-label"><?= nav_icon('admins.php') ?>Admins</span>
+                        </a>
+                    <?php endif; ?>
                 </nav>
                 <a class="logout" href="logout.php">Logout</a>
             </div>
