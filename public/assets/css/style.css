@@ -446,7 +446,51 @@ table {
 }
 
 .admin-table {
-    min-width: 920px;
+    min-width: 820px;
+}
+
+/* Accounts: dates stay whole, and each column takes only what it needs. */
+.admin-table .col-user {
+    width: 150px;
+}
+
+.admin-table .col-role {
+    width: 170px;
+}
+
+.admin-table .col-when {
+    white-space: nowrap;
+    width: 118px;
+}
+
+.admin-table .admin-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-start;
+}
+
+.admin-table .admin-actions .hint {
+    max-width: 320px;
+}
+
+/* A badge is as wide as its word, not as wide as its column. */
+.admin-table .col-role .badge {
+    justify-self: start;
+    margin-bottom: 2px;
+}
+
+.admin-actions-view,
+.admin-actions-view[hidden] {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+}
+
+.admin-actions-view[hidden],
+.inline-reset-form[hidden] {
+    display: none;
 }
 
 .edit-table {
@@ -1013,9 +1057,16 @@ input[type="radio"]:focus-visible {
 
 .inline-reset-form {
     align-items: center;
-    display: grid;
+    display: flex;
+    flex-wrap: wrap;
     gap: 8px;
-    grid-template-columns: minmax(150px, 1fr) minmax(120px, 1fr) auto;
+}
+
+.inline-reset-form input {
+    flex: 0 1 128px;
+    min-height: 36px;
+    padding: 7px 10px;
+    width: auto;
 }
 
 .btn {
@@ -2413,6 +2464,13 @@ tbody tr.is-picked {
     .table-wrap td.col-id {
         white-space: nowrap;
         word-break: normal;
+    }
+
+    /* Card rows set their own width, so the desktop columns step aside. */
+    .admin-table .col-user,
+    .admin-table .col-role,
+    .admin-table .col-when {
+        width: auto;
     }
 }
 
