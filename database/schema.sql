@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS rotation_ips (
     ip VARCHAR(45) NOT NULL,
     provider VARCHAR(100) NULL,
     country VARCHAR(60) NULL,
+    city VARCHAR(100) NULL,
     note VARCHAR(255) NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_rotation_ips_date (used_on),
@@ -88,6 +89,14 @@ CREATE TABLE IF NOT EXISTS rotation_ips (
         FOREIGN KEY (app_id) REFERENCES apps(id) ON DELETE SET NULL,
     CONSTRAINT fk_rotation_ips_console
         FOREIGN KEY (console_id) REFERENCES consoles(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ip_options (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    kind ENUM('provider', 'country', 'city') NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_ip_options (kind, name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS activity_log (

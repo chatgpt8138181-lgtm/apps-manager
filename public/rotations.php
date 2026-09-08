@@ -34,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'app_id' => (int) ($_POST['app_id'] ?? 0),
                 'provider' => (string) ($_POST['provider'] ?? ''),
                 'country' => (string) ($_POST['country'] ?? ''),
+                'city' => (string) ($_POST['city'] ?? ''),
             ]);
             $message = $result['added'] . ' IP(s) added.';
             if ($result['bad']) {
@@ -78,6 +79,10 @@ if ($view === 'today') {
 
 $loadingProgress = loading_cycle_progress();
 $ipCounts = $view === 'today' ? ip_counts_for_date(date('Y-m-d')) : [];
+$ipOptions = [];
+foreach (array_keys(ip_option_kinds()) as $kind) {
+    $ipOptions[$kind] = $view === 'today' ? ip_options($kind) : [];
+}
 $loadingGroups = $view === 'today' ? todays_loading_apps() : [];
 $consoles = all_consoles();
 
@@ -108,7 +113,7 @@ function rotation_controls(string $kind, int $consoleId): void
  * Today's IPs for one app: what has been put in so far, and a small form
  * that opens in place so the day's work does not need another page.
  */
-function rotation_ip_cell(array $row, int $count): void
+function rotation_ip_cell(array $row, int $count, array $options): void
 {
     $appId = (int) $row['app_id'];
     ?>
@@ -126,8 +131,14 @@ function rotation_ip_cell(array $row, int $count): void
             <input type="hidden" name="action" value="add_ip">
             <input type="hidden" name="app_id" value="<?= $appId ?>">
             <input type="text" name="ips" placeholder="IP, or several" spellcheck="false" required>
-            <input type="text" name="provider" maxlength="100" placeholder="Provider">
-            <input type="text" name="country" maxlength="60" placeholder="Country">
+            <?php foreach (['provider' => 'Provider', 'country' => 'Country', 'city' => 'City'] as $kind => $label): ?>
+                <select name="<?= h($kind) ?>" aria-label="<?= h($label) ?>">
+                    <option value=""><?= h($label) ?></option>
+                    <?php foreach ($options[$kind] ?? [] as $option): ?>
+                        <option value="<?= h($option['name']) ?>"><?= h($option['name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            <?php endforeach; ?>
             <button class="btn small primary" type="submit">Save</button>
             <button class="btn small ip-add-cancel" type="button">Cancel</button>
         </form>
@@ -252,7 +263,7 @@ page_start($view === 'history' ? 'Rotation History' : 'Rotations');
                                                 <span class="cell-sub">#<?= (int) $row['app_id'] ?></span>
                                             </span>
                                         </td>
-                                        <td><?php rotation_ip_cell($row, (int) ($ipCounts[(int) $row['app_id']] ?? 0)); ?></td>
+                                        <td><?php rotation_ip_cell($row, (int) ($ipCounts[(int) $row['app_id']] ?? 0), $ipOptions); ?></td>
                                         <td><?php rotation_done_toggle('loading', $row); ?></td>
                                     </tr>
                                 <?php endforeach; ?>

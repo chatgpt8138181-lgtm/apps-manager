@@ -26,6 +26,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect_with('ip-record.php?m=' . urlencode($result['month']), 'success', $message);
         }
 
+        if ($action === 'add_option') {
+            $kind = (string) ($_POST['kind'] ?? '');
+            add_ip_option($kind, (string) ($_POST['name'] ?? ''));
+            redirect_with($back, 'success', 'Added to the list.');
+        }
+
+        if ($action === 'delete_option') {
+            delete_ip_option((int) ($_POST['id'] ?? 0));
+            redirect_with($back, 'success', 'Removed from the list.');
+        }
+
         if ($action === 'delete_month') {
             $wanted = (string) ($_POST['month'] ?? '');
             $removed = delete_ip_month($wanted);
@@ -49,8 +60,11 @@ $days = ip_records_by_day($month);
 $repeats = ip_month_usage($month);
 $consoles = all_consoles();
 $apps = all_apps_overview('', 0, '', '');
-$providers = ip_known_values('provider');
-$countries = ip_known_values('country');
+$optionKinds = ip_option_kinds();
+$optionLists = [];
+foreach (array_keys($optionKinds) as $kind) {
+    $optionLists[$kind] = ip_options($kind);
+}
 
 $copyAll = implode("\n", ip_list_for_month($month));
 $copyUnique = implode("\n", ip_list_for_month($month, true));
@@ -66,6 +80,19 @@ $hasNext = $next <= date('Y-m');
 $appsByConsole = [];
 foreach ($apps as $app) {
     $appsByConsole[(int) ($app['console_id'] ?? 0)][] = $app;
+}
+
+/* One picker, built from the list it belongs to. */
+function ip_option_select(string $kind, array $options): void
+{
+    ?>
+    <select name="<?= h($kind) ?>">
+        <option value="">&mdash;</option>
+        <?php foreach ($options as $option): ?>
+            <option value="<?= h($option['name']) ?>"><?= h($option['name']) ?></option>
+        <?php endforeach; ?>
+    </select>
+    <?php
 }
 
 page_start('IP Record');
@@ -149,25 +176,22 @@ page_start('IP Record');
                         </select>
                     </label>
                     <label>Provider
-                        <input type="text" name="provider" maxlength="100" list="ip-providers" placeholder="Proxy or VPN provider">
+                        <?php ip_option_select('provider', $optionLists['provider']); ?>
                     </label>
                 </div>
 
                 <div class="form-row">
                     <label>Country
-                        <input type="text" name="country" maxlength="60" list="ip-countries" placeholder="Country">
+                        <?php ip_option_select('country', $optionLists['country']); ?>
                     </label>
-                    <label>Note
-                        <input type="text" name="note" maxlength="255" placeholder="Anything worth remembering">
+                    <label>City
+                        <?php ip_option_select('city', $optionLists['city']); ?>
                     </label>
                 </div>
 
-                <datalist id="ip-providers">
-                    <?php foreach ($providers as $value): ?><option value="<?= h($value) ?>"></option><?php endforeach; ?>
-                </datalist>
-                <datalist id="ip-countries">
-                    <?php foreach ($countries as $value): ?><option value="<?= h($value) ?>"></option><?php endforeach; ?>
-                </datalist>
+                <label>Note
+                    <input type="text" name="note" maxlength="255" placeholder="Anything worth remembering">
+                </label>
 
                 <button class="btn primary" type="submit">Add IPs</button>
             </form>
@@ -201,6 +225,7 @@ page_start('IP Record');
                             <th>App</th>
                             <th>Provider</th>
                             <th>Country</th>
+                            <th>City</th>
                             <th>Note</th>
                             <th>Actions</th>
                         </tr>
@@ -230,6 +255,7 @@ page_start('IP Record');
                                 </td>
                                 <td><?= $row['provider'] !== null && $row['provider'] !== '' ? h($row['provider']) : '&mdash;' ?></td>
                                 <td><?= $row['country'] !== null && $row['country'] !== '' ? h($row['country']) : '&mdash;' ?></td>
+                                <td><?= !empty($row['city']) ? h($row['city']) : '&mdash;' ?></td>
                                 <td><?= $row['note'] !== null && $row['note'] !== '' ? h($row['note']) : '&mdash;' ?></td>
                                 <td class="actions">
                                     <form method="post" onsubmit="return confirm('Remove this IP from the record?');">
@@ -250,6 +276,55 @@ page_start('IP Record');
         </div>
     <?php endforeach; ?>
 </section>
+<section class="panel">
+    <div class="app-group" data-group-key="ip-lists">
+        <button class="app-group-toggle" type="button" aria-expanded="false">
+            <span>Manage lists</span>
+            <span class="nav-chevron" aria-hidden="true"></span>
+        </button>
+        <div class="app-group-body">
+            <p class="hint">
+                What the Provider, Country and City pickers offer. Removing a name only
+                takes it off the list &mdash; IPs already recorded keep what they were given.
+            </p>
+            <div class="option-lists">
+                <?php foreach ($optionKinds as $kind => $title): ?>
+                    <div class="option-list">
+                        <h3 class="rotation-title"><?= h($title) ?> (<?= count($optionLists[$kind]) ?>)</h3>
+                        <form method="post" class="option-add">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="add_option">
+                            <input type="hidden" name="kind" value="<?= h($kind) ?>">
+                            <input type="hidden" name="return_month" value="<?= h($month) ?>">
+                            <input type="text" name="name" maxlength="100" placeholder="Add a name" required>
+                            <button class="btn small primary" type="submit">Add</button>
+                        </form>
+                        <?php if (!$optionLists[$kind]): ?>
+                            <p class="empty block">Nothing on this list yet.</p>
+                        <?php else: ?>
+                            <ul class="option-items">
+                                <?php foreach ($optionLists[$kind] as $option): ?>
+                                    <li>
+                                        <span><?= h($option['name']) ?></span>
+                                        <form method="post"
+                                              onsubmit="return confirm('Take &quot;<?= h($option['name']) ?>&quot; off the list?');">
+                                            <?= csrf_field() ?>
+                                            <input type="hidden" name="action" value="delete_option">
+                                            <input type="hidden" name="id" value="<?= (int) $option['id'] ?>">
+                                            <input type="hidden" name="return_month" value="<?= h($month) ?>">
+                                            <button class="btn small" type="submit" aria-label="Remove">&times;</button>
+                                        </form>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+</section>
+
 <?php
 /* Months other than this one, so an old record can be cleared on purpose. */
 $earlier = array_values(array_filter($monthCounts, fn($row) => (string) $row['month'] !== date('Y-m')));

@@ -102,23 +102,55 @@ function ip_month_usage(string $month): array
     return $counts;
 }
 
-/* What has been typed before, offered back as suggestions. */
-function ip_known_values(string $column): array
+/* The lists that provider, country and city are picked from. */
+function ip_option_kinds(): array
 {
-    if (!in_array($column, ['provider', 'country'], true)) {
+    return ['provider' => 'Providers', 'country' => 'Countries', 'city' => 'Cities'];
+}
+
+function ip_options(string $kind): array
+{
+    if (!array_key_exists($kind, ip_option_kinds())) {
         return [];
     }
 
     try {
-        $stmt = db()->query(
-            "SELECT DISTINCT {$column} AS v FROM rotation_ips
-             WHERE {$column} IS NOT NULL AND {$column} <> '' ORDER BY v ASC LIMIT 100"
-        );
+        $stmt = db()->prepare('SELECT id, name FROM ip_options WHERE kind = ? ORDER BY name ASC');
+        $stmt->execute([$kind]);
 
-        return array_column($stmt->fetchAll(), 'v');
+        return $stmt->fetchAll();
     } catch (Throwable $e) {
         return [];
     }
+}
+
+function add_ip_option(string $kind, string $name): void
+{
+    if (!array_key_exists($kind, ip_option_kinds())) {
+        throw new RuntimeException('Unknown list.');
+    }
+
+    $name = mb_substr(trim($name), 0, 100);
+    if ($name === '') {
+        throw new RuntimeException('Give it a name first.');
+    }
+
+    $stmt = db()->prepare('INSERT IGNORE INTO ip_options (kind, name) VALUES (?, ?)');
+    $stmt->execute([$kind, $name]);
+
+    if ($stmt->rowCount() === 0) {
+        throw new RuntimeException('"' . $name . '" is already on that list.');
+    }
+}
+
+/*
+ * Removing a name takes it off the list for next time. Entries already
+ * recorded keep what they were given.
+ */
+function delete_ip_option(int $id): void
+{
+    $stmt = db()->prepare('DELETE FROM ip_options WHERE id = ?');
+    $stmt->execute([$id]);
 }
 
 /*
@@ -149,6 +181,7 @@ function add_rotation_ips(array $data): array
 
     $provider = mb_substr(trim((string) ($data['provider'] ?? '')), 0, 100);
     $country = mb_substr(trim((string) ($data['country'] ?? '')), 0, 60);
+    $city = mb_substr(trim((string) ($data['city'] ?? '')), 0, 100);
     $note = mb_substr(trim((string) ($data['note'] ?? '')), 0, 255);
 
     $lines = preg_split('/[\r\n,]+/', (string) ($data['ips'] ?? '')) ?: [];
@@ -156,8 +189,8 @@ function add_rotation_ips(array $data): array
     $bad = [];
 
     $insert = db()->prepare(
-        'INSERT INTO rotation_ips (used_on, console_id, app_id, ip, provider, country, note)
-         VALUES (?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO rotation_ips (used_on, console_id, app_id, ip, provider, country, city, note)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     );
 
     foreach ($lines as $line) {
@@ -177,6 +210,7 @@ function add_rotation_ips(array $data): array
             $ip,
             $provider !== '' ? $provider : null,
             $country !== '' ? $country : null,
+            $city !== '' ? $city : null,
             $note !== '' ? $note : null,
         ]);
         $added++;
