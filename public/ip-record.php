@@ -18,18 +18,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $action = (string) ($_POST['action'] ?? '');
 
-        if ($action === 'add') {
-            require_can('work');
-            $result = add_rotation_ips($_POST);
-            $message = $result['added'] . ' IP(s) added.';
-            if ($result['bad']) {
-                $message .= ' ' . count($result['bad']) . ' line(s) were not an IP: '
-                    . implode(', ', array_slice($result['bad'], 0, 3))
-                    . (count($result['bad']) > 3 ? '…' : '');
-            }
-            redirect_with('ip-record.php?m=' . urlencode($result['month']), 'success', $message);
-        }
-
         if ($action === 'delete_month') {
             require_can('settings');
             $wanted = (string) ($_POST['month'] ?? '');
@@ -55,9 +43,6 @@ $stats = ip_month_stats($month);
 $days = $by === 'day' ? ip_records_by_day($month) : [];
 $byApp = $by === 'app' ? ip_apps_by_console($month) : [];
 $repeats = ip_month_usage($month);
-$consoles = all_consoles();
-$apps = all_apps_overview('', 0, '', '');
-$pool = ip_pool_all();
 
 $copyAll = implode("\n", ip_list_for_month($month));
 $copyUnique = implode("\n", ip_list_for_month($month, true));
@@ -68,12 +53,6 @@ $previous = ip_month_shift($month, -1);
 $next = ip_month_shift($month, 1);
 $hasPrevious = (bool) array_filter($known, fn($m) => $m <= $previous);
 $hasNext = $next <= date('Y-m');
-
-/* The apps a console holds, so the picker can be grouped by console. */
-$appsByConsole = [];
-foreach ($apps as $app) {
-    $appsByConsole[(int) ($app['console_id'] ?? 0)][] = $app;
-}
 
 /*
  * The addresses of one line, each with its own way out. A repeat wears the
@@ -140,73 +119,6 @@ page_start('IP Record');
         <div class="stat"><span><?= (int) $stats['days'] ?></span><p>Days recorded</p></div>
     </div>
 </section>
-
-<?php if (can('work')): ?>
-<section class="form-panel add-panel">
-    <div class="app-group" data-group-key="add-ips">
-        <button class="app-group-toggle" type="button" aria-expanded="false">
-            <span>+ Add IPs</span>
-            <span class="nav-chevron" aria-hidden="true"></span>
-        </button>
-        <div class="app-group-body">
-            <form method="post" class="stacked-form wide">
-                <?= csrf_field() ?>
-                <input type="hidden" name="action" value="add">
-                <input type="hidden" name="return_month" value="<?= h($month) ?>">
-                <input type="hidden" name="return_by" value="<?= h($by) ?>">
-
-                <div class="field">
-                    <span class="field-label">IPs</span>
-                    <div class="ip-chosen" id="ip-chosen">
-                        <p class="hint">Nothing picked yet.</p>
-                    </div>
-                    <?php if ($pool): ?>
-                        <button class="btn ip-pick-open" type="button" data-name="This record">Choose IPs</button>
-                    <?php else: ?>
-                        <p class="hint">The IP list is empty. Put IPs on it in <a href="ip-management.php">IP Management</a> first.</p>
-                    <?php endif; ?>
-                </div>
-
-                <div class="form-row">
-                    <label>Used on
-                        <input type="date" name="used_on" value="<?= h(date('Y-m-d')) ?>" required>
-                    </label>
-                    <label>App <small>(the console comes with it)</small>
-                        <select name="app_id">
-                            <option value="0">No app</option>
-                            <?php foreach ($consoles as $console): ?>
-                                <?php $list = $appsByConsole[(int) $console['id']] ?? []; ?>
-                                <?php if (!$list) { continue; } ?>
-                                <optgroup label="<?= h($console['name']) ?>">
-                                    <?php foreach ($list as $app): ?>
-                                        <option value="<?= (int) $app['id'] ?>"><?= h($app['app_name']) ?></option>
-                                    <?php endforeach; ?>
-                                </optgroup>
-                            <?php endforeach; ?>
-                        </select>
-                    </label>
-                </div>
-
-                <div class="form-row">
-                    <label>Console <small>(only when no app is picked)</small>
-                        <select name="console_id">
-                            <option value="0">No console</option>
-                            <?php foreach ($consoles as $console): ?>
-                                <option value="<?= (int) $console['id'] ?>"><?= h($console['name']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </label>
-                    <label>Note
-                        <input type="text" name="note" maxlength="255" placeholder="Anything worth remembering">
-                    </label>
-                </div>
-
-                <button class="btn primary" type="submit">Add IPs</button>
-            </form>
-        </div>
-    </div>
-</section>
-<?php endif; ?>
 
 <section class="panel">
     <div class="panel-heading">
@@ -410,66 +322,7 @@ $earlier = array_values(array_filter($monthCounts, fn($row) => (string) $row['mo
     </section>
 <?php endif; ?>
 
-<?php if (can('work')) { render_ip_picker($pool); } ?>
-
 <script>
-/* What the picker hands back becomes the chips this form will send. */
-(() => {
-    const chosen = document.getElementById('ip-chosen');
-    if (!chosen) {
-        return;
-    }
-
-    const form = chosen.closest('form');
-    const save = form.querySelector('button[type="submit"]');
-    const picked = new Map();
-
-    const draw = () => {
-        chosen.innerHTML = '';
-
-        if (!picked.size) {
-            chosen.innerHTML = '<p class="hint">Nothing picked yet.</p>';
-            save.disabled = true;
-            return;
-        }
-
-        picked.forEach((name, id) => {
-            const chip = document.createElement('span');
-            chip.className = 'ip-chosen-chip';
-            chip.textContent = name;
-
-            const drop = document.createElement('button');
-            drop.type = 'button';
-            drop.className = 'ip-chosen-drop';
-            drop.setAttribute('aria-label', 'Remove ' + name);
-            drop.textContent = '\u00d7';
-            drop.addEventListener('click', () => { picked.delete(id); draw(); });
-            chip.appendChild(drop);
-
-            const field = document.createElement('input');
-            field.type = 'hidden';
-            field.name = 'ip_ids[]';
-            field.value = id;
-            chip.appendChild(field);
-
-            chosen.appendChild(chip);
-        });
-
-        save.disabled = false;
-    };
-
-    document.addEventListener('ip-picker:done', (event) => {
-        const modal = document.getElementById('ip-picker');
-        event.detail.ids.forEach((id) => {
-            const row = modal.querySelector('tr[data-id="' + id + '"]');
-            picked.set(id, row ? row.querySelector('.ip-modal-name').textContent.trim() : id);
-        });
-        draw();
-    });
-
-    draw();
-})();
-
 document.querySelectorAll('.copy-ips').forEach((button) => {
     button.addEventListener('click', () => {
         navigator.clipboard.writeText(button.dataset.ips).then(() => {

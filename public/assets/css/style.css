@@ -3184,42 +3184,6 @@ tbody tr.is-picked {
     padding: 8px 10px;
 }
 
-/* What a form is holding after the picker closes. */
-.ip-chosen {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-
-.ip-chosen .hint {
-    margin: 0;
-}
-
-.ip-chosen-chip {
-    align-items: center;
-    background: var(--primary-soft);
-    border-radius: 999px;
-    color: var(--text);
-    display: inline-flex;
-    font-size: 13px;
-    gap: 6px;
-    padding: 5px 6px 5px 12px;
-}
-
-.ip-chosen-drop {
-    background: none;
-    border: 0;
-    color: var(--muted);
-    cursor: pointer;
-    font-size: 15px;
-    line-height: 1;
-    padding: 0 4px;
-}
-
-.ip-chosen-drop:hover {
-    color: var(--red-solid);
-}
-
 /* The lists behind the IP pickers, three short columns side by side. */
 .option-lists {
     display: grid;
