@@ -128,7 +128,7 @@ function rotation_ip_cell(array $row, int $count, array $pool): void
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="add_ip">
             <input type="hidden" name="app_id" value="<?= $appId ?>">
-            <select name="ip_ids[]" multiple size="<?= max(3, min(8, count($pool))) ?>" aria-label="IPs" required>
+            <select name="ip_ids[]" multiple size="<?= max(2, min(8, count($pool))) ?>" aria-label="IPs" required>
                 <?php foreach ($pool as $entry): ?>
                     <option value="<?= (int) $entry['id'] ?>" title="<?= h($entry['ip']) ?>"><?= h($entry['name']) ?></option>
                 <?php endforeach; ?>
