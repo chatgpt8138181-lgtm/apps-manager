@@ -3256,3 +3256,20 @@ select[name="ip_ids[]"] {
     flex: 1 1 180px;
     width: auto;
 }
+
+/* On a card the picker gets the whole width instead of a narrow column. */
+@media (max-width: 760px) {
+    .ip-add-form {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .ip-add-form select[name="ip_ids[]"],
+    .ip-add-form .btn {
+        width: 100%;
+    }
+
+    .pool-actions {
+        margin-left: 0;
+    }
+}
