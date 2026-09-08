@@ -3197,3 +3197,55 @@ tbody tr.is-picked {
 .role-note {
     margin-top: -6px;
 }
+
+/* The list of IPs: one row edits itself in place. */
+.pool-form {
+    margin-bottom: 16px;
+    max-width: 760px;
+}
+
+.pool-row {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.pool-edit {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.pool-edit input,
+.pool-edit select {
+    min-height: 36px;
+    padding: 7px 9px;
+    width: auto;
+}
+
+.pool-edit input[name="name"] {
+    flex: 1 1 150px;
+}
+
+.pool-edit input[name="ip"] {
+    flex: 1 1 140px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+}
+
+.pool-edit select {
+    flex: 0 1 130px;
+}
+
+/* Picking several IPs at once. */
+select[name="ip_ids[]"] {
+    min-height: 0;
+    padding: 6px;
+}
+
+.ip-add-form select[name="ip_ids[]"] {
+    flex: 1 1 180px;
+    width: auto;
+}

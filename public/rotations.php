@@ -32,19 +32,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($action === 'add_ip') {
             require_can('work');
             $result = add_rotation_ips([
-                'ips' => (string) ($_POST['ips'] ?? ''),
+                'ip_ids' => (array) ($_POST['ip_ids'] ?? []),
                 'used_on' => date('Y-m-d'),
                 'app_id' => (int) ($_POST['app_id'] ?? 0),
-                'provider' => (string) ($_POST['provider'] ?? ''),
-                'country' => (string) ($_POST['country'] ?? ''),
-                'city' => (string) ($_POST['city'] ?? ''),
             ]);
-            $message = $result['added'] . ' IP(s) added.';
-            if ($result['bad']) {
-                $message .= ' ' . count($result['bad']) . ' was not an IP: '
-                    . implode(', ', array_slice($result['bad'], 0, 3));
-            }
-            redirect_with($self, 'success', $message);
+            redirect_with($self, 'success', $result['added'] . ' IP(s) added.');
         }
 
         if ($action === 'cycle_step') {
@@ -84,10 +76,7 @@ if ($view === 'today') {
 
 $loadingProgress = loading_cycle_progress();
 $ipCounts = $view === 'today' ? ip_counts_for_date(date('Y-m-d')) : [];
-$ipOptions = [];
-foreach (array_keys(ip_option_kinds()) as $kind) {
-    $ipOptions[$kind] = $view === 'today' ? ip_options($kind) : [];
-}
+$ipPool = $view === 'today' ? ip_pool_all() : [];
 $loadingGroups = $view === 'today' ? todays_loading_apps() : [];
 $consoles = all_consoles();
 
@@ -118,10 +107,10 @@ function rotation_controls(string $kind, int $consoleId): void
  * Today's IPs for one app: what has been put in so far, and a small form
  * that opens in place so the day's work does not need another page.
  */
-function rotation_ip_cell(array $row, int $count, array $options): void
+function rotation_ip_cell(array $row, int $count, array $pool): void
 {
     $appId = (int) $row['app_id'];
-    $mayAdd = can('work');
+    $mayAdd = can('work') && $pool !== [];
     ?>
     <div class="ip-cell">
         <div class="ip-cell-view">
@@ -139,15 +128,11 @@ function rotation_ip_cell(array $row, int $count, array $options): void
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="add_ip">
             <input type="hidden" name="app_id" value="<?= $appId ?>">
-            <input type="text" name="ips" placeholder="IP, or several" spellcheck="false" required>
-            <?php foreach (['provider' => 'Provider', 'country' => 'Country', 'city' => 'City'] as $kind => $label): ?>
-                <select name="<?= h($kind) ?>" aria-label="<?= h($label) ?>">
-                    <option value=""><?= h($label) ?></option>
-                    <?php foreach ($options[$kind] ?? [] as $option): ?>
-                        <option value="<?= h($option['name']) ?>"><?= h($option['name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            <?php endforeach; ?>
+            <select name="ip_ids[]" multiple size="<?= max(3, min(8, count($pool))) ?>" aria-label="IPs" required>
+                <?php foreach ($pool as $entry): ?>
+                    <option value="<?= (int) $entry['id'] ?>" title="<?= h($entry['ip']) ?>"><?= h($entry['name']) ?></option>
+                <?php endforeach; ?>
+            </select>
             <button class="btn small primary" type="submit">Save</button>
             <button class="btn small ip-add-cancel" type="button">Cancel</button>
         </form>
@@ -284,7 +269,7 @@ page_start($view === 'history' ? 'Rotation History' : 'Rotations');
                                                 <span class="cell-sub">#<?= (int) $row['app_id'] ?></span>
                                             </span>
                                         </td>
-                                        <td><?php rotation_ip_cell($row, (int) ($ipCounts[(int) $row['app_id']] ?? 0), $ipOptions); ?></td>
+                                        <td><?php rotation_ip_cell($row, (int) ($ipCounts[(int) $row['app_id']] ?? 0), $ipPool); ?></td>
                                         <td><?php rotation_done_toggle('loading', $row); ?></td>
                                     </tr>
                                 <?php endforeach; ?>

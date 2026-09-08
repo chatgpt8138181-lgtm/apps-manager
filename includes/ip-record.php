@@ -48,7 +48,8 @@ function ip_months_with_records(): array
 function ip_month_stats(string $month): array
 {
     $stmt = db()->prepare(
-        "SELECT COUNT(*) AS total, COUNT(DISTINCT ip) AS unique_ips, COUNT(DISTINCT used_on) AS days
+        "SELECT COUNT(*) AS total, COUNT(DISTINCT COALESCE(ip_id, id)) AS unique_ips,
+                COUNT(DISTINCT used_on) AS days
          FROM rotation_ips WHERE DATE_FORMAT(used_on, '%Y-%m') = ?"
     );
     $stmt->execute([$month]);
@@ -174,7 +175,11 @@ function ip_group_rows(array $rows, array $by): array
             $groups[$key]['ips'] = [];
         }
 
-        $groups[$key]['ips'][] = ['id' => (int) $row['id'], 'ip' => (string) $row['ip']];
+        $groups[$key]['ips'][] = [
+            'id' => (int) $row['id'],
+            'ip' => (string) $row['ip'],
+            'name' => (string) ($row['ip_name'] ?? $row['ip']),
+        ];
     }
 
     return array_values($groups);
@@ -184,18 +189,140 @@ function ip_group_rows(array $rows, array $by): array
 function ip_month_usage(string $month): array
 {
     $stmt = db()->prepare(
-        "SELECT ip, COUNT(*) AS times FROM rotation_ips
-         WHERE DATE_FORMAT(used_on, '%Y-%m') = ?
-         GROUP BY ip HAVING times > 1"
+        "SELECT COALESCE(p.name, r.ip) AS ip_name, COUNT(*) AS times
+         FROM rotation_ips r
+         LEFT JOIN ip_pool p ON p.id = r.ip_id
+         WHERE DATE_FORMAT(r.used_on, '%Y-%m') = ?
+         GROUP BY ip_name HAVING times > 1"
     );
     $stmt->execute([$month]);
 
     $counts = [];
     foreach ($stmt->fetchAll() as $row) {
-        $counts[(string) $row['ip']] = (int) $row['times'];
+        $counts[(string) $row['ip_name']] = (int) $row['times'];
     }
 
     return $counts;
+}
+
+/*
+ * The list of IPs. Each one has a name, and the name is what a person reads
+ * wherever the IP turns up. Where it comes from belongs to the IP, not to
+ * each use of it.
+ */
+function ip_pool_all(): array
+{
+    try {
+        $stmt = db()->query('SELECT * FROM ip_pool ORDER BY name ASC');
+
+        return $stmt->fetchAll();
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+function ip_pool_get(int $id): ?array
+{
+    $stmt = db()->prepare('SELECT * FROM ip_pool WHERE id = ? LIMIT 1');
+    $stmt->execute([$id]);
+    $row = $stmt->fetch();
+
+    return $row ?: null;
+}
+
+/* How often each IP in the list has been used, so a list row can say so. */
+function ip_pool_usage(): array
+{
+    try {
+        $stmt = db()->query(
+            'SELECT ip_id, COUNT(*) AS total FROM rotation_ips
+             WHERE ip_id IS NOT NULL GROUP BY ip_id'
+        );
+
+        $counts = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $counts[(int) $row['ip_id']] = (int) $row['total'];
+        }
+
+        return $counts;
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+function validate_pool_fields(array $data): array
+{
+    $name = mb_substr(trim((string) ($data['name'] ?? '')), 0, 100);
+    $ip = trim((string) ($data['ip'] ?? ''));
+
+    if ($name === '') {
+        throw new RuntimeException('Give this IP a name.');
+    }
+    if (filter_var($ip, FILTER_VALIDATE_IP) === false) {
+        throw new RuntimeException('"' . $ip . '" is not an IP address.');
+    }
+
+    return [
+        'name' => $name,
+        'ip' => $ip,
+        'provider' => mb_substr(trim((string) ($data['provider'] ?? '')), 0, 100) ?: null,
+        'country' => mb_substr(trim((string) ($data['country'] ?? '')), 0, 60) ?: null,
+        'city' => mb_substr(trim((string) ($data['city'] ?? '')), 0, 100) ?: null,
+        'note' => mb_substr(trim((string) ($data['note'] ?? '')), 0, 255) ?: null,
+    ];
+}
+
+function add_pool_ip(array $data): void
+{
+    $f = validate_pool_fields($data);
+
+    $clash = db()->prepare('SELECT name, ip FROM ip_pool WHERE name = ? OR ip = ? LIMIT 1');
+    $clash->execute([$f['name'], $f['ip']]);
+    if ($found = $clash->fetch()) {
+        throw new RuntimeException($found['ip'] === $f['ip']
+            ? 'That IP is already on the list, as "' . $found['name'] . '".'
+            : 'The name "' . $f['name'] . '" is already taken.');
+    }
+
+    $stmt = db()->prepare(
+        'INSERT INTO ip_pool (name, ip, provider, country, city, note) VALUES (?, ?, ?, ?, ?, ?)'
+    );
+    $stmt->execute([$f['name'], $f['ip'], $f['provider'], $f['country'], $f['city'], $f['note']]);
+}
+
+function update_pool_ip(int $id, array $data): void
+{
+    $f = validate_pool_fields($data);
+
+    $clash = db()->prepare('SELECT name, ip FROM ip_pool WHERE (name = ? OR ip = ?) AND id <> ? LIMIT 1');
+    $clash->execute([$f['name'], $f['ip'], $id]);
+    if ($found = $clash->fetch()) {
+        throw new RuntimeException($found['ip'] === $f['ip']
+            ? 'That IP is already on the list, as "' . $found['name'] . '".'
+            : 'The name "' . $f['name'] . '" is already taken.');
+    }
+
+    $stmt = db()->prepare(
+        'UPDATE ip_pool SET name = ?, ip = ?, provider = ?, country = ?, city = ?, note = ? WHERE id = ?'
+    );
+    $stmt->execute([$f['name'], $f['ip'], $f['provider'], $f['country'], $f['city'], $f['note'], $id]);
+}
+
+/* An IP that has been used somewhere stays, so no record loses its name. */
+function delete_pool_ip(int $id): void
+{
+    $stmt = db()->prepare('SELECT COUNT(*) FROM rotation_ips WHERE ip_id = ?');
+    $stmt->execute([$id]);
+    $used = (int) $stmt->fetchColumn();
+
+    if ($used > 0) {
+        throw new RuntimeException(
+            'This IP is used ' . $used . ' time(s) in the record. Remove those entries first.'
+        );
+    }
+
+    $delete = db()->prepare('DELETE FROM ip_pool WHERE id = ?');
+    $delete->execute([$id]);
 }
 
 /* The lists that provider, country and city are picked from. */
@@ -250,8 +377,8 @@ function delete_ip_option(int $id): void
 }
 
 /*
- * Add one or many IPs at once: the box takes one per line, and every line
- * that is not an address is reported back rather than quietly dropped.
+ * Recording use: one day, one app, and the IPs picked from the list. What
+ * each IP is and where it comes from already lives with the IP itself.
  */
 function add_rotation_ips(array $data): array
 {
@@ -275,48 +402,51 @@ function add_rotation_ips(array $data): array
         $consoleId = (int) ($found['console_id'] ?? 0);
     }
 
-    $provider = mb_substr(trim((string) ($data['provider'] ?? '')), 0, 100);
-    $country = mb_substr(trim((string) ($data['country'] ?? '')), 0, 60);
-    $city = mb_substr(trim((string) ($data['city'] ?? '')), 0, 100);
     $note = mb_substr(trim((string) ($data['note'] ?? '')), 0, 255);
+    $ids = array_values(array_unique(array_filter(array_map('intval', (array) ($data['ip_ids'] ?? [])))));
 
-    $lines = preg_split('/[\r\n,]+/', (string) ($data['ips'] ?? '')) ?: [];
-    $added = 0;
-    $bad = [];
+    if (!$ids) {
+        throw new RuntimeException('Pick at least one IP from the list.');
+    }
 
     $insert = db()->prepare(
-        'INSERT INTO rotation_ips (used_on, console_id, app_id, ip, provider, country, city, note)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO rotation_ips (used_on, console_id, app_id, ip_id, ip, provider, country, city, note)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
 
-    foreach ($lines as $line) {
-        $ip = trim($line);
-        if ($ip === '') {
-            continue;
-        }
-        if (filter_var($ip, FILTER_VALIDATE_IP) === false) {
-            $bad[] = $ip;
+    $added = 0;
+    foreach ($ids as $id) {
+        $pool = ip_pool_get($id);
+        if (!$pool) {
             continue;
         }
 
+        /* The plain columns keep a copy, so an old row still reads on its own. */
         $insert->execute([
             $date,
             $consoleId > 0 ? $consoleId : null,
             $appId > 0 ? $appId : null,
-            $ip,
-            $provider !== '' ? $provider : null,
-            $country !== '' ? $country : null,
-            $city !== '' ? $city : null,
+            (int) $pool['id'],
+            (string) $pool['ip'],
+            $pool['provider'],
+            $pool['country'],
+            $pool['city'],
             $note !== '' ? $note : null,
         ]);
         $added++;
     }
 
-    if ($added === 0 && !$bad) {
-        throw new RuntimeException('Add at least one IP.');
+    if ($added === 0) {
+        throw new RuntimeException('None of those IPs are on the list any more.');
     }
 
-    return ['added' => $added, 'bad' => $bad, 'month' => date('Y-m', strtotime($date))];
+    return ['added' => $added, 'bad' => [], 'month' => date('Y-m', strtotime($date))];
+}
+
+function delete_rotation_ip(int $id): void
+{
+    $stmt = db()->prepare('DELETE FROM rotation_ips WHERE id = ?');
+    $stmt->execute([$id]);
 }
 
 /* How many IPs each app has on one day, for the rotation list to show. */
@@ -340,12 +470,16 @@ function ip_counts_for_date(string $date): array
     }
 }
 
-/* The month's IPs as plain lines, for handing to something else. */
+/* The month's addresses as plain lines, for handing to something else. */
 function ip_list_for_month(string $month, bool $uniqueOnly = false): array
 {
     $sql = $uniqueOnly
-        ? "SELECT DISTINCT ip FROM rotation_ips WHERE DATE_FORMAT(used_on, '%Y-%m') = ? ORDER BY ip ASC"
-        : "SELECT ip FROM rotation_ips WHERE DATE_FORMAT(used_on, '%Y-%m') = ? ORDER BY used_on ASC, id ASC";
+        ? "SELECT DISTINCT COALESCE(p.ip, r.ip) AS ip FROM rotation_ips r
+           LEFT JOIN ip_pool p ON p.id = r.ip_id
+           WHERE DATE_FORMAT(r.used_on, '%Y-%m') = ? ORDER BY ip ASC"
+        : "SELECT COALESCE(p.ip, r.ip) AS ip FROM rotation_ips r
+           LEFT JOIN ip_pool p ON p.id = r.ip_id
+           WHERE DATE_FORMAT(r.used_on, '%Y-%m') = ? ORDER BY r.used_on ASC, r.id ASC";
 
     $stmt = db()->prepare($sql);
     $stmt->execute([$month]);
@@ -382,10 +516,4 @@ function delete_ip_month(string $month): int
     $stmt->execute([$month]);
 
     return $stmt->rowCount();
-}
-
-function delete_rotation_ip(int $id): void
-{
-    $stmt = db()->prepare('DELETE FROM rotation_ips WHERE id = ?');
-    $stmt->execute([$id]);
 }
