@@ -121,8 +121,27 @@ function role_descriptions(): array
 function current_role(): string
 {
     $role = (string) ($_SESSION['admin_role'] ?? '');
+    if (array_key_exists($role, role_abilities())) {
+        return $role;
+    }
 
-    return array_key_exists($role, role_abilities()) ? $role : 'operator';
+    /* A session opened before roles existed: read the account's own role
+       rather than assuming the smallest one. */
+    $adminId = (int) ($_SESSION['admin_id'] ?? 0);
+    if ($adminId > 0) {
+        try {
+            $stmt = db()->prepare('SELECT role FROM admins WHERE id = ? LIMIT 1');
+            $stmt->execute([$adminId]);
+            $found = (string) ($stmt->fetchColumn() ?: '');
+            if (array_key_exists($found, role_abilities())) {
+                return $_SESSION['admin_role'] = $found;
+            }
+        } catch (Throwable $e) {
+            /* Fall through to the safe answer below. */
+        }
+    }
+
+    return 'operator';
 }
 
 /* Whether the person signed in may do this kind of thing. */
