@@ -2,7 +2,11 @@
 $root = is_file(__DIR__ . '/../includes/bootstrap.php') ? dirname(__DIR__) : __DIR__;
 require_once $root . '/includes/bootstrap.php';
 require_login();
-require_can('settings');
+
+/* require_login() already turns this away; this is the belt to its braces. */
+if (!can('settings')) {
+    redirect_with(role_home(), 'error', 'Your account does not have access to that page.');
+}
 
 /*
  * The IPs themselves: the list every record and rotation reads from, and the
