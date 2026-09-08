@@ -3269,6 +3269,26 @@ select[name="ip_ids[]"] {
         width: 100%;
     }
 
+    /* Desktop column widths would squash the fields inside a card. */
+    .pool-table td {
+        width: auto;
+    }
+
+    .pool-table td:nth-child(6) {
+        justify-content: space-between;
+        text-align: left;
+    }
+
+    .pool-table input,
+    .pool-table select {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .pool-table td.actions .btn + .btn {
+        margin-left: 0;
+    }
+
     /* An open picker takes the whole card row, not the narrow value column. */
     .table-wrap td.col-ips {
         flex-wrap: wrap;
