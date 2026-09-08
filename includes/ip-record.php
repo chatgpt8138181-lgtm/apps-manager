@@ -210,6 +210,50 @@ function ip_counts_for_date(string $date): array
     }
 }
 
+/* The month's IPs as plain lines, for handing to something else. */
+function ip_list_for_month(string $month, bool $uniqueOnly = false): array
+{
+    $sql = $uniqueOnly
+        ? "SELECT DISTINCT ip FROM rotation_ips WHERE DATE_FORMAT(used_on, '%Y-%m') = ? ORDER BY ip ASC"
+        : "SELECT ip FROM rotation_ips WHERE DATE_FORMAT(used_on, '%Y-%m') = ? ORDER BY used_on ASC, id ASC";
+
+    $stmt = db()->prepare($sql);
+    $stmt->execute([$month]);
+
+    return array_column($stmt->fetchAll(), 'ip');
+}
+
+/* Every month that holds something, with how much, newest first. */
+function ip_months_with_counts(): array
+{
+    try {
+        $stmt = db()->query(
+            "SELECT DATE_FORMAT(used_on, '%Y-%m') AS month, COUNT(*) AS total
+             FROM rotation_ips GROUP BY month ORDER BY month DESC"
+        );
+
+        return $stmt->fetchAll();
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+/* Clear one whole month. Only ever runs because someone asked for it. */
+function delete_ip_month(string $month): int
+{
+    if (preg_match('/^\d{4}-\d{2}$/', $month) !== 1) {
+        throw new RuntimeException('That is not a month.');
+    }
+    if ($month === date('Y-m')) {
+        throw new RuntimeException('This month is still in use. Pick an earlier one.');
+    }
+
+    $stmt = db()->prepare("DELETE FROM rotation_ips WHERE DATE_FORMAT(used_on, '%Y-%m') = ?");
+    $stmt->execute([$month]);
+
+    return $stmt->rowCount();
+}
+
 function delete_rotation_ip(int $id): void
 {
     $stmt = db()->prepare('DELETE FROM rotation_ips WHERE id = ?');

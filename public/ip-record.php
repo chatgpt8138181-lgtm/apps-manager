@@ -26,6 +26,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect_with('ip-record.php?m=' . urlencode($result['month']), 'success', $message);
         }
 
+        if ($action === 'delete_month') {
+            $wanted = (string) ($_POST['month'] ?? '');
+            $removed = delete_ip_month($wanted);
+            redirect_with('ip-record.php', 'success', $removed . ' IP(s) removed from ' . ip_month_label($wanted) . '.');
+        }
+
         if ($action === 'delete') {
             delete_rotation_ip((int) ($_POST['id'] ?? 0));
             redirect_with($back, 'success', 'IP removed.');
@@ -46,6 +52,10 @@ $apps = all_apps_overview('', 0, '', '');
 $providers = ip_known_values('provider');
 $countries = ip_known_values('country');
 
+$copyAll = implode("\n", ip_list_for_month($month));
+$copyUnique = implode("\n", ip_list_for_month($month, true));
+$monthCounts = ip_months_with_counts();
+
 $known = ip_months_with_records();
 $previous = ip_month_shift($month, -1);
 $next = ip_month_shift($month, 1);
@@ -64,6 +74,16 @@ page_start('IP Record');
     <div class="panel-heading">
         <h2><?= h(ip_month_label($month)) ?></h2>
         <div class="inline-actions">
+            <?php if ($stats['total'] > 0): ?>
+                <button class="btn small copy-ips" type="button" data-ips="<?= h($copyAll) ?>">
+                    Copy all (<?= (int) $stats['total'] ?>)
+                </button>
+                <?php if ($stats['unique_ips'] < $stats['total']): ?>
+                    <button class="btn small copy-ips" type="button" data-ips="<?= h($copyUnique) ?>">
+                        Copy unique (<?= (int) $stats['unique_ips'] ?>)
+                    </button>
+                <?php endif; ?>
+            <?php endif; ?>
             <?php if ($hasPrevious): ?>
                 <a class="btn small" href="ip-record.php?m=<?= h($previous) ?>">&laquo; <?= h(ip_month_label($previous)) ?></a>
             <?php endif; ?>
@@ -230,4 +250,65 @@ page_start('IP Record');
         </div>
     <?php endforeach; ?>
 </section>
+<?php
+/* Months other than this one, so an old record can be cleared on purpose. */
+$earlier = array_values(array_filter($monthCounts, fn($row) => (string) $row['month'] !== date('Y-m')));
+?>
+<?php if ($earlier): ?>
+    <section class="panel">
+        <div class="app-group" data-group-key="ip-earlier-months">
+            <button class="app-group-toggle" type="button" aria-expanded="false">
+                <span>Earlier months (<?= count($earlier) ?>)</span>
+                <span class="nav-chevron" aria-hidden="true"></span>
+            </button>
+            <div class="app-group-body">
+                <p class="hint">
+                    Nothing here is removed on its own. A month goes only when you say so.
+                </p>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>IPs</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($earlier as $row): ?>
+                            <tr>
+                                <td><?= h(ip_month_label((string) $row['month'])) ?></td>
+                                <td><?= (int) $row['total'] ?></td>
+                                <td class="actions">
+                                    <a class="btn small" href="ip-record.php?m=<?= h((string) $row['month']) ?>">Open</a>
+                                    <form method="post"
+                                          onsubmit="return confirm('Delete all <?= (int) $row['total'] ?> IP(s) from <?= h(ip_month_label((string) $row['month'])) ?>? This cannot be undone.');">
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="action" value="delete_month">
+                                        <input type="hidden" name="month" value="<?= h((string) $row['month']) ?>">
+                                        <input type="hidden" name="return_month" value="<?= h($month) ?>">
+                                        <button class="btn small danger" type="submit">Delete month</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+<?php endif; ?>
+
+<script>
+document.querySelectorAll('.copy-ips').forEach((button) => {
+    button.addEventListener('click', () => {
+        navigator.clipboard.writeText(button.dataset.ips).then(() => {
+            const label = button.textContent;
+            button.textContent = 'Copied!';
+            setTimeout(() => { button.textContent = label; }, 1500);
+        });
+    });
+});
+</script>
 <?php page_end(); ?>
