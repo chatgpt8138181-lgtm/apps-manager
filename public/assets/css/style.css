@@ -3349,30 +3349,30 @@ tbody tr.is-picked {
 
 /* Fixed columns wide enough to read, and the wrap scrolls if the screen is not. */
 .pool-table {
-    min-width: 980px;
+    min-width: 940px;
     table-layout: fixed;
 }
 
 .pool-table th:nth-child(1),
 .pool-table td:nth-child(1) {
-    width: 150px;
+    width: 140px;
 }
 
 .pool-table th:nth-child(2),
 .pool-table td:nth-child(2) {
-    width: 138px;
+    width: 130px;
 }
 
 .pool-table th:nth-child(3),
 .pool-table td:nth-child(3),
 .pool-table th:nth-child(5),
 .pool-table td:nth-child(5) {
-    width: 128px;
+    width: 120px;
 }
 
 .pool-table th:nth-child(4),
 .pool-table td:nth-child(4) {
-    width: 126px;
+    width: 116px;
 }
 
 .pool-table th:nth-child(6),
@@ -3388,7 +3388,7 @@ tbody tr.is-picked {
 
 .pool-table th:nth-child(8),
 .pool-table td:nth-child(8) {
-    width: 172px;
+    width: 166px;
 }
 
 /* Searching a long list, above the table it filters. */
@@ -3417,6 +3417,36 @@ tbody tr.is-picked {
     display: none;
 }
 
+/* The list keeps its own height: the page below it stays where it is. */
+.pool-scroll {
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    max-height: 62vh;
+    overflow-y: auto;
+}
+
+.pool-scroll .pool-table thead th {
+    background: var(--panel);
+    /* Collapsed borders do not travel with a sticky row; this one does. */
+    box-shadow: inset 0 -1px 0 var(--line);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+/* A desk narrower than the full row keeps the note out of the way; the field
+   is still there, so what it holds is saved untouched. */
+@media (min-width: 761px) and (max-width: 1340px) {
+    .pool-table {
+        min-width: 860px;
+    }
+
+    .pool-table th:nth-child(6),
+    .pool-table td:nth-child(6) {
+        display: none;
+    }
+}
+
 /* The new row waits behind this until it is asked for. */
 .pool-add-bar {
     margin-top: 14px;
@@ -3440,6 +3470,13 @@ tbody tr.is-picked {
 
     .ip-modal-foot .btn {
         flex: 1 1 auto;
+    }
+
+    /* On a phone the page scrolls; a box inside a box is no help there. */
+    .pool-scroll {
+        border: 0;
+        max-height: none;
+        overflow-y: visible;
     }
 
     /* Desktop column widths would squash the fields inside a card. */
