@@ -61,7 +61,7 @@ $month = ip_month((string) ($_GET['m'] ?? ''));
 $by = (string) ($_GET['by'] ?? 'day') === 'app' ? 'app' : 'day';
 $stats = ip_month_stats($month);
 $days = $by === 'day' ? ip_records_by_day($month) : [];
-$byApp = $by === 'app' ? ip_records_by_app($month) : [];
+$byApp = $by === 'app' ? ip_apps_by_console($month) : [];
 $repeats = ip_month_usage($month);
 $consoles = all_consoles();
 $apps = all_apps_overview('', 0, '', '');
@@ -224,73 +224,93 @@ page_start('IP Record');
         <p class="empty block">Nothing recorded for <?= h(ip_month_label($month)) ?> yet.</p>
     <?php endif; ?>
 
-    <?php foreach ($byApp as $key => $group): ?>
-        <?php $appPage = paginate_group($group['rows'], 'a' . ($group['app_id'] ?: 0)); ?>
-        <div class="app-group" id="a<?= (int) $group['app_id'] ?>" data-group-key="ip-<?= h((string) $key) ?>">
+    <?php foreach ($byApp as $consoleId => $console): ?>
+        <div class="app-group" id="c<?= (int) $consoleId ?>" data-group-key="ip-console-<?= (int) $consoleId ?>">
             <button class="app-group-toggle" type="button" aria-expanded="false">
                 <span class="console-head">
-                    <span class="console-head-name">
-                        <?= h($group['label']) ?>
-                        <?php if ($group['app_id'] > 0): ?>#<?= (int) $group['app_id'] ?><?php endif; ?>
-                        (<?= count($group['rows']) ?> IPs)
+                    <span class="console-head-name"><?= h($console['name']) ?></span>
+                    <span class="console-head-meta">
+                        <?= count($console['apps']) ?> app<?= count($console['apps']) === 1 ? '' : 's' ?>
+                        &middot; <?= (int) $console['total'] ?> IP<?= (int) $console['total'] === 1 ? '' : 's' ?>
                     </span>
-                    <?php if ($group['console'] !== ''): ?>
-                        <span class="console-head-meta"><?= h($group['console']) ?></span>
-                    <?php endif; ?>
                 </span>
                 <span class="nav-chevron" aria-hidden="true"></span>
             </button>
             <div class="app-group-body">
-                <?php if ($group['app_id'] > 0): ?>
-                    <div class="inline-actions">
-                        <a class="btn small" href="app.php?id=<?= (int) $group['app_id'] ?>">Open app</a>
+                <?php foreach ($console['apps'] as $app): ?>
+                    <?php $appPage = paginate_group($app['rows'], 'a' . (int) $app['id']); ?>
+                    <div class="app-group" id="a<?= (int) $app['id'] ?>" data-group-key="ip-app-<?= (int) $app['id'] ?>">
+                        <button class="app-group-toggle" type="button" aria-expanded="false">
+                            <span class="console-head">
+                                <span class="console-head-name">
+                                    <?= h($app['name']) ?>
+                                    <?php if ($app['id'] > 0): ?>#<?= (int) $app['id'] ?><?php endif; ?>
+                                </span>
+                                <span class="console-head-meta">
+                                    <?= count($app['rows']) ?> IP<?= count($app['rows']) === 1 ? '' : 's' ?>
+                                </span>
+                            </span>
+                            <span class="nav-chevron" aria-hidden="true"></span>
+                        </button>
+                        <div class="app-group-body">
+                            <?php if ($app['id'] > 0): ?>
+                                <div class="inline-actions">
+                                    <a class="btn small" href="app.php?id=<?= (int) $app['id'] ?>">Open app</a>
+                                </div>
+                            <?php endif; ?>
+
+                            <?php if (!$app['rows']): ?>
+                                <p class="empty block">No IPs for this app in <?= h(ip_month_label($month)) ?>.</p>
+                            <?php else: ?>
+                                <div class="table-wrap">
+                                    <table>
+                                        <thead>
+                                        <tr>
+                                            <th>IP</th>
+                                            <th>Used on</th>
+                                            <th>Provider</th>
+                                            <th>Country</th>
+                                            <th>City</th>
+                                            <th>Note</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <?php foreach ($appPage['rows'] as $row): ?>
+                                            <tr>
+                                                <td>
+                                                    <span class="cell-title">
+                                                        <code><?= h($row['ip']) ?></code>
+                                                        <?php if (isset($repeats[$row['ip']])): ?>
+                                                            <span class="badge badge-amber">Used <?= (int) $repeats[$row['ip']] ?>&times; this month</span>
+                                                        <?php endif; ?>
+                                                    </span>
+                                                </td>
+                                                <td><?= h(date('d M Y', strtotime((string) $row['used_on']) ?: time())) ?></td>
+                                                <td><?= $row['provider'] !== null && $row['provider'] !== '' ? h($row['provider']) : '&mdash;' ?></td>
+                                                <td><?= $row['country'] !== null && $row['country'] !== '' ? h($row['country']) : '&mdash;' ?></td>
+                                                <td><?= !empty($row['city']) ? h($row['city']) : '&mdash;' ?></td>
+                                                <td><?= $row['note'] !== null && $row['note'] !== '' ? h($row['note']) : '&mdash;' ?></td>
+                                                <td class="actions">
+                                                    <form method="post" onsubmit="return confirm('Remove this IP from the record?');">
+                                                        <?= csrf_field() ?>
+                                                        <input type="hidden" name="action" value="delete">
+                                                        <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
+                                                        <input type="hidden" name="return_month" value="<?= h($month) ?>">
+                                                        <input type="hidden" name="return_by" value="<?= h($by) ?>">
+                                                        <button class="btn small danger" type="submit">Delete</button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <?php render_group_pager($appPage, 'ip-record.php', ['m' => $month, 'by' => $by]); ?>
+                            <?php endif; ?>
+                        </div>
                     </div>
-                <?php endif; ?>
-                <div class="table-wrap">
-                    <table>
-                        <thead>
-                        <tr>
-                            <th>IP</th>
-                            <th>Used on</th>
-                            <th>Provider</th>
-                            <th>Country</th>
-                            <th>City</th>
-                            <th>Note</th>
-                            <th>Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <?php foreach ($appPage['rows'] as $row): ?>
-                            <tr>
-                                <td>
-                                    <span class="cell-title">
-                                        <code><?= h($row['ip']) ?></code>
-                                        <?php if (isset($repeats[$row['ip']])): ?>
-                                            <span class="badge badge-amber">Used <?= (int) $repeats[$row['ip']] ?>&times; this month</span>
-                                        <?php endif; ?>
-                                    </span>
-                                </td>
-                                <td><?= h(date('d M Y', strtotime((string) $row['used_on']) ?: time())) ?></td>
-                                <td><?= $row['provider'] !== null && $row['provider'] !== '' ? h($row['provider']) : '&mdash;' ?></td>
-                                <td><?= $row['country'] !== null && $row['country'] !== '' ? h($row['country']) : '&mdash;' ?></td>
-                                <td><?= !empty($row['city']) ? h($row['city']) : '&mdash;' ?></td>
-                                <td><?= $row['note'] !== null && $row['note'] !== '' ? h($row['note']) : '&mdash;' ?></td>
-                                <td class="actions">
-                                    <form method="post" onsubmit="return confirm('Remove this IP from the record?');">
-                                        <?= csrf_field() ?>
-                                        <input type="hidden" name="action" value="delete">
-                                        <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
-                                        <input type="hidden" name="return_month" value="<?= h($month) ?>">
-                                        <input type="hidden" name="return_by" value="<?= h($by) ?>">
-                                        <button class="btn small danger" type="submit">Delete</button>
-                                    </form>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-                <?php render_group_pager($appPage, 'ip-record.php', ['m' => $month, 'by' => $by]); ?>
+                <?php endforeach; ?>
             </div>
         </div>
     <?php endforeach; ?>

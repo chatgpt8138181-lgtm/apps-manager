@@ -85,38 +85,74 @@ function ip_records_by_day(string $month): array
 }
 
 /*
- * The same month seen the other way: every app with the IPs it was given,
- * consoles in their usual order. Entries with no app sit together at the end.
+ * The same month seen the other way: every console with its apps, and each
+ * app with the IPs it was given. Apps that were given none are still listed,
+ * so a console shows its whole set rather than only the busy ones.
  */
-function ip_records_by_app(string $month): array
+function ip_apps_by_console(string $month): array
 {
+    /* The apps a console loads, plus any app this month's record touched. */
     $stmt = db()->prepare(
-        "SELECT r.*, a.app_name, c.name AS console_name, c.created_at AS console_created
-         FROM rotation_ips r
-         LEFT JOIN apps a ON a.id = r.app_id
-         LEFT JOIN consoles c ON c.id = r.console_id
-         WHERE DATE_FORMAT(r.used_on, '%Y-%m') = ?
-         ORDER BY c.created_at ASC, c.id ASC, a.app_name ASC, r.used_on DESC, r.id DESC"
+        "SELECT a.id, a.app_name, a.console_id, c.name AS console_name
+         FROM apps a
+         JOIN consoles c ON c.id = a.console_id
+         WHERE a.stage = 'live'
+            OR a.id IN (SELECT app_id FROM rotation_ips
+                        WHERE app_id IS NOT NULL AND DATE_FORMAT(used_on, '%Y-%m') = ?)
+         ORDER BY c.created_at ASC, c.id ASC, a.created_at ASC, a.id ASC"
     );
     $stmt->execute([$month]);
 
-    $groups = [];
-    foreach ($stmt->fetchAll() as $row) {
-        $key = !empty($row['app_id']) ? 'app-' . (int) $row['app_id'] : 'none';
-        $groups[$key]['app_id'] = !empty($row['app_id']) ? (int) $row['app_id'] : 0;
-        $groups[$key]['label'] = $row['app_name'] ?? 'No app';
-        $groups[$key]['console'] = $row['console_name'] ?? '';
-        $groups[$key]['rows'][] = $row;
+    $consoles = [];
+    foreach ($stmt->fetchAll() as $app) {
+        $consoleId = (int) $app['console_id'];
+        $consoles[$consoleId]['name'] = $app['console_name'];
+        $consoles[$consoleId]['total'] = 0;
+        $consoles[$consoleId]['apps'][(int) $app['id']] = [
+            'id' => (int) $app['id'],
+            'name' => (string) $app['app_name'],
+            'rows' => [],
+        ];
     }
 
-    /* Whatever was not tied to an app comes last, not first. */
-    if (isset($groups['none'])) {
-        $loose = $groups['none'];
-        unset($groups['none']);
-        $groups['none'] = $loose;
+    $rows = db()->prepare(
+        "SELECT * FROM rotation_ips
+         WHERE DATE_FORMAT(used_on, '%Y-%m') = ?
+         ORDER BY used_on DESC, id DESC"
+    );
+    $rows->execute([$month]);
+
+    $loose = [];
+    foreach ($rows->fetchAll() as $row) {
+        $appId = (int) ($row['app_id'] ?? 0);
+        $consoleId = (int) ($row['console_id'] ?? 0);
+
+        if ($appId > 0 && isset($consoles[$consoleId]['apps'][$appId])) {
+            $consoles[$consoleId]['apps'][$appId]['rows'][] = $row;
+            $consoles[$consoleId]['total']++;
+            continue;
+        }
+
+        /* Recorded against the console alone, or against nothing at all. */
+        if ($consoleId > 0 && isset($consoles[$consoleId])) {
+            $consoles[$consoleId]['apps'][0] ??= ['id' => 0, 'name' => 'No app', 'rows' => []];
+            $consoles[$consoleId]['apps'][0]['rows'][] = $row;
+            $consoles[$consoleId]['total']++;
+            continue;
+        }
+
+        $loose[] = $row;
     }
 
-    return $groups;
+    if ($loose) {
+        $consoles[0] = [
+            'name' => 'No console',
+            'total' => count($loose),
+            'apps' => [0 => ['id' => 0, 'name' => 'No app', 'rows' => $loose]],
+        ];
+    }
+
+    return $consoles;
 }
 
 /* How often each IP turns up in the month, so a repeat can be shown as one. */
