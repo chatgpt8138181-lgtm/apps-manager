@@ -217,9 +217,12 @@ function ip_month_usage(string $month): array
 function ip_pool_all(): array
 {
     try {
-        $stmt = db()->query('SELECT * FROM ip_pool ORDER BY name ASC');
+        $rows = db()->query('SELECT * FROM ip_pool')->fetchAll();
 
-        return $stmt->fetchAll();
+        /* Atlanta 2 belongs before Atlanta 10, which plain sorting gets wrong. */
+        usort($rows, fn($a, $b) => strnatcasecmp((string) $a['name'], (string) $b['name']));
+
+        return $rows;
     } catch (Throwable $e) {
         return [];
     }
@@ -472,6 +475,161 @@ function ip_counts_for_date(string $date): array
     } catch (Throwable $e) {
         return [];
     }
+}
+
+/*
+ * One line of an uploaded list. Blank lines and comments are passed over;
+ * anything else has to read as an address or it is reported back.
+ */
+function ip_from_line(string $line)
+{
+    $line = trim($line);
+    if ($line === '' || str_starts_with($line, '#')) {
+        return null;
+    }
+
+    $first = preg_split('/[\s,;|]+/', $line)[0] ?? '';
+    if (filter_var($first, FILTER_VALIDATE_IP)) {
+        return $first;
+    }
+
+    /* A list written as address:port still names an address. */
+    if (substr_count($first, ':') === 1) {
+        $head = substr($first, 0, (int) strpos($first, ':'));
+        if (filter_var($head, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return $head;
+        }
+    }
+
+    return false;
+}
+
+/*
+ * A file of addresses becomes named entries: the first line takes the first
+ * number, the next line the next, for as far as the counting reaches.
+ */
+function import_pool_ips(array $data, array $file): array
+{
+    $name = trim((string) ($data['batch_name'] ?? ''));
+    if ($name === '') {
+        throw new RuntimeException('Give the batch a name, like Atlanta.');
+    }
+    if (mb_strlen($name) > 80) {
+        throw new RuntimeException('That name is too long for a batch.');
+    }
+
+    $from = (int) ($data['from'] ?? 0);
+    $to = (int) ($data['to'] ?? 0);
+    if ($from < 0 || $to < $from) {
+        throw new RuntimeException('The counting has to run from a smaller number to a larger one.');
+    }
+    if ($to - $from > 5000) {
+        throw new RuntimeException('That counting is wider than one import should carry.');
+    }
+
+    $error = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
+    if ($error === UPLOAD_ERR_NO_FILE) {
+        throw new RuntimeException('Pick the text file that holds the addresses.');
+    }
+    if ($error === UPLOAD_ERR_INI_SIZE || $error === UPLOAD_ERR_FORM_SIZE) {
+        throw new RuntimeException('That file is larger than the server accepts.');
+    }
+    if ($error !== UPLOAD_ERR_OK || !is_uploaded_file((string) ($file['tmp_name'] ?? ''))) {
+        throw new RuntimeException('That file did not arrive in one piece. Try again.');
+    }
+    if ((int) ($file['size'] ?? 0) > 512 * 1024) {
+        throw new RuntimeException('That file is larger than 512 KB.');
+    }
+
+    $text = (string) file_get_contents((string) $file['tmp_name']);
+    if ($text !== '' && !mb_check_encoding($text, 'UTF-8')) {
+        $text = (string) mb_convert_encoding($text, 'UTF-8', 'ISO-8859-1');
+    }
+
+    $wanted = [];
+    $bad = [];
+    $seen = [];
+    foreach (preg_split("/\r\n|\n|\r/", $text) ?: [] as $line) {
+        $found = ip_from_line($line);
+        if ($found === null) {
+            continue;
+        }
+        if ($found === false) {
+            if (count($bad) < 20) {
+                $bad[] = mb_substr(trim($line), 0, 40);
+            }
+            continue;
+        }
+        if (isset($seen[$found])) {
+            continue;
+        }
+        $seen[$found] = true;
+        $wanted[] = $found;
+    }
+
+    if (!$wanted) {
+        throw new RuntimeException('No address was found in that file.');
+    }
+
+    /* What the list already holds, so nothing is written over. */
+    $takenIps = [];
+    $takenNames = [];
+    foreach (db()->query('SELECT name, ip FROM ip_pool')->fetchAll() as $row) {
+        $takenIps[(string) $row['ip']] = true;
+        $takenNames[mb_strtolower((string) $row['name'])] = true;
+    }
+
+    $fields = [
+        'provider' => mb_substr(trim((string) ($data['provider'] ?? '')), 0, 100) ?: null,
+        'country' => mb_substr(trim((string) ($data['country'] ?? '')), 0, 60) ?: null,
+        'city' => mb_substr(trim((string) ($data['city'] ?? '')), 0, 100) ?: null,
+    ];
+
+    $insert = db()->prepare(
+        'INSERT INTO ip_pool (name, ip, provider, country, city) VALUES (?, ?, ?, ?, ?)'
+    );
+
+    $added = 0;
+    $already = 0;
+    $over = 0;
+    $next = $from;
+
+    db()->beginTransaction();
+    try {
+        foreach ($wanted as $ip) {
+            if (isset($takenIps[$ip])) {
+                $already++;
+                continue;
+            }
+
+            /* A number already spoken for is stepped over, not written twice. */
+            while ($next <= $to && isset($takenNames[mb_strtolower($name . ' ' . $next)])) {
+                $next++;
+            }
+
+            if ($next > $to) {
+                $over++;
+                continue;
+            }
+
+            $insert->execute([$name . ' ' . $next, $ip, $fields['provider'], $fields['country'], $fields['city']]);
+            $takenNames[mb_strtolower($name . ' ' . $next)] = true;
+            $takenIps[$ip] = true;
+            $next++;
+            $added++;
+        }
+        db()->commit();
+    } catch (Throwable $e) {
+        db()->rollBack();
+        throw $e;
+    }
+
+    return [
+        'added' => $added,
+        'already' => $already,
+        'over' => $over,
+        'bad' => $bad,
+    ];
 }
 
 /* Which IPs an app already has on one day, so the picker can say so. */
