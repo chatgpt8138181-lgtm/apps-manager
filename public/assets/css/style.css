@@ -3434,6 +3434,19 @@ tbody tr.is-picked {
     z-index: 1;
 }
 
+/* A desk narrower than the full row keeps the note out of the way; the field
+   is still there, so what it holds is saved untouched. */
+@media (min-width: 761px) and (max-width: 1180px) {
+    .pool-table {
+        min-width: 860px;
+    }
+
+    .pool-table th:nth-child(6),
+    .pool-table td:nth-child(6) {
+        display: none;
+    }
+}
+
 /* The new row waits behind this until it is asked for. */
 .pool-add-bar {
     margin-top: 14px;
