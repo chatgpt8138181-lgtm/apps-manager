@@ -3042,31 +3042,95 @@ tbody tr.is-picked {
 }
 
 .ip-add-form {
-    align-items: center;
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 190px;
 }
 
 .ip-add-form[hidden] {
     display: none;
 }
 
-.ip-add-form input {
+.ip-pick-hint {
+    color: var(--muted);
+    font-size: 12px;
+    margin: 0;
+}
+
+/* One tap per IP: no keyboard gymnastics to pick more than one. */
+.ip-picks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 172px;
+    overflow-y: auto;
+}
+
+/* A field that holds something other than one input. */
+.field {
+    display: grid;
+    gap: 7px;
+}
+
+.field-label {
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.ip-pick {
+    align-items: center;
+    background: var(--panel);
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    color: var(--text);
+    cursor: pointer;
+    display: inline-flex;
     font-size: 13px;
-    min-height: 34px;
-    padding: 6px 8px;
+    gap: 6px;
+    line-height: 1.2;
+    padding: 6px 12px;
+    position: relative;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    user-select: none;
     width: auto;
 }
 
-.ip-add-form input[name="ips"] {
-    flex: 1 1 150px;
-    font-family: var(--font-mono);
+.ip-pick:hover {
+    border-color: var(--primary);
 }
 
-.ip-add-form input[name="provider"],
-.ip-add-form input[name="country"] {
-    flex: 1 1 110px;
+/* The box itself stays out of sight; the pill is the control. */
+.ip-pick input {
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+    position: absolute;
+    width: 1px;
+}
+
+.ip-pick:focus-within {
+    box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.ip-pick.is-picked {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--on-primary);
+}
+
+.ip-pick-mark {
+    color: var(--green-text);
+    font-size: 11px;
+}
+
+.ip-pick.is-picked .ip-pick-mark {
+    color: var(--on-primary);
+}
+
+.ip-pick-actions {
+    display: flex;
+    gap: 8px;
 }
 
 /* The lists behind the IP pickers, three short columns side by side. */
@@ -3104,14 +3168,6 @@ tbody tr.is-picked {
     gap: 8px;
     justify-content: space-between;
     padding: 6px 6px 6px 10px;
-}
-
-.ip-add-form select {
-    flex: 1 1 110px;
-    font-size: 13px;
-    min-height: 34px;
-    padding: 6px 8px;
-    width: auto;
 }
 
 /* Addresses recorded together sit on one line, each with its own way out. */
@@ -3278,27 +3334,10 @@ tbody tr.is-picked {
     display: none;
 }
 
-/* Picking several IPs at once. */
-select[name="ip_ids[]"] {
-    min-height: 0;
-    padding: 6px;
-}
-
-.ip-add-form select[name="ip_ids[]"] {
-    flex: 1 1 180px;
-    width: auto;
-}
-
 /* On a card the picker gets the whole width instead of a narrow column. */
 @media (max-width: 760px) {
-    .ip-add-form {
-        align-items: stretch;
-        flex-direction: column;
-    }
-
-    .ip-add-form select[name="ip_ids[]"],
-    .ip-add-form .btn {
-        width: 100%;
+    .ip-pick-actions .btn {
+        flex: 1 1 auto;
     }
 
     /* Desktop column widths would squash the fields inside a card. */
