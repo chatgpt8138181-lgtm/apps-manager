@@ -2968,3 +2968,43 @@ tbody tr.is-picked {
 .group-pager {
     margin-top: 14px;
 }
+
+/* Today's IPs, added from the rotation row itself. */
+.ip-cell-view {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.ip-cell-view[hidden] {
+    display: none;
+}
+
+.ip-add-form {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.ip-add-form[hidden] {
+    display: none;
+}
+
+.ip-add-form input {
+    font-size: 13px;
+    min-height: 34px;
+    padding: 6px 8px;
+    width: auto;
+}
+
+.ip-add-form input[name="ips"] {
+    flex: 1 1 150px;
+    font-family: var(--font-mono);
+}
+
+.ip-add-form input[name="provider"],
+.ip-add-form input[name="country"] {
+    flex: 1 1 110px;
+}

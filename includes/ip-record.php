@@ -189,6 +189,27 @@ function add_rotation_ips(array $data): array
     return ['added' => $added, 'bad' => $bad, 'month' => date('Y-m', strtotime($date))];
 }
 
+/* How many IPs each app has on one day, for the rotation list to show. */
+function ip_counts_for_date(string $date): array
+{
+    try {
+        $stmt = db()->prepare(
+            'SELECT app_id, COUNT(*) AS total FROM rotation_ips
+             WHERE used_on = ? AND app_id IS NOT NULL GROUP BY app_id'
+        );
+        $stmt->execute([$date]);
+
+        $counts = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $counts[(int) $row['app_id']] = (int) $row['total'];
+        }
+
+        return $counts;
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
 function delete_rotation_ip(int $id): void
 {
     $stmt = db()->prepare('DELETE FROM rotation_ips WHERE id = ?');
