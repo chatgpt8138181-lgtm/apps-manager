@@ -3225,36 +3225,37 @@ tbody tr.is-picked {
     margin-left: 8px;
 }
 
-/* Fixed columns, so a picker never ends up too narrow to read. */
+/* Fixed columns wide enough to read, and the wrap scrolls if the screen is not. */
 .pool-table {
+    min-width: 1080px;
     table-layout: fixed;
 }
 
 .pool-table th:nth-child(1),
 .pool-table td:nth-child(1) {
-    width: 15%;
+    width: 165px;
 }
 
 .pool-table th:nth-child(2),
 .pool-table td:nth-child(2) {
-    width: 14%;
+    width: 150px;
 }
 
 .pool-table th:nth-child(3),
 .pool-table td:nth-child(3),
 .pool-table th:nth-child(5),
 .pool-table td:nth-child(5) {
-    width: 13%;
+    width: 135px;
 }
 
 .pool-table th:nth-child(4),
 .pool-table td:nth-child(4) {
-    width: 12%;
+    width: 125px;
 }
 
 .pool-table th:nth-child(6),
 .pool-table td:nth-child(6) {
-    width: 16%;
+    width: auto;
 }
 
 .pool-table th:nth-child(7),
@@ -3265,7 +3266,7 @@ tbody tr.is-picked {
 
 .pool-table th:nth-child(8),
 .pool-table td:nth-child(8) {
-    width: 150px;
+    width: 152px;
 }
 
 /* The new row waits behind this until it is asked for. */
