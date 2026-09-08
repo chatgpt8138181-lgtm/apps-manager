@@ -62,6 +62,23 @@ $admins = all_admins();
 $roles = role_labels();
 $roleNotes = role_descriptions();
 
+/* A timestamp reads as a day, with the time quietly under it. */
+function admin_when(?string $value): string
+{
+    $value = trim((string) $value);
+    if ($value === '') {
+        return '<span class="cell-sub">Never</span>';
+    }
+
+    $time = strtotime($value);
+    if ($time === false) {
+        return h($value);
+    }
+
+    return '<span class="cell-title">' . h(date('d M Y', $time))
+        . '<span class="cell-sub">' . h(date('H:i', $time)) . '</span></span>';
+}
+
 page_start('Admins');
 ?>
 <section class="admin-grid">
@@ -140,28 +157,31 @@ page_start('Admins');
         <table class="admin-table">
             <thead>
             <tr>
-                <th>Username</th>
-                <th>Role</th>
-                <th>Last login</th>
-                <th>Created</th>
-                <th>Reset Password</th>
-                <th>Delete</th>
+                <th class="col-user">Username</th>
+                <th class="col-role">Role</th>
+                <th class="col-when">Last login</th>
+                <th class="col-when">Created</th>
+                <th>Actions</th>
             </tr>
             </thead>
             <tbody>
             <?php foreach ($admins as $admin): ?>
                 <?php $adminId = (int) $admin['id']; ?>
                 <tr>
-                    <td>
-                        <?= h($admin['username']) ?>
-                        <?php if ($adminId === $currentAdminId): ?>
-                            <span class="user-pill inline-pill">Current</span>
-                        <?php endif; ?>
+                    <td class="col-user">
+                        <span class="cell-title">
+                            <?= h($admin['username']) ?>
+                            <?php if ($adminId === $currentAdminId): ?>
+                                <span class="cell-sub">This is you</span>
+                            <?php endif; ?>
+                        </span>
                     </td>
-                    <td>
+                    <td class="col-role">
                         <?php if ($adminId === $currentAdminId): ?>
-                            <span class="badge badge-blue"><?= h($roles[$admin['role']] ?? $admin['role']) ?></span>
-                            <span class="cell-sub">Your own role cannot be changed here.</span>
+                            <span class="cell-title">
+                                <span class="badge badge-blue"><?= h($roles[$admin['role']] ?? $admin['role']) ?></span>
+                                <span class="cell-sub">Cannot change your own</span>
+                            </span>
                         <?php else: ?>
                             <form method="post" class="role-form">
                                 <?= csrf_field() ?>
@@ -177,9 +197,9 @@ page_start('Admins');
                             </form>
                         <?php endif; ?>
                     </td>
-                    <td><?= !empty($admin['last_login_at']) ? h($admin['last_login_at']) : '<span class="cell-sub">Never</span>' ?></td>
-                    <td><?= h($admin['created_at']) ?></td>
-                    <td>
+                    <td class="col-when"><?= admin_when($admin['last_login_at'] ?? null) ?></td>
+                    <td class="col-when"><?= admin_when($admin['created_at'] ?? null) ?></td>
+                    <td class="actions admin-actions">
                         <?php if ($adminId !== $currentAdminId): ?>
                             <form method="post" class="inline-reset-form">
                                 <?= csrf_field() ?>
@@ -189,20 +209,14 @@ page_start('Admins');
                                 <input type="password" name="new_password_confirm" placeholder="Confirm" autocomplete="new-password" required>
                                 <button class="btn small" type="submit">Reset</button>
                             </form>
-                        <?php else: ?>
-                            <span class="hint">Use Change My Password</span>
-                        <?php endif; ?>
-                    </td>
-                    <td>
-                        <?php if ($adminId !== $currentAdminId): ?>
-                            <form method="post" onsubmit="return confirm('Delete this admin user?');">
+                            <form method="post" onsubmit="return confirm('Delete this account?');">
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="action" value="delete_admin">
                                 <input type="hidden" name="admin_id" value="<?= $adminId ?>">
                                 <button class="btn danger small" type="submit">Delete</button>
                             </form>
                         <?php else: ?>
-                            <span class="hint">Protected</span>
+                            <span class="hint">Use Change My Password above. This account cannot delete itself.</span>
                         <?php endif; ?>
                     </td>
                 </tr>

@@ -446,7 +446,37 @@ table {
 }
 
 .admin-table {
-    min-width: 920px;
+    min-width: 820px;
+}
+
+/* Accounts: dates stay whole, and each column takes only what it needs. */
+.admin-table .col-user {
+    width: 170px;
+}
+
+.admin-table .col-role {
+    width: 190px;
+}
+
+.admin-table .col-when {
+    white-space: nowrap;
+    width: 130px;
+}
+
+.admin-table .admin-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-start;
+}
+
+.admin-table .admin-actions .hint {
+    max-width: 320px;
+}
+
+.admin-table .col-role .badge {
+    margin-bottom: 2px;
 }
 
 .edit-table {
@@ -1013,9 +1043,16 @@ input[type="radio"]:focus-visible {
 
 .inline-reset-form {
     align-items: center;
-    display: grid;
+    display: flex;
+    flex-wrap: wrap;
     gap: 8px;
-    grid-template-columns: minmax(150px, 1fr) minmax(120px, 1fr) auto;
+}
+
+.inline-reset-form input {
+    flex: 0 1 150px;
+    min-height: 36px;
+    padding: 7px 10px;
+    width: auto;
 }
 
 .btn {
