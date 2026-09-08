@@ -3239,6 +3239,13 @@ tbody tr.is-picked {
     flex: 0 1 130px;
 }
 
+.pool-actions {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+}
+
 /* Picking several IPs at once. */
 select[name="ip_ids[]"] {
     min-height: 0;

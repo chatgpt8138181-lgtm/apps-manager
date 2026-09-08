@@ -488,15 +488,11 @@ page_start('IP Record');
                                         <?php ip_option_select('country', $optionLists['country'], (string) ($entry['country'] ?? '')); ?>
                                         <?php ip_option_select('city', $optionLists['city'], (string) ($entry['city'] ?? '')); ?>
                                         <span class="badge badge-<?= $used > 0 ? 'blue' : 'gray' ?>"><?= $used ?> used</span>
-                                        <button class="btn small primary" type="submit">Save</button>
-                                    </form>
-                                    <form method="post" onsubmit="return confirm('Remove <?= h($entry['name']) ?> from the list?');">
-                                        <?= csrf_field() ?>
-                                        <input type="hidden" name="action" value="delete_pool_ip">
-                                        <input type="hidden" name="id" value="<?= (int) $entry['id'] ?>">
-                                        <input type="hidden" name="return_month" value="<?= h($month) ?>">
-                                        <input type="hidden" name="return_by" value="<?= h($by) ?>">
-                                        <button class="btn small danger" type="submit">Delete</button>
+                                        <span class="pool-actions">
+                                            <button class="btn small primary" type="submit">Save</button>
+                                            <button class="btn small danger" type="submit" name="action" value="delete_pool_ip"
+                                                    onclick="return confirm('Remove <?= h($entry['name']) ?> from the list?');">Delete</button>
+                                        </span>
                                     </form>
                                 </td>
                             </tr>
