@@ -18,6 +18,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $return = 'sent-production.php?status=' . urlencode((string) ($_POST['return_status'] ?? 'sent'));
 
     try {
+        /* The day's work, unless something is being taken away for good. */
+        require_can((($_POST['action'] ?? '') === 'delete' || ($_POST['bulk_action'] ?? '') === 'delete')
+            ? 'delete'
+            : ((($_POST['action'] ?? '') === 'add') ? 'create' : 'work'));
+
         if (($_POST['action'] ?? '') === 'bulk') {
             $bulkAction = (string) ($_POST['bulk_action'] ?? '');
             $result = apply_bulk_production_action($bulkAction, (array) ($_POST['app_ids'] ?? []));
@@ -166,6 +171,7 @@ function render_sent_apps_table(array $apps, string $status): void
                                         <button class="menu-item" type="submit">Back to Production Apps</button>
                                     </form>
                                 <?php endif; ?>
+                                <?php if (can('delete')): ?>
                                 <form method="post" onsubmit="return confirm('Delete this app? Its checklist and task history will also be removed.');">
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="action" value="delete">
@@ -173,6 +179,7 @@ function render_sent_apps_table(array $apps, string $status): void
                                     <input type="hidden" name="return_status" value="<?= h($status) ?>">
                                     <button class="menu-item danger" type="submit">Delete</button>
                                 </form>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </td>

@@ -26,6 +26,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $action = (string) ($_POST['action'] ?? '');
 
+        /* Everything here is the day's work, except taking an app away. */
+        require_can($action === 'delete' ? 'delete' : 'work');
+
         if ($action === 'update_loading') {
             update_app_statuses($appId, (string) ($_POST['loading_status'] ?? ''));
             redirect_with($self, 'success', 'Loading status updated.');
@@ -359,12 +362,14 @@ page_start($app['name']);
                         <?= (int) ($app['url_checked'] ?? 0) === 1 ? 'Mark URL pending' : 'Mark URL checked' ?>
                     </button>
                 </form>
+                <?php if (can('delete')): ?>
                 <form method="post" onsubmit="return confirm('Delete this app? Its checklist and task history will also be removed.');">
                     <?= csrf_field() ?>
                     <input type="hidden" name="action" value="delete">
                     <input type="hidden" name="app_id" value="<?= $appId ?>">
                     <button class="menu-item danger" type="submit">Delete</button>
                 </form>
+                <?php endif; ?>
             </div>
         </div>
     </div>

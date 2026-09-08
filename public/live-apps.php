@@ -10,6 +10,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = $_POST['action'] ?? '';
         $appId = (int) ($_POST['app_id'] ?? 0);
 
+        /* The day's work, unless something is being taken away for good. */
+        require_can((($_POST['action'] ?? '') === 'delete' || ($_POST['bulk_action'] ?? '') === 'delete')
+            ? 'delete'
+            : ((($_POST['action'] ?? '') === 'add') ? 'create' : 'work'));
+
         if ($action === 'bulk') {
             $result = apply_bulk_production_action(
                 (string) ($_POST['bulk_action'] ?? ''),
@@ -83,12 +88,14 @@ function render_live_apps_table(array $apps): void
                                     <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
                                     <button class="menu-item" type="submit">Back to Production Apps</button>
                                 </form>
+                                <?php if (can('delete')): ?>
                                 <form method="post" onsubmit="return confirm('Delete this app? Its checklist will also be removed.');">
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
                                     <button class="menu-item danger" type="submit">Delete</button>
                                 </form>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </td>

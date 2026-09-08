@@ -8,6 +8,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         $action = $_POST['action'] ?? '';
+
+        /* The day's work, unless something is being taken away for good. */
+        require_can(($action === 'delete' || ($_POST['bulk_action'] ?? '') === 'delete')
+            ? 'delete'
+            : (in_array($action, ['add', 'add_app'], true) ? 'create' : 'work'));
+
         $appId = (int) ($_POST['app_id'] ?? 0);
 
         if ($action === 'bulk') {
@@ -51,12 +57,13 @@ function render_ready_apps_table(array $apps): void
         <input type="hidden" name="action" value="bulk">
         <input type="hidden" name="bulk_action" value="">
     </form>
-    <?php render_bulk_bar([
+    <?php render_bulk_bar(array_merge([
         ['value' => 'send', 'label' => 'Send for Production', 'class' => 'primary'],
         ['value' => 'to_prepare', 'label' => 'Back to Prepare'],
+    ], can('delete') ? [
         ['value' => 'delete', 'label' => 'Delete', 'class' => 'danger',
          'confirm' => 'Delete the selected apps? Their checklists and task history go too.'],
-    ]); ?>
+    ] : [])); ?>
     <div class="table-wrap">
         <table>
             <thead>
@@ -103,12 +110,14 @@ function render_ready_apps_table(array $apps): void
                                     <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
                                     <button class="menu-item" type="submit">Back to Prepare</button>
                                 </form>
+                                <?php if (can('delete')): ?>
                                 <form method="post" onsubmit="return confirm('Delete this app? Its checklist will also be removed.');">
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="app_id" value="<?= (int) $app['id'] ?>">
                                     <button class="menu-item danger" type="submit">Delete</button>
                                 </form>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </td>

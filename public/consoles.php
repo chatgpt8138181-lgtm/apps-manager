@@ -10,16 +10,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = $_POST['action'] ?? '';
 
         if ($action === 'add') {
+            require_can('create');
             add_console((string) ($_POST['name'] ?? ''), $_POST);
             redirect_with('consoles.php', 'success', 'Console added.');
         }
 
         if ($action === 'rename') {
+            require_can('settings');
             update_console((int) ($_POST['console_id'] ?? 0), (string) ($_POST['name'] ?? ''), $_POST);
             redirect_with('consoles.php', 'success', 'Console updated.');
         }
 
         if ($action === 'rebuild_urls') {
+            require_can('settings');
             $result = rebuild_console_domain_urls((int) ($_POST['console_id'] ?? 0));
             $message = $result['changed'] . ' of ' . $result['total'] . ' app URL(s) rebuilt.';
             if ($result['was_checked'] > 0) {
@@ -29,6 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($action === 'delete') {
+            require_can('delete');
             delete_console((int) ($_POST['console_id'] ?? 0));
             redirect_with('consoles.php', 'success', 'Console deleted.');
         }
@@ -41,6 +45,7 @@ $consoles = console_overview();
 
 page_start('Play Consoles');
 ?>
+<?php if (can('create')): ?>
 <section class="form-panel add-panel">
     <div class="app-group" data-group-key="add-form">
         <button class="app-group-toggle" type="button" aria-expanded="false">
@@ -65,6 +70,7 @@ page_start('Play Consoles');
         </div>
     </div>
 </section>
+<?php endif; ?>
 
 <section class="panel">
     <div class="panel-heading">
@@ -135,12 +141,14 @@ page_start('Play Consoles');
                         <input type="hidden" name="console_id" value="<?= $consoleId ?>">
                         <button class="btn" type="submit">Rebuild app URLs</button>
                     </form>
-                    <form method="post" onsubmit="return confirm('Delete this console? Its publishing and loading apps will be unassigned, and its task history will be removed.');">
-                        <?= csrf_field() ?>
-                        <input type="hidden" name="action" value="delete">
-                        <input type="hidden" name="console_id" value="<?= $consoleId ?>">
-                        <button class="btn danger" type="submit">Delete</button>
-                    </form>
+                    <?php if (can('delete')): ?>
+                        <form method="post" onsubmit="return confirm('Delete this console? Its publishing and loading apps will be unassigned, and its task history will be removed.');">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="console_id" value="<?= $consoleId ?>">
+                            <button class="btn danger" type="submit">Delete</button>
+                        </form>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

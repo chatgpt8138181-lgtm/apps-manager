@@ -10,10 +10,43 @@ function is_logged_in(): bool
     return !empty($_SESSION['admin_logged_in']);
 }
 
+/* The pages a viewer may open: the rotation side, and nothing else. */
+function viewer_pages(): array
+{
+    return ['rotations.php', 'dashboard.php', 'ip-record.php', 'logout.php', 'palette.php'];
+}
+
+/* Where a role starts, and where it is sent back to when it overreaches. */
+function role_home(): string
+{
+    return current_role() === 'viewer' ? 'rotations.php' : 'home.php';
+}
+
+/* Whether this role may open a page at all. */
+function can_open_page(string $page): bool
+{
+    if ($page === 'admins.php') {
+        return can('users');
+    }
+
+    if (current_role() === 'viewer') {
+        return in_array($page, viewer_pages(), true);
+    }
+
+    return true;
+}
+
 function require_login(): void
 {
     if (!is_logged_in()) {
         header('Location: login.php');
+        exit;
+    }
+
+    $page = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    if (!can_open_page($page)) {
+        $_SESSION['flash'] = ['type' => 'error', 'message' => 'Your account does not have access to that page.'];
+        header('Location: ' . role_home());
         exit;
     }
 }

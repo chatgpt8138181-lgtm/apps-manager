@@ -19,6 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = (string) ($_POST['action'] ?? '');
 
         if ($action === 'add') {
+            require_can('work');
             $result = add_rotation_ips($_POST);
             $message = $result['added'] . ' IP(s) added.';
             if ($result['bad']) {
@@ -30,23 +31,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($action === 'add_option') {
+            require_can('settings');
             $kind = (string) ($_POST['kind'] ?? '');
             add_ip_option($kind, (string) ($_POST['name'] ?? ''));
             redirect_with($back, 'success', 'Added to the list.');
         }
 
         if ($action === 'delete_option') {
+            require_can('settings');
             delete_ip_option((int) ($_POST['id'] ?? 0));
             redirect_with($back, 'success', 'Removed from the list.');
         }
 
         if ($action === 'delete_month') {
+            require_can('settings');
             $wanted = (string) ($_POST['month'] ?? '');
             $removed = delete_ip_month($wanted);
             redirect_with('ip-record.php', 'success', $removed . ' IP(s) removed from ' . ip_month_label($wanted) . '.');
         }
 
         if ($action === 'delete') {
+            require_can('work');
             delete_rotation_ip((int) ($_POST['id'] ?? 0));
             redirect_with($back, 'success', 'IP removed.');
         }
@@ -101,6 +106,7 @@ function ip_chips_cell(array $ips, array $repeats, string $month, string $by): v
                 <?php if (isset($repeats[$entry['ip']])): ?>
                     <small title="Used <?= (int) $repeats[$entry['ip']] ?> times this month"><?= (int) $repeats[$entry['ip']] ?>&times;</small>
                 <?php endif; ?>
+                <?php if (can('work')): ?>
                 <form method="post" onsubmit="return confirm('Remove <?= h($entry['ip']) ?> from the record?');">
                     <?= csrf_field() ?>
                     <input type="hidden" name="action" value="delete">
@@ -109,6 +115,7 @@ function ip_chips_cell(array $ips, array $repeats, string $month, string $by): v
                     <input type="hidden" name="return_by" value="<?= h($by) ?>">
                     <button type="submit" aria-label="Remove <?= h($entry['ip']) ?>">&times;</button>
                 </form>
+                <?php endif; ?>
             </span>
         <?php endforeach; ?>
     </div>
@@ -163,6 +170,7 @@ page_start('IP Record');
     </div>
 </section>
 
+<?php if (can('work')): ?>
 <section class="form-panel add-panel">
     <div class="app-group" data-group-key="add-ips">
         <button class="app-group-toggle" type="button" aria-expanded="false">
@@ -232,6 +240,7 @@ page_start('IP Record');
         </div>
     </div>
 </section>
+<?php endif; ?>
 
 <section class="panel">
     <div class="panel-heading">
@@ -383,6 +392,7 @@ page_start('IP Record');
         </div>
     <?php endforeach; ?>
 </section>
+<?php if (can('settings')): ?>
 <section class="panel">
     <div class="app-group" data-group-key="ip-lists">
         <button class="app-group-toggle" type="button" aria-expanded="false">
@@ -433,12 +443,13 @@ page_start('IP Record');
         </div>
     </div>
 </section>
+<?php endif; ?>
 
 <?php
 /* Months other than this one, so an old record can be cleared on purpose. */
 $earlier = array_values(array_filter($monthCounts, fn($row) => (string) $row['month'] !== date('Y-m')));
 ?>
-<?php if ($earlier): ?>
+<?php if ($earlier && can('settings')): ?>
     <section class="panel">
         <div class="app-group" data-group-key="ip-earlier-months">
             <button class="app-group-toggle" type="button" aria-expanded="false">
