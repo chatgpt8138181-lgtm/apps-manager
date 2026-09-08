@@ -520,6 +520,8 @@ th {
     font-size: 13px;
     font-weight: 700;
     padding: 6px 10px;
+    /* A badge is a label, not a paragraph: it never breaks mid-word. */
+    white-space: nowrap;
 }
 
 .bulk-status-row {
