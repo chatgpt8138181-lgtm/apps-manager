@@ -229,7 +229,11 @@ page_start('IP Record');
         <div class="app-group" id="a<?= (int) $group['app_id'] ?>" data-group-key="ip-<?= h((string) $key) ?>">
             <button class="app-group-toggle" type="button" aria-expanded="false">
                 <span class="console-head">
-                    <span class="console-head-name"><?= h($group['label']) ?> (<?= count($group['rows']) ?> IPs)</span>
+                    <span class="console-head-name">
+                        <?= h($group['label']) ?>
+                        <?php if ($group['app_id'] > 0): ?>#<?= (int) $group['app_id'] ?><?php endif; ?>
+                        (<?= count($group['rows']) ?> IPs)
+                    </span>
                     <?php if ($group['console'] !== ''): ?>
                         <span class="console-head-meta"><?= h($group['console']) ?></span>
                     <?php endif; ?>
