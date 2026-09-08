@@ -3266,7 +3266,7 @@ tbody tr.is-picked {
 
 .pool-table th:nth-child(8),
 .pool-table td:nth-child(8) {
-    width: 148px;
+    width: 172px;
 }
 
 /* The new row waits behind this until it is asked for. */
