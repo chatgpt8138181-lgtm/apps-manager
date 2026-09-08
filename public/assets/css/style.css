@@ -3197,3 +3197,88 @@ tbody tr.is-picked {
 .role-note {
     margin-top: -6px;
 }
+
+/* The list of IPs: one row edits itself in place. */
+.pool-form {
+    margin-bottom: 16px;
+    max-width: 760px;
+}
+
+.pool-row {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.pool-edit {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.pool-edit input,
+.pool-edit select {
+    min-height: 36px;
+    padding: 7px 9px;
+    width: auto;
+}
+
+.pool-edit input[name="name"] {
+    flex: 1 1 150px;
+}
+
+.pool-edit input[name="ip"] {
+    flex: 1 1 140px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+}
+
+.pool-edit select {
+    flex: 0 1 130px;
+}
+
+.pool-actions {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+}
+
+/* Picking several IPs at once. */
+select[name="ip_ids[]"] {
+    min-height: 0;
+    padding: 6px;
+}
+
+.ip-add-form select[name="ip_ids[]"] {
+    flex: 1 1 180px;
+    width: auto;
+}
+
+/* On a card the picker gets the whole width instead of a narrow column. */
+@media (max-width: 760px) {
+    .ip-add-form {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .ip-add-form select[name="ip_ids[]"],
+    .ip-add-form .btn {
+        width: 100%;
+    }
+
+    .pool-actions {
+        margin-left: 0;
+    }
+
+    /* An open picker takes the whole card row, not the narrow value column. */
+    .table-wrap td.col-ips {
+        flex-wrap: wrap;
+    }
+
+    .table-wrap td.col-ips .ip-cell:has(.ip-add-form:not([hidden])) {
+        flex: 1 1 100%;
+    }
+}

@@ -73,11 +73,25 @@ CREATE TABLE IF NOT EXISTS production_checklist (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+CREATE TABLE IF NOT EXISTS ip_pool (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    ip VARCHAR(45) NOT NULL,
+    provider VARCHAR(100) NULL,
+    country VARCHAR(60) NULL,
+    city VARCHAR(100) NULL,
+    note VARCHAR(255) NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_ip_pool_name (name),
+    UNIQUE KEY uq_ip_pool_ip (ip)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS rotation_ips (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     used_on DATE NOT NULL,
     console_id INT UNSIGNED NULL,
     app_id INT UNSIGNED NULL,
+    ip_id INT UNSIGNED NULL,
     ip VARCHAR(45) NOT NULL,
     provider VARCHAR(100) NULL,
     country VARCHAR(60) NULL,
