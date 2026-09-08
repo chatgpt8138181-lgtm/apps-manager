@@ -20,6 +20,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $action = (string) ($_POST['action'] ?? '');
 
+        if ($action === 'import_pool_ips') {
+            $result = import_pool_ips($_POST, $_FILES['list'] ?? []);
+            $said = $result['added'] . ' IP(s) imported.';
+            if ($result['already']) {
+                $said .= ' ' . $result['already'] . ' were on the list already.';
+            }
+            if ($result['over']) {
+                $said .= ' ' . $result['over'] . ' had no number left in the counting.';
+            }
+            if ($result['bad']) {
+                $said .= ' ' . count($result['bad']) . ' line(s) were not an address: '
+                    . implode(', ', array_slice($result['bad'], 0, 3))
+                    . (count($result['bad']) > 3 ? '…' : '');
+            }
+            redirect_with($back, $result['added'] > 0 ? 'success' : 'error', $said);
+        }
+
         if ($action === 'add_pool_ip') {
             add_pool_ip($_POST);
             redirect_with($back, 'success', 'IP added to the list.');
@@ -139,6 +156,9 @@ page_start('IP Management');
 <section class="panel">
     <div class="panel-heading">
         <h2>IP list (<?= count($pool) ?>)</h2>
+        <div class="inline-actions">
+            <button class="btn small" type="button" id="import-open">Import file</button>
+        </div>
     </div>
     <p class="hint">
         Every IP you work with, each under a name. The name is what shows on the
@@ -218,6 +238,63 @@ page_start('IP Management');
         <button class="btn primary" type="button" id="pool-new-open">+ Add IP</button>
     </div>
 
+    <dialog class="ip-modal import-modal" id="import-modal" aria-label="Import a list of IPs">
+        <form method="post" enctype="multipart/form-data" class="import-form">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="import_pool_ips">
+
+            <div class="ip-modal-head">
+                <div>
+                    <h3 class="ip-modal-title">Import a list</h3>
+                    <p class="ip-modal-for">A text file with one address on each line. The first line
+                        takes the first number, the next line the next.</p>
+                </div>
+                <button class="ip-modal-x" type="button" data-import-close aria-label="Close">&times;</button>
+            </div>
+
+            <div class="ip-modal-body">
+                <div class="stacked-form wide">
+                    <label>Name
+                        <input type="text" name="batch_name" maxlength="80" placeholder="Atlanta" required>
+                    </label>
+
+                    <div class="form-row">
+                        <label>Count from
+                            <input type="number" name="from" value="1" min="0" max="100000" required>
+                        </label>
+                        <label>Count to
+                            <input type="number" name="to" value="999" min="0" max="100000" required>
+                        </label>
+                    </div>
+
+                    <p class="hint" id="import-preview">The first will be named &ldquo;Atlanta 1&rdquo;.</p>
+
+                    <div class="form-row">
+                        <label>Provider <small>(for all of them)</small>
+                            <?php ip_option_select('provider', $optionLists['provider']); ?>
+                        </label>
+                        <label>Country <small>(for all of them)</small>
+                            <?php ip_option_select('country', $optionLists['country']); ?>
+                        </label>
+                    </div>
+
+                    <label>City <small>(for all of them)</small>
+                        <?php ip_option_select('city', $optionLists['city']); ?>
+                    </label>
+
+                    <label>File <small>(.txt, one address per line)</small>
+                        <input type="file" name="list" accept=".txt,.csv,text/plain" required>
+                    </label>
+                </div>
+            </div>
+
+            <div class="ip-modal-foot">
+                <button class="btn primary" type="submit">Import</button>
+                <button class="btn" type="button" data-import-close>Cancel</button>
+            </div>
+        </form>
+    </dialog>
+
     <?php /* The forms live outside the table; each row's fields point at their own. */ ?>
     <form method="post" id="pool-new" hidden><?= csrf_field() ?></form>
     <?php foreach ($pool as $entry): ?>
@@ -230,6 +307,40 @@ page_start('IP Management');
 </section>
 
 <script>
+/* The import form, and a line showing what the naming will look like. */
+(() => {
+    const modal = document.getElementById('import-modal');
+    const open = document.getElementById('import-open');
+    if (!modal || !open) {
+        return;
+    }
+
+    const name = modal.querySelector('input[name="batch_name"]');
+    const from = modal.querySelector('input[name="from"]');
+    const to = modal.querySelector('input[name="to"]');
+    const preview = document.getElementById('import-preview');
+
+    const show = () => {
+        const called = name.value.trim() || 'Atlanta';
+        const first = from.value.trim() || '1';
+        const last = to.value.trim() || '999';
+        preview.textContent = 'They will be named \u201c' + called + ' ' + first + '\u201d, \u201c'
+            + called + ' ' + (Number(first) + 1) + '\u201d, and on to \u201c' + called + ' ' + last + '\u201d.';
+    };
+
+    [name, from, to].forEach((field) => field.addEventListener('input', show));
+
+    open.addEventListener('click', () => {
+        show();
+        modal.showModal();
+        name.focus();
+    });
+
+    modal.querySelectorAll('[data-import-close]').forEach((button) => {
+        button.addEventListener('click', () => modal.close());
+    });
+})();
+
 /* Searching the list, so a long one stays workable. */
 (() => {
     const search = document.getElementById('pool-search');
