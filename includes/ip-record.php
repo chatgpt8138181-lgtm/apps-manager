@@ -66,8 +66,10 @@ function ip_month_stats(string $month): array
 function ip_records_by_day(string $month): array
 {
     $stmt = db()->prepare(
-        "SELECT r.*, a.app_name, c.name AS console_name
+        "SELECT r.*, COALESCE(p.name, r.ip) AS ip_name, COALESCE(p.ip, r.ip) AS ip,
+                a.app_name, c.name AS console_name
          FROM rotation_ips r
+         LEFT JOIN ip_pool p ON p.id = r.ip_id
          LEFT JOIN apps a ON a.id = r.app_id
          LEFT JOIN consoles c ON c.id = r.console_id
          WHERE DATE_FORMAT(r.used_on, '%Y-%m') = ?
@@ -117,9 +119,11 @@ function ip_apps_by_console(string $month): array
     }
 
     $rows = db()->prepare(
-        "SELECT * FROM rotation_ips
-         WHERE DATE_FORMAT(used_on, '%Y-%m') = ?
-         ORDER BY used_on DESC, id DESC"
+        "SELECT r.*, COALESCE(p.name, r.ip) AS ip_name, COALESCE(p.ip, r.ip) AS ip
+         FROM rotation_ips r
+         LEFT JOIN ip_pool p ON p.id = r.ip_id
+         WHERE DATE_FORMAT(r.used_on, '%Y-%m') = ?
+         ORDER BY r.used_on DESC, r.id DESC"
     );
     $rows->execute([$month]);
 
