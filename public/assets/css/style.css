@@ -1750,6 +1750,8 @@ tbody tr:hover {
         display: flex;
         gap: 12px;
         justify-content: space-between;
+        /* A long package name wraps inside the card instead of running off it. */
+        overflow-wrap: anywhere;
         padding: 10px 12px;
     }
 
