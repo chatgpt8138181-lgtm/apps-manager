@@ -474,6 +474,28 @@ function ip_counts_for_date(string $date): array
     }
 }
 
+/* Which IPs an app already has on one day, so the picker can say so. */
+function ip_ids_for_date(string $date): array
+{
+    try {
+        $stmt = db()->prepare(
+            'SELECT app_id, ip_id, COUNT(*) AS total FROM rotation_ips
+             WHERE used_on = ? AND app_id IS NOT NULL AND ip_id IS NOT NULL
+             GROUP BY app_id, ip_id'
+        );
+        $stmt->execute([$date]);
+
+        $found = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $found[(int) $row['app_id']][(int) $row['ip_id']] = (int) $row['total'];
+        }
+
+        return $found;
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
 /* The month's addresses as plain lines, for handing to something else. */
 function ip_list_for_month(string $month, bool $uniqueOnly = false): array
 {

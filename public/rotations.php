@@ -77,6 +77,7 @@ if ($view === 'today') {
 $loadingProgress = loading_cycle_progress();
 $ipCounts = $view === 'today' ? ip_counts_for_date(date('Y-m-d')) : [];
 $ipPool = $view === 'today' ? ip_pool_all() : [];
+$ipAlready = $view === 'today' ? ip_ids_for_date(date('Y-m-d')) : [];
 $loadingGroups = $view === 'today' ? todays_loading_apps() : [];
 $consoles = all_consoles();
 
@@ -107,10 +108,11 @@ function rotation_controls(string $kind, int $consoleId): void
  * Today's IPs for one app: what has been put in so far, and a small form
  * that opens in place so the day's work does not need another page.
  */
-function rotation_ip_cell(array $row, int $count, array $pool): void
+function rotation_ip_cell(array $row, int $count, array $pool, array $already): void
 {
     $appId = (int) $row['app_id'];
     $mayAdd = can('work') && $pool !== [];
+    $onToday = $already[$appId] ?? [];
     ?>
     <div class="ip-cell">
         <div class="ip-cell-view">
@@ -128,13 +130,23 @@ function rotation_ip_cell(array $row, int $count, array $pool): void
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="add_ip">
             <input type="hidden" name="app_id" value="<?= $appId ?>">
-            <select name="ip_ids[]" multiple size="<?= max(2, min(8, count($pool))) ?>" aria-label="IPs" required>
+            <p class="ip-pick-hint">Tap the IPs used on this app today.</p>
+            <div class="ip-picks">
                 <?php foreach ($pool as $entry): ?>
-                    <option value="<?= (int) $entry['id'] ?>" title="<?= h($entry['ip']) ?>"><?= h($entry['name']) ?></option>
+                    <?php $isOn = isset($onToday[(int) $entry['id']]); ?>
+                    <label class="ip-pick<?= $isOn ? ' is-on' : '' ?>" title="<?= h($entry['ip']) ?><?= $isOn ? ' — already on today' : '' ?>">
+                        <input type="checkbox" name="ip_ids[]" value="<?= (int) $entry['id'] ?>">
+                        <span class="ip-pick-name"><?= h($entry['name']) ?></span>
+                        <?php if ($isOn): ?>
+                            <span class="ip-pick-mark" aria-hidden="true">&#10003;</span>
+                        <?php endif; ?>
+                    </label>
                 <?php endforeach; ?>
-            </select>
-            <button class="btn small primary" type="submit">Save</button>
-            <button class="btn small ip-add-cancel" type="button">Cancel</button>
+            </div>
+            <div class="ip-pick-actions">
+                <button class="btn small primary" type="submit" disabled>Save</button>
+                <button class="btn small ip-add-cancel" type="button">Cancel</button>
+            </div>
         </form>
     </div>
     <?php
@@ -269,7 +281,7 @@ page_start($view === 'history' ? 'Rotation History' : 'Rotations');
                                                 <span class="cell-sub">#<?= (int) $row['app_id'] ?></span>
                                             </span>
                                         </td>
-                                        <td class="col-ips"><?php rotation_ip_cell($row, (int) ($ipCounts[(int) $row['app_id']] ?? 0), $ipPool); ?></td>
+                                        <td class="col-ips"><?php rotation_ip_cell($row, (int) ($ipCounts[(int) $row['app_id']] ?? 0), $ipPool, $ipAlready); ?></td>
                                         <td><?php rotation_done_toggle('loading', $row); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -360,14 +372,28 @@ document.querySelectorAll('.ip-add-toggle').forEach((button) => {
     const cell = button.closest('.ip-cell');
     const form = cell.querySelector('.ip-add-form');
     const view = cell.querySelector('.ip-cell-view');
+    const picks = [...form.querySelectorAll('.ip-pick input')];
+    const save = form.querySelector('button[type="submit"]');
+
+    /* Save is offered only once something is actually picked. */
+    const refresh = () => {
+        picks.forEach((pick) => {
+            pick.closest('.ip-pick').classList.toggle('is-picked', pick.checked);
+        });
+        save.disabled = !picks.some((pick) => pick.checked);
+    };
+
+    picks.forEach((pick) => pick.addEventListener('change', refresh));
 
     button.addEventListener('click', () => {
         view.hidden = true;
         form.hidden = false;
-        form.querySelector('input[name="ips"]').focus();
+        refresh();
     });
 
     form.querySelector('.ip-add-cancel').addEventListener('click', () => {
+        picks.forEach((pick) => { pick.checked = false; });
+        refresh();
         form.hidden = true;
         view.hidden = false;
     });

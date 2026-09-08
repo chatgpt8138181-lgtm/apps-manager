@@ -155,17 +155,19 @@ page_start('IP Record');
                 <input type="hidden" name="return_month" value="<?= h($month) ?>">
                 <input type="hidden" name="return_by" value="<?= h($by) ?>">
 
-                <label>IPs <small>(pick one or more)</small>
-                    <select name="ip_ids[]" multiple size="<?= max(4, min(10, count($pool))) ?>" required>
+                <div class="field">
+                    <span class="field-label">IPs <small>(tap one or more)</small></span>
+                    <div class="ip-picks">
                         <?php foreach ($pool as $entry): ?>
-                            <option value="<?= (int) $entry['id'] ?>"><?= h($entry['name']) ?></option>
+                            <label class="ip-pick" title="<?= h($entry['ip']) ?>">
+                                <input type="checkbox" name="ip_ids[]" value="<?= (int) $entry['id'] ?>">
+                                <span class="ip-pick-name"><?= h($entry['name']) ?></span>
+                            </label>
                         <?php endforeach; ?>
-                    </select>
-                </label>
+                    </div>
+                </div>
                 <?php if (!$pool): ?>
                     <p class="hint">The IP list is empty. Put IPs on it in <a href="ip-management.php">IP Management</a> first.</p>
-                <?php else: ?>
-                    <p class="hint">Hold Ctrl (or Cmd) to pick several.</p>
                 <?php endif; ?>
 
                 <div class="form-row">
@@ -412,6 +414,27 @@ $earlier = array_values(array_filter($monthCounts, fn($row) => (string) $row['mo
 <?php endif; ?>
 
 <script>
+/* A picked IP shows it, and nothing is sent until at least one is picked. */
+document.querySelectorAll('form').forEach((form) => {
+    const picks = [...form.querySelectorAll('.ip-pick input')];
+    if (!picks.length) {
+        return;
+    }
+
+    const save = form.querySelector('button[type="submit"]');
+    const refresh = () => {
+        picks.forEach((pick) => {
+            pick.closest('.ip-pick').classList.toggle('is-picked', pick.checked);
+        });
+        if (save) {
+            save.disabled = !picks.some((pick) => pick.checked);
+        }
+    };
+
+    picks.forEach((pick) => pick.addEventListener('change', refresh));
+    refresh();
+});
+
 document.querySelectorAll('.copy-ips').forEach((button) => {
     button.addEventListener('click', () => {
         navigator.clipboard.writeText(button.dataset.ips).then(() => {
