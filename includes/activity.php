@@ -116,6 +116,10 @@ function activity_label(string $action): string
         'ads_template_saved' => 'Ads template saved',
         'ads_created' => 'Ads JSON marked created',
         'ads_pending' => 'Ads JSON moved back to pending',
+        'admin_added' => 'Account created',
+        'role_changed' => 'Role changed',
+        'password_reset' => 'Password reset',
+        'admin_deleted' => 'Account deleted',
     ];
 
     return $labels[$action] ?? ucfirst(str_replace('_', ' ', $action));
@@ -126,6 +130,7 @@ function activity_entity_label(string $entity): string
     $labels = [
         'app' => 'App',
         'console' => 'Console',
+        'admin' => 'Account',
     ];
 
     return $labels[$entity] ?? ucfirst($entity);

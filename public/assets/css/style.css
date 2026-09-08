@@ -520,6 +520,8 @@ th {
     font-size: 13px;
     font-weight: 700;
     padding: 6px 10px;
+    /* A badge is a label, not a paragraph: it never breaks mid-word. */
+    white-space: nowrap;
 }
 
 .bulk-status-row {
@@ -3110,4 +3112,30 @@ tbody tr.is-picked {
 
 .col-when {
     white-space: nowrap;
+}
+
+/* Roles: what each one means, and the picker on a row. */
+.role-guide {
+    display: grid;
+    gap: 10px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.role-guide li {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.role-form select {
+    min-height: 36px;
+    padding: 7px 9px;
+    width: auto;
+}
+
+.role-note {
+    margin-top: -6px;
 }
