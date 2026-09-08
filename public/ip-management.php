@@ -151,7 +151,7 @@ page_start('IP Management');
         <span class="pool-count" id="pool-count"><?= count($pool) ?> shown</span>
     </div>
 
-    <div class="table-wrap">
+    <div class="table-wrap pool-scroll">
         <table class="pool-table">
             <thead>
             <tr>
@@ -277,6 +277,7 @@ page_start('IP Management');
 
     open.addEventListener('click', () => {
         show(true);
+        row.scrollIntoView({ block: 'nearest' });
         row.querySelector('input[name="name"]').focus();
     });
 
