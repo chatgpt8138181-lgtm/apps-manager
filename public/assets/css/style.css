@@ -451,16 +451,16 @@ table {
 
 /* Accounts: dates stay whole, and each column takes only what it needs. */
 .admin-table .col-user {
-    width: 170px;
+    width: 150px;
 }
 
 .admin-table .col-role {
-    width: 190px;
+    width: 170px;
 }
 
 .admin-table .col-when {
     white-space: nowrap;
-    width: 130px;
+    width: 118px;
 }
 
 .admin-table .admin-actions {
@@ -475,7 +475,9 @@ table {
     max-width: 320px;
 }
 
+/* A badge is as wide as its word, not as wide as its column. */
 .admin-table .col-role .badge {
+    align-self: flex-start;
     margin-bottom: 2px;
 }
 
@@ -1049,7 +1051,7 @@ input[type="radio"]:focus-visible {
 }
 
 .inline-reset-form input {
-    flex: 0 1 150px;
+    flex: 0 1 128px;
     min-height: 36px;
     padding: 7px 10px;
     width: auto;
