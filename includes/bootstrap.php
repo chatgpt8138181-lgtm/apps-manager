@@ -49,6 +49,7 @@ function nav_icon(string $key): string
         'consoles.php' => '<rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/>',
         'tasks.php' => '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="m9 15 2 2 4-4"/>',
         'ip-record.php' => '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10h4M7 14h7"/>',
+        'ip-management.php' => '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h9"/><circle cx="18" cy="18" r="3"/>',
         'dashboard.php' => '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="11" width="7" height="10" rx="1"/><rect x="3" y="15" width="7" height="6" rx="1"/>',
         'active-apps.php' => '<circle cx="12" cy="12" r="9"/><path d="m10 9 5 3-5 3z"/>',
         'rotations.php' => '<path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/>',
@@ -163,6 +164,7 @@ function page_start(string $title): void
             'rotations.php' => 'Today',
             'dashboard.php' => 'Loading Board',
             'ip-record.php' => 'IP Record',
+            'ip-management.php' => 'IP Management',
         ],
         'Setup' => [
             'consoles.php' => 'Play Consoles',
@@ -175,6 +177,11 @@ function page_start(string $title): void
         $navGroups = ['Rotations' => $navGroups['Rotations']];
     } elseif (!can('settings')) {
         unset($navGroups['Setup']);
+    }
+
+    /* The IP list is setup work, wherever it sits in the menu. */
+    if (!can('settings')) {
+        unset($navGroups['Rotations']['ip-management.php']);
     }
 
     $navCounts = nav_counts();

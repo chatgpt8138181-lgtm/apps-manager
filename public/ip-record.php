@@ -30,37 +30,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect_with('ip-record.php?m=' . urlencode($result['month']), 'success', $message);
         }
 
-        if ($action === 'add_pool_ip') {
-            require_can('settings');
-            add_pool_ip($_POST);
-            redirect_with($back, 'success', 'IP added to the list.');
-        }
-
-        if ($action === 'update_pool_ip') {
-            require_can('settings');
-            update_pool_ip((int) ($_POST['id'] ?? 0), $_POST);
-            redirect_with($back, 'success', 'IP updated.');
-        }
-
-        if ($action === 'delete_pool_ip') {
-            require_can('settings');
-            delete_pool_ip((int) ($_POST['id'] ?? 0));
-            redirect_with($back, 'success', 'IP removed from the list.');
-        }
-
-        if ($action === 'add_option') {
-            require_can('settings');
-            $kind = (string) ($_POST['kind'] ?? '');
-            add_ip_option($kind, (string) ($_POST['name'] ?? ''));
-            redirect_with($back, 'success', 'Added to the list.');
-        }
-
-        if ($action === 'delete_option') {
-            require_can('settings');
-            delete_ip_option((int) ($_POST['id'] ?? 0));
-            redirect_with($back, 'success', 'Removed from the list.');
-        }
-
         if ($action === 'delete_month') {
             require_can('settings');
             $wanted = (string) ($_POST['month'] ?? '');
@@ -89,12 +58,6 @@ $repeats = ip_month_usage($month);
 $consoles = all_consoles();
 $apps = all_apps_overview('', 0, '', '');
 $pool = ip_pool_all();
-$poolUsage = ip_pool_usage();
-$optionKinds = ip_option_kinds();
-$optionLists = [];
-foreach (array_keys($optionKinds) as $kind) {
-    $optionLists[$kind] = ip_options($kind);
-}
 
 $copyAll = implode("\n", ip_list_for_month($month));
 $copyUnique = implode("\n", ip_list_for_month($month, true));
@@ -142,20 +105,6 @@ function ip_chips_cell(array $ips, array $repeats, string $month, string $by): v
     <?php
 }
 
-/* One picker, built from the list it belongs to. */
-function ip_option_select(string $kind, array $options, string $chosen = '', string $form = ''): void
-{
-    ?>
-    <select name="<?= h($kind) ?>" aria-label="<?= h(ucfirst($kind)) ?>"<?= $form !== '' ? ' form="' . h($form) . '"' : '' ?>>
-        <option value=""><?= h(ucfirst($kind)) ?></option>
-        <?php foreach ($options as $option): ?>
-            <option value="<?= h($option['name']) ?>" <?= $chosen === $option['name'] ? 'selected' : '' ?>>
-                <?= h($option['name']) ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
-    <?php
-}
 
 page_start('IP Record');
 ?>
@@ -214,7 +163,7 @@ page_start('IP Record');
                     </select>
                 </label>
                 <?php if (!$pool): ?>
-                    <p class="hint">The IP list is empty. Add IPs to it below first.</p>
+                    <p class="hint">The IP list is empty. Put IPs on it in <a href="ip-management.php">IP Management</a> first.</p>
                 <?php else: ?>
                     <p class="hint">Hold Ctrl (or Cmd) to pick several.</p>
                 <?php endif; ?>
@@ -410,169 +359,6 @@ page_start('IP Record');
         </div>
     <?php endforeach; ?>
 </section>
-<?php if (can('settings')): ?>
-<section class="panel">
-    <div class="app-group" data-group-key="ip-pool">
-        <button class="app-group-toggle" type="button" aria-expanded="false">
-            <span>IP list (<?= count($pool) ?>)</span>
-            <span class="nav-chevron" aria-hidden="true"></span>
-        </button>
-        <div class="app-group-body">
-            <p class="hint">
-                Every IP you work with, each under a name. The name is what shows
-                on the rotation and in this record; the address stays here.
-            </p>
-
-            <form method="post" class="stacked-form wide pool-form">
-                <?= csrf_field() ?>
-                <input type="hidden" name="action" value="add_pool_ip">
-                <input type="hidden" name="return_month" value="<?= h($month) ?>">
-                <input type="hidden" name="return_by" value="<?= h($by) ?>">
-                <div class="form-row">
-                    <label>Name
-                        <input type="text" name="name" maxlength="100" placeholder="What you call it" required>
-                    </label>
-                    <label>IP
-                        <input type="text" name="ip" maxlength="45" placeholder="192.0.2.10" spellcheck="false" required>
-                    </label>
-                </div>
-                <div class="form-row">
-                    <label>Provider
-                        <?php ip_option_select('provider', $optionLists['provider']); ?>
-                    </label>
-                    <label>Country
-                        <?php ip_option_select('country', $optionLists['country']); ?>
-                    </label>
-                </div>
-                <div class="form-row">
-                    <label>City
-                        <?php ip_option_select('city', $optionLists['city']); ?>
-                    </label>
-                    <label>Note
-                        <input type="text" name="note" maxlength="255" placeholder="Anything worth remembering">
-                    </label>
-                </div>
-                <button class="btn primary" type="submit">Add IP</button>
-            </form>
-
-            <?php if (!$pool): ?>
-                <p class="empty block">No IPs on the list yet.</p>
-            <?php else: ?>
-                <div class="table-wrap">
-                    <table class="pool-table">
-                        <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>IP</th>
-                            <th>Provider</th>
-                            <th>Country</th>
-                            <th>City</th>
-                            <th>Used</th>
-                            <th>Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <?php foreach ($pool as $entry): ?>
-                            <?php
-                            $used = (int) ($poolUsage[(int) $entry['id']] ?? 0);
-                            $formId = 'pool-' . (int) $entry['id'];
-                            ?>
-                            <tr class="pool-row">
-                                <td data-label="Name">
-                                    <input type="text" form="<?= $formId ?>" name="name" value="<?= h($entry['name']) ?>" maxlength="100" aria-label="Name" required>
-                                </td>
-                                <td data-label="IP">
-                                    <input type="text" form="<?= $formId ?>" name="ip" value="<?= h($entry['ip']) ?>" maxlength="45" aria-label="IP" spellcheck="false" required>
-                                </td>
-                                <td data-label="Provider">
-                                    <?php ip_option_select('provider', $optionLists['provider'], (string) ($entry['provider'] ?? ''), $formId); ?>
-                                </td>
-                                <td data-label="Country">
-                                    <?php ip_option_select('country', $optionLists['country'], (string) ($entry['country'] ?? ''), $formId); ?>
-                                </td>
-                                <td data-label="City">
-                                    <?php ip_option_select('city', $optionLists['city'], (string) ($entry['city'] ?? ''), $formId); ?>
-                                </td>
-                                <td data-label="Used">
-                                    <span class="badge badge-<?= $used > 0 ? 'blue' : 'gray' ?>"><?= $used ?></span>
-                                </td>
-                                <td class="actions" data-label="Actions">
-                                    <button class="btn small primary" type="submit" form="<?= $formId ?>" name="action" value="update_pool_ip">Save</button>
-                                    <button class="btn small danger" type="submit" form="<?= $formId ?>" name="action" value="delete_pool_ip"
-                                            onclick="return confirm('Remove <?= h($entry['name']) ?> from the list?');">Delete</button>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-
-                <?php /* The forms live outside the table; each row's fields point at their own. */ ?>
-                <?php foreach ($pool as $entry): ?>
-                    <?php /* Which button was pressed carries the action, so no hidden one competes with it. */ ?>
-                    <form method="post" id="pool-<?= (int) $entry['id'] ?>" hidden>
-                        <?= csrf_field() ?>
-                        <input type="hidden" name="id" value="<?= (int) $entry['id'] ?>">
-                        <input type="hidden" name="return_month" value="<?= h($month) ?>">
-                        <input type="hidden" name="return_by" value="<?= h($by) ?>">
-                    </form>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
-    </div>
-</section>
-
-<section class="panel">
-    <div class="app-group" data-group-key="ip-lists">
-        <button class="app-group-toggle" type="button" aria-expanded="false">
-            <span>Manage lists</span>
-            <span class="nav-chevron" aria-hidden="true"></span>
-        </button>
-        <div class="app-group-body">
-            <p class="hint">
-                What the Provider, Country and City pickers offer. Removing a name only
-                takes it off the list &mdash; IPs already recorded keep what they were given.
-            </p>
-            <div class="option-lists">
-                <?php foreach ($optionKinds as $kind => $title): ?>
-                    <div class="option-list">
-                        <h3 class="rotation-title"><?= h($title) ?> (<?= count($optionLists[$kind]) ?>)</h3>
-                        <form method="post" class="option-add">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="action" value="add_option">
-                            <input type="hidden" name="kind" value="<?= h($kind) ?>">
-                            <input type="hidden" name="return_month" value="<?= h($month) ?>">
-                            <input type="hidden" name="return_by" value="<?= h($by) ?>">
-                            <input type="text" name="name" maxlength="100" placeholder="Add a name" required>
-                            <button class="btn small primary" type="submit">Add</button>
-                        </form>
-                        <?php if (!$optionLists[$kind]): ?>
-                            <p class="empty block">Nothing on this list yet.</p>
-                        <?php else: ?>
-                            <ul class="option-items">
-                                <?php foreach ($optionLists[$kind] as $option): ?>
-                                    <li>
-                                        <span><?= h($option['name']) ?></span>
-                                        <form method="post"
-                                              onsubmit="return confirm('Take &quot;<?= h($option['name']) ?>&quot; off the list?');">
-                                            <?= csrf_field() ?>
-                                            <input type="hidden" name="action" value="delete_option">
-                                            <input type="hidden" name="id" value="<?= (int) $option['id'] ?>">
-                                            <input type="hidden" name="return_month" value="<?= h($month) ?>">
-                            <input type="hidden" name="return_by" value="<?= h($by) ?>">
-                                            <button class="btn small" type="submit" aria-label="Remove">&times;</button>
-                                        </form>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
-                        <?php endif; ?>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-    </div>
-</section>
-<?php endif; ?>
 
 <?php
 /* Months other than this one, so an old record can be cleared on purpose. */

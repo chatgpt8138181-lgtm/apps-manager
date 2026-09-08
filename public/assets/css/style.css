@@ -3199,11 +3199,6 @@ tbody tr.is-picked {
 }
 
 /* The list of IPs: one row edits itself in place. */
-.pool-form {
-    margin-bottom: 16px;
-    max-width: 760px;
-}
-
 /* One row, one form: the fields sit in the columns their headings name. */
 .pool-table td {
     vertical-align: middle;
@@ -3230,20 +3225,57 @@ tbody tr.is-picked {
     margin-left: 8px;
 }
 
+/* Fixed columns wide enough to read, and the wrap scrolls if the screen is not. */
+.pool-table {
+    min-width: 980px;
+    table-layout: fixed;
+}
+
 .pool-table th:nth-child(1),
 .pool-table td:nth-child(1) {
-    width: 20%;
+    width: 150px;
 }
 
 .pool-table th:nth-child(2),
 .pool-table td:nth-child(2) {
-    width: 17%;
+    width: 138px;
+}
+
+.pool-table th:nth-child(3),
+.pool-table td:nth-child(3),
+.pool-table th:nth-child(5),
+.pool-table td:nth-child(5) {
+    width: 128px;
+}
+
+.pool-table th:nth-child(4),
+.pool-table td:nth-child(4) {
+    width: 126px;
 }
 
 .pool-table th:nth-child(6),
 .pool-table td:nth-child(6) {
+    width: auto;
+}
+
+.pool-table th:nth-child(7),
+.pool-table td:nth-child(7) {
     text-align: center;
-    width: 60px;
+    width: 55px;
+}
+
+.pool-table th:nth-child(8),
+.pool-table td:nth-child(8) {
+    width: 172px;
+}
+
+/* The new row waits behind this until it is asked for. */
+.pool-add-bar {
+    margin-top: 14px;
+}
+
+.pool-add-bar .btn[hidden] {
+    display: none;
 }
 
 /* Picking several IPs at once. */
