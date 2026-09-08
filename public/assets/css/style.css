@@ -3270,13 +3270,9 @@ select[name="ip_ids[]"] {
     }
 
     /* Desktop column widths would squash the fields inside a card. */
-    .pool-table td {
-        width: auto;
-    }
-
-    .pool-table td:nth-child(6) {
-        justify-content: space-between;
+    .pool-table td:nth-child(n) {
         text-align: left;
+        width: auto;
     }
 
     .pool-table input,
