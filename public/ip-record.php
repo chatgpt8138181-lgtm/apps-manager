@@ -10,7 +10,10 @@ require_login();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
-    $back = 'ip-record.php?m=' . urlencode(ip_month((string) ($_POST['return_month'] ?? '')));
+    $back = 'ip-record.php?' . http_build_query([
+        'm' => ip_month((string) ($_POST['return_month'] ?? '')),
+        'by' => (string) ($_POST['return_by'] ?? '') === 'app' ? 'app' : 'day',
+    ]);
 
     try {
         $action = (string) ($_POST['action'] ?? '');
@@ -55,8 +58,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $month = ip_month((string) ($_GET['m'] ?? ''));
+$by = (string) ($_GET['by'] ?? 'day') === 'app' ? 'app' : 'day';
 $stats = ip_month_stats($month);
-$days = ip_records_by_day($month);
+$days = $by === 'day' ? ip_records_by_day($month) : [];
+$byApp = $by === 'app' ? ip_records_by_app($month) : [];
 $repeats = ip_month_usage($month);
 $consoles = all_consoles();
 $apps = all_apps_overview('', 0, '', '');
@@ -112,13 +117,13 @@ page_start('IP Record');
                 <?php endif; ?>
             <?php endif; ?>
             <?php if ($hasPrevious): ?>
-                <a class="btn small" href="ip-record.php?m=<?= h($previous) ?>">&laquo; <?= h(ip_month_label($previous)) ?></a>
+                <a class="btn small" href="ip-record.php?m=<?= h($previous) ?>&amp;by=<?= h($by) ?>">&laquo; <?= h(ip_month_label($previous)) ?></a>
             <?php endif; ?>
             <?php if ($month !== date('Y-m')): ?>
-                <a class="btn small" href="ip-record.php">This month</a>
+                <a class="btn small" href="ip-record.php?by=<?= h($by) ?>">This month</a>
             <?php endif; ?>
             <?php if ($hasNext && $next <= date('Y-m')): ?>
-                <a class="btn small" href="ip-record.php?m=<?= h($next) ?>"><?= h(ip_month_label($next)) ?> &raquo;</a>
+                <a class="btn small" href="ip-record.php?m=<?= h($next) ?>&amp;by=<?= h($by) ?>"><?= h(ip_month_label($next)) ?> &raquo;</a>
             <?php endif; ?>
         </div>
     </div>
@@ -141,6 +146,7 @@ page_start('IP Record');
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="add">
                 <input type="hidden" name="return_month" value="<?= h($month) ?>">
+                <input type="hidden" name="return_by" value="<?= h($by) ?>">
 
                 <label>IPs <small>(one per line)</small>
                     <textarea name="ips" rows="5" spellcheck="false" placeholder="192.0.2.10&#10;198.51.100.7" required></textarea>
@@ -201,13 +207,89 @@ page_start('IP Record');
 
 <section class="panel">
     <div class="panel-heading">
-        <h2>Day by day</h2>
-        <span class="hint">Newest first. A new month starts empty; this one stays here.</span>
+        <h2><?= $by === 'app' ? 'App by app' : 'Day by day' ?></h2>
+        <span class="hint">
+            <?= $by === 'app'
+                ? 'Every app with the IPs it was given this month.'
+                : 'Newest first. A new month starts empty; this one stays here.' ?>
+        </span>
     </div>
 
-    <?php if (!$days): ?>
+    <div class="tabs">
+        <a class="<?= $by === 'day' ? 'active' : '' ?>" href="ip-record.php?m=<?= h($month) ?>&amp;by=day">Day by day</a>
+        <a class="<?= $by === 'app' ? 'active' : '' ?>" href="ip-record.php?m=<?= h($month) ?>&amp;by=app">App by app</a>
+    </div>
+
+    <?php if (!$days && !$byApp): ?>
         <p class="empty block">Nothing recorded for <?= h(ip_month_label($month)) ?> yet.</p>
     <?php endif; ?>
+
+    <?php foreach ($byApp as $key => $group): ?>
+        <?php $appPage = paginate_group($group['rows'], 'a' . ($group['app_id'] ?: 0)); ?>
+        <div class="app-group" id="a<?= (int) $group['app_id'] ?>" data-group-key="ip-<?= h((string) $key) ?>">
+            <button class="app-group-toggle" type="button" aria-expanded="false">
+                <span class="console-head">
+                    <span class="console-head-name"><?= h($group['label']) ?> (<?= count($group['rows']) ?> IPs)</span>
+                    <?php if ($group['console'] !== ''): ?>
+                        <span class="console-head-meta"><?= h($group['console']) ?></span>
+                    <?php endif; ?>
+                </span>
+                <span class="nav-chevron" aria-hidden="true"></span>
+            </button>
+            <div class="app-group-body">
+                <?php if ($group['app_id'] > 0): ?>
+                    <div class="inline-actions">
+                        <a class="btn small" href="app.php?id=<?= (int) $group['app_id'] ?>">Open app</a>
+                    </div>
+                <?php endif; ?>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>IP</th>
+                            <th>Used on</th>
+                            <th>Provider</th>
+                            <th>Country</th>
+                            <th>City</th>
+                            <th>Note</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($appPage['rows'] as $row): ?>
+                            <tr>
+                                <td>
+                                    <span class="cell-title">
+                                        <code><?= h($row['ip']) ?></code>
+                                        <?php if (isset($repeats[$row['ip']])): ?>
+                                            <span class="badge badge-amber">Used <?= (int) $repeats[$row['ip']] ?>&times; this month</span>
+                                        <?php endif; ?>
+                                    </span>
+                                </td>
+                                <td><?= h(date('d M Y', strtotime((string) $row['used_on']) ?: time())) ?></td>
+                                <td><?= $row['provider'] !== null && $row['provider'] !== '' ? h($row['provider']) : '&mdash;' ?></td>
+                                <td><?= $row['country'] !== null && $row['country'] !== '' ? h($row['country']) : '&mdash;' ?></td>
+                                <td><?= !empty($row['city']) ? h($row['city']) : '&mdash;' ?></td>
+                                <td><?= $row['note'] !== null && $row['note'] !== '' ? h($row['note']) : '&mdash;' ?></td>
+                                <td class="actions">
+                                    <form method="post" onsubmit="return confirm('Remove this IP from the record?');">
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
+                                        <input type="hidden" name="return_month" value="<?= h($month) ?>">
+                                        <input type="hidden" name="return_by" value="<?= h($by) ?>">
+                                        <button class="btn small danger" type="submit">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <?php render_group_pager($appPage, 'ip-record.php', ['m' => $month, 'by' => $by]); ?>
+            </div>
+        </div>
+    <?php endforeach; ?>
 
     <?php foreach ($days as $date => $day): ?>
         <?php $dayPage = paginate_group($day['rows'], 'd' . str_replace('-', '', $date)); ?>
@@ -263,6 +345,7 @@ page_start('IP Record');
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
                                         <input type="hidden" name="return_month" value="<?= h($month) ?>">
+                            <input type="hidden" name="return_by" value="<?= h($by) ?>">
                                         <button class="btn small danger" type="submit">Delete</button>
                                     </form>
                                 </td>
@@ -271,7 +354,7 @@ page_start('IP Record');
                         </tbody>
                     </table>
                 </div>
-                <?php render_group_pager($dayPage, 'ip-record.php', ['m' => $month]); ?>
+                <?php render_group_pager($dayPage, 'ip-record.php', ['m' => $month, 'by' => $by]); ?>
             </div>
         </div>
     <?php endforeach; ?>
@@ -296,6 +379,7 @@ page_start('IP Record');
                             <input type="hidden" name="action" value="add_option">
                             <input type="hidden" name="kind" value="<?= h($kind) ?>">
                             <input type="hidden" name="return_month" value="<?= h($month) ?>">
+                            <input type="hidden" name="return_by" value="<?= h($by) ?>">
                             <input type="text" name="name" maxlength="100" placeholder="Add a name" required>
                             <button class="btn small primary" type="submit">Add</button>
                         </form>
@@ -312,6 +396,7 @@ page_start('IP Record');
                                             <input type="hidden" name="action" value="delete_option">
                                             <input type="hidden" name="id" value="<?= (int) $option['id'] ?>">
                                             <input type="hidden" name="return_month" value="<?= h($month) ?>">
+                            <input type="hidden" name="return_by" value="<?= h($by) ?>">
                                             <button class="btn small" type="submit" aria-label="Remove">&times;</button>
                                         </form>
                                     </li>
@@ -355,13 +440,14 @@ $earlier = array_values(array_filter($monthCounts, fn($row) => (string) $row['mo
                                 <td><?= h(ip_month_label((string) $row['month'])) ?></td>
                                 <td><?= (int) $row['total'] ?></td>
                                 <td class="actions">
-                                    <a class="btn small" href="ip-record.php?m=<?= h((string) $row['month']) ?>">Open</a>
+                                    <a class="btn small" href="ip-record.php?m=<?= h((string) $row['month']) ?>&amp;by=<?= h($by) ?>">Open</a>
                                     <form method="post"
                                           onsubmit="return confirm('Delete all <?= (int) $row['total'] ?> IP(s) from <?= h(ip_month_label((string) $row['month'])) ?>? This cannot be undone.');">
                                         <?= csrf_field() ?>
                                         <input type="hidden" name="action" value="delete_month">
                                         <input type="hidden" name="month" value="<?= h((string) $row['month']) ?>">
                                         <input type="hidden" name="return_month" value="<?= h($month) ?>">
+                            <input type="hidden" name="return_by" value="<?= h($by) ?>">
                                         <button class="btn small danger" type="submit">Delete month</button>
                                     </form>
                                 </td>

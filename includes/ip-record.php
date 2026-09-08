@@ -84,6 +84,41 @@ function ip_records_by_day(string $month): array
     return $days;
 }
 
+/*
+ * The same month seen the other way: every app with the IPs it was given,
+ * consoles in their usual order. Entries with no app sit together at the end.
+ */
+function ip_records_by_app(string $month): array
+{
+    $stmt = db()->prepare(
+        "SELECT r.*, a.app_name, c.name AS console_name, c.created_at AS console_created
+         FROM rotation_ips r
+         LEFT JOIN apps a ON a.id = r.app_id
+         LEFT JOIN consoles c ON c.id = r.console_id
+         WHERE DATE_FORMAT(r.used_on, '%Y-%m') = ?
+         ORDER BY c.created_at ASC, c.id ASC, a.app_name ASC, r.used_on DESC, r.id DESC"
+    );
+    $stmt->execute([$month]);
+
+    $groups = [];
+    foreach ($stmt->fetchAll() as $row) {
+        $key = !empty($row['app_id']) ? 'app-' . (int) $row['app_id'] : 'none';
+        $groups[$key]['app_id'] = !empty($row['app_id']) ? (int) $row['app_id'] : 0;
+        $groups[$key]['label'] = $row['app_name'] ?? 'No app';
+        $groups[$key]['console'] = $row['console_name'] ?? '';
+        $groups[$key]['rows'][] = $row;
+    }
+
+    /* Whatever was not tied to an app comes last, not first. */
+    if (isset($groups['none'])) {
+        $loose = $groups['none'];
+        unset($groups['none']);
+        $groups['none'] = $loose;
+    }
+
+    return $groups;
+}
+
 /* How often each IP turns up in the month, so a repeat can be shown as one. */
 function ip_month_usage(string $month): array
 {
