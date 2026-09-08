@@ -87,6 +87,34 @@ foreach ($apps as $app) {
     $appsByConsole[(int) ($app['console_id'] ?? 0)][] = $app;
 }
 
+/*
+ * The addresses of one line, each with its own way out. A repeat wears the
+ * badge on the address itself, so a long line still reads at a glance.
+ */
+function ip_chips_cell(array $ips, array $repeats, string $month, string $by): void
+{
+    ?>
+    <div class="ip-chips">
+        <?php foreach ($ips as $entry): ?>
+            <span class="ip-chip<?= isset($repeats[$entry['ip']]) ? ' is-repeat' : '' ?>">
+                <code><?= h($entry['ip']) ?></code>
+                <?php if (isset($repeats[$entry['ip']])): ?>
+                    <small title="Used <?= (int) $repeats[$entry['ip']] ?> times this month"><?= (int) $repeats[$entry['ip']] ?>&times;</small>
+                <?php endif; ?>
+                <form method="post" onsubmit="return confirm('Remove <?= h($entry['ip']) ?> from the record?');">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="id" value="<?= (int) $entry['id'] ?>">
+                    <input type="hidden" name="return_month" value="<?= h($month) ?>">
+                    <input type="hidden" name="return_by" value="<?= h($by) ?>">
+                    <button type="submit" aria-label="Remove <?= h($entry['ip']) ?>">&times;</button>
+                </form>
+            </span>
+        <?php endforeach; ?>
+    </div>
+    <?php
+}
+
 /* One picker, built from the list it belongs to. */
 function ip_option_select(string $kind, array $options): void
 {
@@ -238,7 +266,6 @@ page_start('IP Record');
             </button>
             <div class="app-group-body">
                 <?php foreach ($console['apps'] as $app): ?>
-                    <?php $appPage = paginate_group($app['rows'], 'a' . (int) $app['id']); ?>
                     <div class="app-group" id="a<?= (int) $app['id'] ?>" data-group-key="ip-app-<?= (int) $app['id'] ?>">
                         <button class="app-group-toggle" type="button" aria-expanded="false">
                             <span class="console-head">
@@ -259,6 +286,8 @@ page_start('IP Record');
                                 </div>
                             <?php endif; ?>
 
+                            <?php $appLines = ip_group_rows($app['rows'], ['used_on', 'provider', 'country', 'city', 'note']); ?>
+                            <?php $appPage = paginate_group($appLines, 'a' . (int) $app['id']); ?>
                             <?php if (!$app['rows']): ?>
                                 <p class="empty block">No IPs for this app in <?= h(ip_month_label($month)) ?>.</p>
                             <?php else: ?>
@@ -266,41 +295,26 @@ page_start('IP Record');
                                     <table>
                                         <thead>
                                         <tr>
-                                            <th>IP</th>
                                             <th>Used on</th>
+                                            <th>IPs</th>
                                             <th>Provider</th>
                                             <th>Country</th>
                                             <th>City</th>
                                             <th>Note</th>
-                                            <th>Actions</th>
                                         </tr>
                                         </thead>
                                         <tbody>
-                                        <?php foreach ($appPage['rows'] as $row): ?>
+                                        <?php foreach ($appPage['rows'] as $line): ?>
                                             <tr>
-                                                <td>
-                                                    <span class="cell-title">
-                                                        <code><?= h($row['ip']) ?></code>
-                                                        <?php if (isset($repeats[$row['ip']])): ?>
-                                                            <span class="badge badge-amber">Used <?= (int) $repeats[$row['ip']] ?>&times; this month</span>
-                                                        <?php endif; ?>
-                                                    </span>
+                                                <td class="col-when">
+                                                    <?= h(date('d M Y', strtotime((string) $line['used_on']) ?: time())) ?>
+                                                    <span class="cell-sub"><?= count($line['ips']) ?> IP<?= count($line['ips']) === 1 ? '' : 's' ?></span>
                                                 </td>
-                                                <td><?= h(date('d M Y', strtotime((string) $row['used_on']) ?: time())) ?></td>
-                                                <td><?= $row['provider'] !== null && $row['provider'] !== '' ? h($row['provider']) : '&mdash;' ?></td>
-                                                <td><?= $row['country'] !== null && $row['country'] !== '' ? h($row['country']) : '&mdash;' ?></td>
-                                                <td><?= !empty($row['city']) ? h($row['city']) : '&mdash;' ?></td>
-                                                <td><?= $row['note'] !== null && $row['note'] !== '' ? h($row['note']) : '&mdash;' ?></td>
-                                                <td class="actions">
-                                                    <form method="post" onsubmit="return confirm('Remove this IP from the record?');">
-                                                        <?= csrf_field() ?>
-                                                        <input type="hidden" name="action" value="delete">
-                                                        <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
-                                                        <input type="hidden" name="return_month" value="<?= h($month) ?>">
-                                                        <input type="hidden" name="return_by" value="<?= h($by) ?>">
-                                                        <button class="btn small danger" type="submit">Delete</button>
-                                                    </form>
-                                                </td>
+                                                <td><?php ip_chips_cell($line['ips'], $repeats, $month, $by); ?></td>
+                                                <td><?= $line['provider'] !== null && $line['provider'] !== '' ? h($line['provider']) : '&mdash;' ?></td>
+                                                <td><?= $line['country'] !== null && $line['country'] !== '' ? h($line['country']) : '&mdash;' ?></td>
+                                                <td><?= !empty($line['city']) ? h($line['city']) : '&mdash;' ?></td>
+                                                <td><?= $line['note'] !== null && $line['note'] !== '' ? h($line['note']) : '&mdash;' ?></td>
                                             </tr>
                                         <?php endforeach; ?>
                                         </tbody>
@@ -316,7 +330,8 @@ page_start('IP Record');
     <?php endforeach; ?>
 
     <?php foreach ($days as $date => $day): ?>
-        <?php $dayPage = paginate_group($day['rows'], 'd' . str_replace('-', '', $date)); ?>
+        <?php $dayLines = ip_group_rows($day['rows'], ['app_id', 'console_id', 'provider', 'country', 'city', 'note']); ?>
+        <?php $dayPage = paginate_group($dayLines, 'd' . str_replace('-', '', $date)); ?>
         <div class="app-group" id="d<?= h(str_replace('-', '', $date)) ?>" data-group-key="ip-day-<?= h($date) ?>">
             <button class="app-group-toggle" type="button" aria-expanded="false">
                 <span><?= h($day['label']) ?> (<?= count($day['rows']) ?> IPs)</span>
@@ -327,52 +342,37 @@ page_start('IP Record');
                     <table>
                         <thead>
                         <tr>
-                            <th>IP</th>
                             <th>App</th>
+                            <th>IPs</th>
                             <th>Provider</th>
                             <th>Country</th>
                             <th>City</th>
                             <th>Note</th>
-                            <th>Actions</th>
                         </tr>
                         </thead>
                         <tbody>
-                        <?php foreach ($dayPage['rows'] as $row): ?>
+                        <?php foreach ($dayPage['rows'] as $line): ?>
                             <tr>
                                 <td>
-                                    <span class="cell-title">
-                                        <code><?= h($row['ip']) ?></code>
-                                        <?php if (isset($repeats[$row['ip']])): ?>
-                                            <span class="badge badge-amber">Used <?= (int) $repeats[$row['ip']] ?>&times; this month</span>
-                                        <?php endif; ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <?php if (!empty($row['app_name'])): ?>
+                                    <?php if (!empty($line['app_name'])): ?>
                                         <span class="cell-title">
-                                            <a href="app.php?id=<?= (int) $row['app_id'] ?>"><?= h($row['app_name']) ?></a>
-                                            <span class="cell-sub"><?= h($row['console_name'] ?? '') ?></span>
+                                            <a href="app.php?id=<?= (int) $line['app_id'] ?>"><?= h($line['app_name']) ?></a>
+                                            <span class="cell-sub">
+                                                <?= h($line['console_name'] ?? '') ?>
+                                                &middot; <?= count($line['ips']) ?> IP<?= count($line['ips']) === 1 ? '' : 's' ?>
+                                            </span>
                                         </span>
-                                    <?php elseif (!empty($row['console_name'])): ?>
-                                        <span class="cell-sub"><?= h($row['console_name']) ?></span>
+                                    <?php elseif (!empty($line['console_name'])): ?>
+                                        <span class="cell-sub"><?= h($line['console_name']) ?></span>
                                     <?php else: ?>
                                         &mdash;
                                     <?php endif; ?>
                                 </td>
-                                <td><?= $row['provider'] !== null && $row['provider'] !== '' ? h($row['provider']) : '&mdash;' ?></td>
-                                <td><?= $row['country'] !== null && $row['country'] !== '' ? h($row['country']) : '&mdash;' ?></td>
-                                <td><?= !empty($row['city']) ? h($row['city']) : '&mdash;' ?></td>
-                                <td><?= $row['note'] !== null && $row['note'] !== '' ? h($row['note']) : '&mdash;' ?></td>
-                                <td class="actions">
-                                    <form method="post" onsubmit="return confirm('Remove this IP from the record?');">
-                                        <?= csrf_field() ?>
-                                        <input type="hidden" name="action" value="delete">
-                                        <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
-                                        <input type="hidden" name="return_month" value="<?= h($month) ?>">
-                            <input type="hidden" name="return_by" value="<?= h($by) ?>">
-                                        <button class="btn small danger" type="submit">Delete</button>
-                                    </form>
-                                </td>
+                                <td><?php ip_chips_cell($line['ips'], $repeats, $month, $by); ?></td>
+                                <td><?= $line['provider'] !== null && $line['provider'] !== '' ? h($line['provider']) : '&mdash;' ?></td>
+                                <td><?= $line['country'] !== null && $line['country'] !== '' ? h($line['country']) : '&mdash;' ?></td>
+                                <td><?= !empty($line['city']) ? h($line['city']) : '&mdash;' ?></td>
+                                <td><?= $line['note'] !== null && $line['note'] !== '' ? h($line['note']) : '&mdash;' ?></td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>
