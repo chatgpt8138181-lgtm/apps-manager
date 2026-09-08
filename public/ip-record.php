@@ -156,19 +156,16 @@ page_start('IP Record');
                 <input type="hidden" name="return_by" value="<?= h($by) ?>">
 
                 <div class="field">
-                    <span class="field-label">IPs <small>(tap one or more)</small></span>
-                    <div class="ip-picks">
-                        <?php foreach ($pool as $entry): ?>
-                            <label class="ip-pick" title="<?= h($entry['ip']) ?>">
-                                <input type="checkbox" name="ip_ids[]" value="<?= (int) $entry['id'] ?>">
-                                <span class="ip-pick-name"><?= h($entry['name']) ?></span>
-                            </label>
-                        <?php endforeach; ?>
+                    <span class="field-label">IPs</span>
+                    <div class="ip-chosen" id="ip-chosen">
+                        <p class="hint">Nothing picked yet.</p>
                     </div>
+                    <?php if ($pool): ?>
+                        <button class="btn ip-pick-open" type="button" data-name="This record">Choose IPs</button>
+                    <?php else: ?>
+                        <p class="hint">The IP list is empty. Put IPs on it in <a href="ip-management.php">IP Management</a> first.</p>
+                    <?php endif; ?>
                 </div>
-                <?php if (!$pool): ?>
-                    <p class="hint">The IP list is empty. Put IPs on it in <a href="ip-management.php">IP Management</a> first.</p>
-                <?php endif; ?>
 
                 <div class="form-row">
                     <label>Used on
@@ -413,27 +410,65 @@ $earlier = array_values(array_filter($monthCounts, fn($row) => (string) $row['mo
     </section>
 <?php endif; ?>
 
+<?php if (can('work')) { render_ip_picker($pool); } ?>
+
 <script>
-/* A picked IP shows it, and nothing is sent until at least one is picked. */
-document.querySelectorAll('form').forEach((form) => {
-    const picks = [...form.querySelectorAll('.ip-pick input')];
-    if (!picks.length) {
+/* What the picker hands back becomes the chips this form will send. */
+(() => {
+    const chosen = document.getElementById('ip-chosen');
+    if (!chosen) {
         return;
     }
 
+    const form = chosen.closest('form');
     const save = form.querySelector('button[type="submit"]');
-    const refresh = () => {
-        picks.forEach((pick) => {
-            pick.closest('.ip-pick').classList.toggle('is-picked', pick.checked);
-        });
-        if (save) {
-            save.disabled = !picks.some((pick) => pick.checked);
+    const picked = new Map();
+
+    const draw = () => {
+        chosen.innerHTML = '';
+
+        if (!picked.size) {
+            chosen.innerHTML = '<p class="hint">Nothing picked yet.</p>';
+            save.disabled = true;
+            return;
         }
+
+        picked.forEach((name, id) => {
+            const chip = document.createElement('span');
+            chip.className = 'ip-chosen-chip';
+            chip.textContent = name;
+
+            const drop = document.createElement('button');
+            drop.type = 'button';
+            drop.className = 'ip-chosen-drop';
+            drop.setAttribute('aria-label', 'Remove ' + name);
+            drop.textContent = '\u00d7';
+            drop.addEventListener('click', () => { picked.delete(id); draw(); });
+            chip.appendChild(drop);
+
+            const field = document.createElement('input');
+            field.type = 'hidden';
+            field.name = 'ip_ids[]';
+            field.value = id;
+            chip.appendChild(field);
+
+            chosen.appendChild(chip);
+        });
+
+        save.disabled = false;
     };
 
-    picks.forEach((pick) => pick.addEventListener('change', refresh));
-    refresh();
-});
+    document.addEventListener('ip-picker:done', (event) => {
+        const modal = document.getElementById('ip-picker');
+        event.detail.ids.forEach((id) => {
+            const row = modal.querySelector('tr[data-id="' + id + '"]');
+            picked.set(id, row ? row.querySelector('.ip-modal-name').textContent.trim() : id);
+        });
+        draw();
+    });
+
+    draw();
+})();
 
 document.querySelectorAll('.copy-ips').forEach((button) => {
     button.addEventListener('click', () => {

@@ -3029,108 +3029,174 @@ tbody tr.is-picked {
     margin-top: 14px;
 }
 
-/* Today's IPs, added from the rotation row itself. */
-.ip-cell-view {
+/* Today's IPs: the cell only says how many, and opens the picker. */
+.ip-cell {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
 }
 
-.ip-cell-view[hidden] {
-    display: none;
+/* The picker itself: one dialog for the page, a table and a search over it. */
+.ip-modal {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+    color: var(--text);
+    max-height: 86vh;
+    max-width: none;
+    padding: 0;
+    width: min(900px, 94vw);
 }
 
-.ip-add-form {
+.ip-modal[open] {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    min-width: 190px;
 }
 
-.ip-add-form[hidden] {
-    display: none;
+.ip-modal::backdrop {
+    background: rgba(15, 23, 42, 0.55);
 }
 
-.ip-pick-hint {
-    color: var(--muted);
-    font-size: 12px;
+.ip-modal-head {
+    align-items: flex-start;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    padding: 16px 18px;
+}
+
+.ip-modal-title {
+    font-size: 17px;
     margin: 0;
 }
 
-/* One tap per IP: no keyboard gymnastics to pick more than one. */
-.ip-picks {
+.ip-modal-for {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 4px 0 0;
+}
+
+.ip-modal-x {
+    background: none;
+    border: 0;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 24px;
+    line-height: 1;
+    padding: 0 4px;
+}
+
+.ip-modal-x:hover {
+    color: var(--text);
+}
+
+.ip-modal-tools {
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    gap: 12px;
+    padding: 12px 18px;
+}
+
+.ip-modal-search {
+    flex: 1 1 auto;
+    min-height: 38px;
+    padding: 8px 12px;
+}
+
+.ip-modal-count {
+    color: var(--muted);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.ip-modal-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 0 18px 8px;
+}
+
+.ip-modal-table {
+    min-width: 0;
+}
+
+.ip-modal-table thead th {
+    background: var(--panel);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.ip-modal-table td,
+.ip-modal-table th {
+    padding: 9px 10px;
+}
+
+.ip-modal-table tbody tr:hover {
+    background: var(--surface);
+}
+
+.ip-modal-table .col-pick {
+    width: 38px;
+}
+
+.ip-modal-name {
+    font-weight: 600;
+}
+
+/* The green tag shows only on the rows this app already has today. */
+.ip-modal-today .badge {
+    display: none;
+}
+
+.ip-modal-table tr.is-added .ip-modal-today .badge {
+    display: inline-block;
+}
+
+.ip-modal-foot {
+    border-top: 1px solid var(--line);
+    display: flex;
+    gap: 10px;
+    padding: 14px 18px;
+}
+
+/* What a form is holding after the picker closes. */
+.ip-chosen {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    max-height: 172px;
-    overflow-y: auto;
 }
 
-/* A field that holds something other than one input. */
-.field {
-    display: grid;
-    gap: 7px;
+.ip-chosen .hint {
+    margin: 0;
 }
 
-.field-label {
-    color: var(--muted);
-    font-size: 14px;
-}
-
-.ip-pick {
+.ip-chosen-chip {
     align-items: center;
-    background: var(--panel);
-    border: 1px solid var(--line-strong);
+    background: var(--primary-soft);
     border-radius: 999px;
     color: var(--text);
-    cursor: pointer;
     display: inline-flex;
     font-size: 13px;
     gap: 6px;
-    line-height: 1.2;
-    padding: 6px 12px;
-    position: relative;
-    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-    user-select: none;
-    width: auto;
+    padding: 5px 6px 5px 12px;
 }
 
-.ip-pick:hover {
-    border-color: var(--primary);
+.ip-chosen-drop {
+    background: none;
+    border: 0;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+    padding: 0 4px;
 }
 
-/* The box itself stays out of sight; the pill is the control. */
-.ip-pick input {
-    height: 1px;
-    margin: 0;
-    opacity: 0;
-    position: absolute;
-    width: 1px;
-}
-
-.ip-pick:focus-within {
-    box-shadow: 0 0 0 3px var(--primary-soft);
-}
-
-.ip-pick.is-picked {
-    background: var(--primary);
-    border-color: var(--primary);
-    color: var(--on-primary);
-}
-
-.ip-pick-mark {
-    color: var(--green-text);
-    font-size: 11px;
-}
-
-.ip-pick.is-picked .ip-pick-mark {
-    color: var(--on-primary);
-}
-
-.ip-pick-actions {
-    display: flex;
-    gap: 8px;
+.ip-chosen-drop:hover {
+    color: var(--red-solid);
 }
 
 /* The lists behind the IP pickers, three short columns side by side. */
@@ -3336,7 +3402,17 @@ tbody tr.is-picked {
 
 /* On a card the picker gets the whole width instead of a narrow column. */
 @media (max-width: 760px) {
-    .ip-pick-actions .btn {
+    /* Narrow screens keep the picker to what a phone can read. */
+    .ip-modal-table th:nth-child(4),
+    .ip-modal-table td:nth-child(4),
+    .ip-modal-table th:nth-child(5),
+    .ip-modal-table td:nth-child(5),
+    .ip-modal-table th:nth-child(6),
+    .ip-modal-table td:nth-child(6) {
+        display: none;
+    }
+
+    .ip-modal-foot .btn {
         flex: 1 1 auto;
     }
 
@@ -3354,14 +3430,5 @@ tbody tr.is-picked {
 
     .pool-table td.actions .btn + .btn {
         margin-left: 0;
-    }
-
-    /* An open picker takes the whole card row, not the narrow value column. */
-    .table-wrap td.col-ips {
-        flex-wrap: wrap;
-    }
-
-    .table-wrap td.col-ips .ip-cell:has(.ip-add-form:not([hidden])) {
-        flex: 1 1 100%;
     }
 }

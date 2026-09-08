@@ -105,49 +105,27 @@ function rotation_controls(string $kind, int $consoleId): void
 }
 
 /*
- * Today's IPs for one app: what has been put in so far, and a small form
- * that opens in place so the day's work does not need another page.
+ * Today's IPs for one app: what has been put in so far, and the button that
+ * opens the shared picker. The list itself lives once, in the dialog.
  */
 function rotation_ip_cell(array $row, int $count, array $pool, array $already): void
 {
     $appId = (int) $row['app_id'];
     $mayAdd = can('work') && $pool !== [];
-    $onToday = $already[$appId] ?? [];
+    $onToday = array_keys($already[$appId] ?? []);
     ?>
     <div class="ip-cell">
-        <div class="ip-cell-view">
-            <?php if ($count > 0): ?>
-                <a class="badge badge-blue" href="ip-record.php"><?= $count ?> IP<?= $count === 1 ? '' : 's' ?></a>
-            <?php else: ?>
-                <span class="badge badge-gray">None</span>
-            <?php endif; ?>
-            <?php if ($mayAdd): ?>
-                <button class="btn small ip-add-toggle" type="button">+ IP</button>
-            <?php endif; ?>
-        </div>
-        <?php if (!$mayAdd) { echo '</div>'; return; } ?>
-        <form method="post" class="ip-add-form" hidden>
-            <?= csrf_field() ?>
-            <input type="hidden" name="action" value="add_ip">
-            <input type="hidden" name="app_id" value="<?= $appId ?>">
-            <p class="ip-pick-hint">Tap the IPs used on this app today.</p>
-            <div class="ip-picks">
-                <?php foreach ($pool as $entry): ?>
-                    <?php $isOn = isset($onToday[(int) $entry['id']]); ?>
-                    <label class="ip-pick<?= $isOn ? ' is-on' : '' ?>" title="<?= h($entry['ip']) ?><?= $isOn ? ' — already on today' : '' ?>">
-                        <input type="checkbox" name="ip_ids[]" value="<?= (int) $entry['id'] ?>">
-                        <span class="ip-pick-name"><?= h($entry['name']) ?></span>
-                        <?php if ($isOn): ?>
-                            <span class="ip-pick-mark" aria-hidden="true">&#10003;</span>
-                        <?php endif; ?>
-                    </label>
-                <?php endforeach; ?>
-            </div>
-            <div class="ip-pick-actions">
-                <button class="btn small primary" type="submit" disabled>Save</button>
-                <button class="btn small ip-add-cancel" type="button">Cancel</button>
-            </div>
-        </form>
+        <?php if ($count > 0): ?>
+            <a class="badge badge-blue" href="ip-record.php"><?= $count ?> IP<?= $count === 1 ? '' : 's' ?></a>
+        <?php else: ?>
+            <span class="badge badge-gray">None</span>
+        <?php endif; ?>
+        <?php if ($mayAdd): ?>
+            <button class="btn small ip-pick-open" type="button"
+                    data-app="<?= $appId ?>"
+                    data-name="<?= h((string) $row['app_name']) ?>"
+                    data-on="<?= h(implode(',', $onToday)) ?>">+ IP</button>
+        <?php endif; ?>
     </div>
     <?php
 }
@@ -366,37 +344,35 @@ page_start($view === 'history' ? 'Rotation History' : 'Rotations');
         <?php endforeach; ?>
     </section>
 <?php endif; ?>
+<?php if ($view === 'today' && can('work')) { render_ip_picker($ipPool); } ?>
+
+<form method="post" id="ip-add-form" hidden>
+    <?= csrf_field() ?>
+    <input type="hidden" name="action" value="add_ip">
+    <input type="hidden" name="app_id" value="0">
+</form>
+
 <script>
-/* The add box stays out of the way until it is asked for. */
-document.querySelectorAll('.ip-add-toggle').forEach((button) => {
-    const cell = button.closest('.ip-cell');
-    const form = cell.querySelector('.ip-add-form');
-    const view = cell.querySelector('.ip-cell-view');
-    const picks = [...form.querySelectorAll('.ip-pick input')];
-    const save = form.querySelector('button[type="submit"]');
+/* What the picker hands back goes straight to the server for that app. */
+document.addEventListener('ip-picker:done', (event) => {
+    const form = document.getElementById('ip-add-form');
+    if (!form) {
+        return;
+    }
 
-    /* Save is offered only once something is actually picked. */
-    const refresh = () => {
-        picks.forEach((pick) => {
-            pick.closest('.ip-pick').classList.toggle('is-picked', pick.checked);
-        });
-        save.disabled = !picks.some((pick) => pick.checked);
-    };
+    form.querySelectorAll('.ip-id').forEach((field) => field.remove());
+    form.querySelector('input[name="app_id"]').value = event.detail.opener.dataset.app || '0';
 
-    picks.forEach((pick) => pick.addEventListener('change', refresh));
-
-    button.addEventListener('click', () => {
-        view.hidden = true;
-        form.hidden = false;
-        refresh();
+    event.detail.ids.forEach((id) => {
+        const field = document.createElement('input');
+        field.type = 'hidden';
+        field.name = 'ip_ids[]';
+        field.value = id;
+        field.className = 'ip-id';
+        form.appendChild(field);
     });
 
-    form.querySelector('.ip-add-cancel').addEventListener('click', () => {
-        picks.forEach((pick) => { pick.checked = false; });
-        refresh();
-        form.hidden = true;
-        view.hidden = false;
-    });
+    form.submit();
 });
 </script>
 <?php page_end(); ?>
