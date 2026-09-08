@@ -90,6 +90,53 @@ function pool_row_fields(array $entry, string $formId, array $optionLists): void
 page_start('IP Management');
 ?>
 <section class="panel">
+    <div class="app-group" data-group-key="ip-lists">
+        <button class="app-group-toggle" type="button" aria-expanded="false">
+            <span>Provider Details</span>
+            <span class="nav-chevron" aria-hidden="true"></span>
+        </button>
+        <div class="app-group-body">
+            <p class="hint">
+                What the Provider, Country and City pickers offer. Removing a name only
+                takes it off the list &mdash; IPs already recorded keep what they were given.
+            </p>
+            <div class="option-lists">
+                <?php foreach ($optionKinds as $kind => $title): ?>
+                    <div class="option-list">
+                        <h3 class="rotation-title"><?= h($title) ?> (<?= count($optionLists[$kind]) ?>)</h3>
+                        <form method="post" class="option-add">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="add_option">
+                            <input type="hidden" name="kind" value="<?= h($kind) ?>">
+                            <input type="text" name="name" maxlength="100" placeholder="Add a name" required>
+                            <button class="btn small primary" type="submit">Add</button>
+                        </form>
+                        <?php if (!$optionLists[$kind]): ?>
+                            <p class="empty block">Nothing on this list yet.</p>
+                        <?php else: ?>
+                            <ul class="option-items">
+                                <?php foreach ($optionLists[$kind] as $option): ?>
+                                    <li>
+                                        <span><?= h($option['name']) ?></span>
+                                        <form method="post"
+                                              onsubmit="return confirm('Take &quot;<?= h($option['name']) ?>&quot; off the list?');">
+                                            <?= csrf_field() ?>
+                                            <input type="hidden" name="action" value="delete_option">
+                                            <input type="hidden" name="id" value="<?= (int) $option['id'] ?>">
+                                            <button class="btn small" type="submit" aria-label="Remove">&times;</button>
+                                        </form>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="panel">
     <div class="panel-heading">
         <h2>IP list (<?= count($pool) ?>)</h2>
     </div>
@@ -163,53 +210,6 @@ page_start('IP Management');
             <input type="hidden" name="id" value="<?= (int) $entry['id'] ?>">
         </form>
     <?php endforeach; ?>
-</section>
-
-<section class="panel">
-    <div class="app-group" data-group-key="ip-lists">
-        <button class="app-group-toggle" type="button" aria-expanded="false">
-            <span>Manage lists</span>
-            <span class="nav-chevron" aria-hidden="true"></span>
-        </button>
-        <div class="app-group-body">
-            <p class="hint">
-                What the Provider, Country and City pickers offer. Removing a name only
-                takes it off the list &mdash; IPs already recorded keep what they were given.
-            </p>
-            <div class="option-lists">
-                <?php foreach ($optionKinds as $kind => $title): ?>
-                    <div class="option-list">
-                        <h3 class="rotation-title"><?= h($title) ?> (<?= count($optionLists[$kind]) ?>)</h3>
-                        <form method="post" class="option-add">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="action" value="add_option">
-                            <input type="hidden" name="kind" value="<?= h($kind) ?>">
-                            <input type="text" name="name" maxlength="100" placeholder="Add a name" required>
-                            <button class="btn small primary" type="submit">Add</button>
-                        </form>
-                        <?php if (!$optionLists[$kind]): ?>
-                            <p class="empty block">Nothing on this list yet.</p>
-                        <?php else: ?>
-                            <ul class="option-items">
-                                <?php foreach ($optionLists[$kind] as $option): ?>
-                                    <li>
-                                        <span><?= h($option['name']) ?></span>
-                                        <form method="post"
-                                              onsubmit="return confirm('Take &quot;<?= h($option['name']) ?>&quot; off the list?');">
-                                            <?= csrf_field() ?>
-                                            <input type="hidden" name="action" value="delete_option">
-                                            <input type="hidden" name="id" value="<?= (int) $option['id'] ?>">
-                                            <button class="btn small" type="submit" aria-label="Remove">&times;</button>
-                                        </form>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
-                        <?php endif; ?>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-    </div>
 </section>
 
 <script>
