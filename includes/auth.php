@@ -29,6 +29,11 @@ function can_open_page(string $page): bool
         return can('users');
     }
 
+    /* The IP list and its pickers are setup, not day-to-day work. */
+    if ($page === 'ip-management.php') {
+        return can('settings');
+    }
+
     if (current_role() === 'viewer') {
         return in_array($page, viewer_pages(), true);
     }

@@ -521,3 +521,18 @@ function delete_ip_month(string $month): int
 
     return $stmt->rowCount();
 }
+
+/* One picker, built from the list it belongs to. */
+function ip_option_select(string $kind, array $options, string $chosen = '', string $form = ''): void
+{
+    ?>
+    <select name="<?= h($kind) ?>" aria-label="<?= h(ucfirst($kind)) ?>"<?= $form !== '' ? ' form="' . h($form) . '"' : '' ?>>
+        <option value=""><?= h(ucfirst($kind)) ?></option>
+        <?php foreach ($options as $option): ?>
+            <option value="<?= h($option['name']) ?>" <?= $chosen === $option['name'] ? 'selected' : '' ?>>
+                <?= h($option['name']) ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
+    <?php
+}
