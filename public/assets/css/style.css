@@ -3436,7 +3436,7 @@ tbody tr.is-picked {
 
 /* A desk narrower than the full row keeps the note out of the way; the field
    is still there, so what it holds is saved untouched. */
-@media (min-width: 761px) and (max-width: 1180px) {
+@media (min-width: 761px) and (max-width: 1340px) {
     .pool-table {
         min-width: 860px;
     }
