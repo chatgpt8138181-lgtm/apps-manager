@@ -27,6 +27,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect_with('rotations.php', 'success', 'Settings saved.');
         }
 
+        if ($action === 'add_ip') {
+            $result = add_rotation_ips([
+                'ips' => (string) ($_POST['ips'] ?? ''),
+                'used_on' => date('Y-m-d'),
+                'app_id' => (int) ($_POST['app_id'] ?? 0),
+                'provider' => (string) ($_POST['provider'] ?? ''),
+                'country' => (string) ($_POST['country'] ?? ''),
+            ]);
+            $message = $result['added'] . ' IP(s) added.';
+            if ($result['bad']) {
+                $message .= ' ' . count($result['bad']) . ' was not an IP: '
+                    . implode(', ', array_slice($result['bad'], 0, 3));
+            }
+            redirect_with($self, 'success', $message);
+        }
+
         if ($action === 'cycle_step') {
             $direction = (string) ($_POST['direction'] ?? 'restart');
             $consoleId = (int) ($_POST['console_id'] ?? 0);
@@ -61,6 +77,7 @@ if ($view === 'today') {
 }
 
 $loadingProgress = loading_cycle_progress();
+$ipCounts = $view === 'today' ? ip_counts_for_date(date('Y-m-d')) : [];
 $loadingGroups = $view === 'today' ? todays_loading_apps() : [];
 $consoles = all_consoles();
 
@@ -85,6 +102,37 @@ function rotation_controls(string $kind, int $consoleId): void
         </form>
         <?php
     }
+}
+
+/*
+ * Today's IPs for one app: what has been put in so far, and a small form
+ * that opens in place so the day's work does not need another page.
+ */
+function rotation_ip_cell(array $row, int $count): void
+{
+    $appId = (int) $row['app_id'];
+    ?>
+    <div class="ip-cell">
+        <div class="ip-cell-view">
+            <?php if ($count > 0): ?>
+                <a class="badge badge-blue" href="ip-record.php"><?= $count ?> IP<?= $count === 1 ? '' : 's' ?></a>
+            <?php else: ?>
+                <span class="badge badge-gray">None</span>
+            <?php endif; ?>
+            <button class="btn small ip-add-toggle" type="button">+ IP</button>
+        </div>
+        <form method="post" class="ip-add-form" hidden>
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="add_ip">
+            <input type="hidden" name="app_id" value="<?= $appId ?>">
+            <input type="text" name="ips" placeholder="IP, or several" spellcheck="false" required>
+            <input type="text" name="provider" maxlength="100" placeholder="Provider">
+            <input type="text" name="country" maxlength="60" placeholder="Country">
+            <button class="btn small primary" type="submit">Save</button>
+            <button class="btn small ip-add-cancel" type="button">Cancel</button>
+        </form>
+    </div>
+    <?php
 }
 
 function rotation_done_toggle(string $kind, array $row): void
@@ -190,6 +238,7 @@ page_start($view === 'history' ? 'Rotation History' : 'Rotations');
                                 <tr>
                                     <th>App Icon</th>
                                     <th>App Name</th>
+                                    <th>Today's IPs</th>
                                     <th>Status</th>
                                 </tr>
                                 </thead>
@@ -203,6 +252,7 @@ page_start($view === 'history' ? 'Rotation History' : 'Rotations');
                                                 <span class="cell-sub">#<?= (int) $row['app_id'] ?></span>
                                             </span>
                                         </td>
+                                        <td><?php rotation_ip_cell($row, (int) ($ipCounts[(int) $row['app_id']] ?? 0)); ?></td>
                                         <td><?php rotation_done_toggle('loading', $row); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -287,4 +337,23 @@ page_start($view === 'history' ? 'Rotation History' : 'Rotations');
         <?php endforeach; ?>
     </section>
 <?php endif; ?>
+<script>
+/* The add box stays out of the way until it is asked for. */
+document.querySelectorAll('.ip-add-toggle').forEach((button) => {
+    const cell = button.closest('.ip-cell');
+    const form = cell.querySelector('.ip-add-form');
+    const view = cell.querySelector('.ip-cell-view');
+
+    button.addEventListener('click', () => {
+        view.hidden = true;
+        form.hidden = false;
+        form.querySelector('input[name="ips"]').focus();
+    });
+
+    form.querySelector('.ip-add-cancel').addEventListener('click', () => {
+        form.hidden = true;
+        view.hidden = false;
+    });
+});
+</script>
 <?php page_end(); ?>
