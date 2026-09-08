@@ -143,10 +143,10 @@ function ip_chips_cell(array $ips, array $repeats, string $month, string $by): v
 }
 
 /* One picker, built from the list it belongs to. */
-function ip_option_select(string $kind, array $options, string $chosen = ''): void
+function ip_option_select(string $kind, array $options, string $chosen = '', string $form = ''): void
 {
     ?>
-    <select name="<?= h($kind) ?>" aria-label="<?= h(ucfirst($kind)) ?>">
+    <select name="<?= h($kind) ?>" aria-label="<?= h(ucfirst($kind)) ?>"<?= $form !== '' ? ' form="' . h($form) . '"' : '' ?>>
         <option value=""><?= h(ucfirst($kind)) ?></option>
         <?php foreach ($options as $option): ?>
             <option value="<?= h($option['name']) ?>" <?= $chosen === $option['name'] ? 'selected' : '' ?>>
@@ -459,7 +459,7 @@ page_start('IP Record');
                 <p class="empty block">No IPs on the list yet.</p>
             <?php else: ?>
                 <div class="table-wrap">
-                    <table>
+                    <table class="pool-table">
                         <thead>
                         <tr>
                             <th>Name</th>
@@ -473,33 +473,50 @@ page_start('IP Record');
                         </thead>
                         <tbody>
                         <?php foreach ($pool as $entry): ?>
-                            <?php $used = (int) ($poolUsage[(int) $entry['id']] ?? 0); ?>
-                            <tr>
-                                <td colspan="7" class="pool-row">
-                                    <form method="post" class="pool-edit">
-                                        <?= csrf_field() ?>
-                                        <input type="hidden" name="action" value="update_pool_ip">
-                                        <input type="hidden" name="id" value="<?= (int) $entry['id'] ?>">
-                                        <input type="hidden" name="return_month" value="<?= h($month) ?>">
-                                        <input type="hidden" name="return_by" value="<?= h($by) ?>">
-                                        <input type="text" name="name" value="<?= h($entry['name']) ?>" maxlength="100" aria-label="Name" required>
-                                        <input type="text" name="ip" value="<?= h($entry['ip']) ?>" maxlength="45" aria-label="IP" spellcheck="false" required>
-                                        <?php ip_option_select('provider', $optionLists['provider'], (string) ($entry['provider'] ?? '')); ?>
-                                        <?php ip_option_select('country', $optionLists['country'], (string) ($entry['country'] ?? '')); ?>
-                                        <?php ip_option_select('city', $optionLists['city'], (string) ($entry['city'] ?? '')); ?>
-                                        <span class="badge badge-<?= $used > 0 ? 'blue' : 'gray' ?>"><?= $used ?> used</span>
-                                        <span class="pool-actions">
-                                            <button class="btn small primary" type="submit">Save</button>
-                                            <button class="btn small danger" type="submit" name="action" value="delete_pool_ip"
-                                                    onclick="return confirm('Remove <?= h($entry['name']) ?> from the list?');">Delete</button>
-                                        </span>
-                                    </form>
+                            <?php
+                            $used = (int) ($poolUsage[(int) $entry['id']] ?? 0);
+                            $formId = 'pool-' . (int) $entry['id'];
+                            ?>
+                            <tr class="pool-row">
+                                <td data-label="Name">
+                                    <input type="text" form="<?= $formId ?>" name="name" value="<?= h($entry['name']) ?>" maxlength="100" aria-label="Name" required>
+                                </td>
+                                <td data-label="IP">
+                                    <input type="text" form="<?= $formId ?>" name="ip" value="<?= h($entry['ip']) ?>" maxlength="45" aria-label="IP" spellcheck="false" required>
+                                </td>
+                                <td data-label="Provider">
+                                    <?php ip_option_select('provider', $optionLists['provider'], (string) ($entry['provider'] ?? ''), $formId); ?>
+                                </td>
+                                <td data-label="Country">
+                                    <?php ip_option_select('country', $optionLists['country'], (string) ($entry['country'] ?? ''), $formId); ?>
+                                </td>
+                                <td data-label="City">
+                                    <?php ip_option_select('city', $optionLists['city'], (string) ($entry['city'] ?? ''), $formId); ?>
+                                </td>
+                                <td data-label="Used">
+                                    <span class="badge badge-<?= $used > 0 ? 'blue' : 'gray' ?>"><?= $used ?></span>
+                                </td>
+                                <td class="actions" data-label="Actions">
+                                    <button class="btn small primary" type="submit" form="<?= $formId ?>" name="action" value="update_pool_ip">Save</button>
+                                    <button class="btn small danger" type="submit" form="<?= $formId ?>" name="action" value="delete_pool_ip"
+                                            onclick="return confirm('Remove <?= h($entry['name']) ?> from the list?');">Delete</button>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>
                     </table>
                 </div>
+
+                <?php /* The forms live outside the table; each row's fields point at their own. */ ?>
+                <?php foreach ($pool as $entry): ?>
+                    <?php /* Which button was pressed carries the action, so no hidden one competes with it. */ ?>
+                    <form method="post" id="pool-<?= (int) $entry['id'] ?>" hidden>
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="id" value="<?= (int) $entry['id'] ?>">
+                        <input type="hidden" name="return_month" value="<?= h($month) ?>">
+                        <input type="hidden" name="return_by" value="<?= h($by) ?>">
+                    </form>
+                <?php endforeach; ?>
             <?php endif; ?>
         </div>
     </div>

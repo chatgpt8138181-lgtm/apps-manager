@@ -3204,46 +3204,46 @@ tbody tr.is-picked {
     max-width: 760px;
 }
 
-.pool-row {
-    align-items: center;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+/* One row, one form: the fields sit in the columns their headings name. */
+.pool-table td {
+    vertical-align: middle;
 }
 
-.pool-edit {
-    align-items: center;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.pool-edit input,
-.pool-edit select {
+.pool-table input,
+.pool-table select {
     min-height: 36px;
     padding: 7px 9px;
-    width: auto;
+    width: 100%;
 }
 
-.pool-edit input[name="name"] {
-    flex: 1 1 150px;
-}
-
-.pool-edit input[name="ip"] {
-    flex: 1 1 140px;
+.pool-table input[name="ip"] {
     font-family: var(--font-mono);
     font-size: 13px;
 }
 
-.pool-edit select {
-    flex: 0 1 130px;
+.pool-table td.actions {
+    text-align: right;
+    white-space: nowrap;
 }
 
-.pool-actions {
-    align-items: center;
-    display: flex;
-    gap: 8px;
-    margin-left: auto;
+.pool-table td.actions .btn + .btn {
+    margin-left: 8px;
+}
+
+.pool-table th:nth-child(1),
+.pool-table td:nth-child(1) {
+    width: 20%;
+}
+
+.pool-table th:nth-child(2),
+.pool-table td:nth-child(2) {
+    width: 17%;
+}
+
+.pool-table th:nth-child(6),
+.pool-table td:nth-child(6) {
+    text-align: center;
+    width: 60px;
 }
 
 /* Picking several IPs at once. */
@@ -3269,7 +3269,19 @@ select[name="ip_ids[]"] {
         width: 100%;
     }
 
-    .pool-actions {
+    /* Desktop column widths would squash the fields inside a card. */
+    .pool-table td:nth-child(n) {
+        text-align: left;
+        width: auto;
+    }
+
+    .pool-table input,
+    .pool-table select {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .pool-table td.actions .btn + .btn {
         margin-left: 0;
     }
 
