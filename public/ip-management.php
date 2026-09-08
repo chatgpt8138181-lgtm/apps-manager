@@ -145,6 +145,12 @@ page_start('IP Management');
         rotation and in the record; the address stays here.
     </p>
 
+    <div class="pool-tools">
+        <input type="search" class="pool-search" id="pool-search" placeholder="Search a name, address, provider, country or city"
+               aria-label="Search the IP list" autocomplete="off">
+        <span class="pool-count" id="pool-count"><?= count($pool) ?> shown</span>
+    </div>
+
     <div class="table-wrap">
         <table class="pool-table">
             <thead>
@@ -165,7 +171,17 @@ page_start('IP Management');
                 $used = (int) ($poolUsage[(int) $entry['id']] ?? 0);
                 $formId = 'pool-' . (int) $entry['id'];
                 ?>
-                <tr class="pool-row">
+                <?php
+                $find = mb_strtolower(implode(' ', array_filter([
+                    (string) $entry['name'],
+                    (string) $entry['ip'],
+                    (string) ($entry['provider'] ?? ''),
+                    (string) ($entry['country'] ?? ''),
+                    (string) ($entry['city'] ?? ''),
+                    (string) ($entry['note'] ?? ''),
+                ])));
+                ?>
+                <tr class="pool-row" data-find="<?= h($find) ?>">
                     <?php pool_row_fields($entry, $formId, $optionLists); ?>
                     <td data-label="Used">
                         <span class="badge badge-<?= $used > 0 ? 'blue' : 'gray' ?>"><?= $used ?></span>
@@ -196,6 +212,7 @@ page_start('IP Management');
     <?php if (!$pool): ?>
         <p class="empty block" id="pool-empty">No IPs on the list yet.</p>
     <?php endif; ?>
+    <p class="empty block" id="pool-nomatch" hidden>No IP matches that.</p>
 
     <div class="pool-add-bar">
         <button class="btn primary" type="button" id="pool-new-open">+ Add IP</button>
@@ -213,6 +230,34 @@ page_start('IP Management');
 </section>
 
 <script>
+/* Searching the list, so a long one stays workable. */
+(() => {
+    const search = document.getElementById('pool-search');
+    const count = document.getElementById('pool-count');
+    const none = document.getElementById('pool-nomatch');
+    if (!search) {
+        return;
+    }
+
+    const rows = [...document.querySelectorAll('.pool-table tbody tr.pool-row:not(.pool-new)')];
+
+    search.addEventListener('input', () => {
+        const wanted = search.value.trim().toLowerCase();
+        let shown = 0;
+
+        rows.forEach((row) => {
+            const hit = wanted === '' || (row.dataset.find || '').includes(wanted);
+            row.hidden = !hit;
+            if (hit) {
+                shown += 1;
+            }
+        });
+
+        count.textContent = shown + ' shown';
+        none.hidden = shown > 0 || rows.length === 0;
+    });
+})();
+
 (() => {
     const row = document.getElementById('pool-new-row');
     const open = document.getElementById('pool-new-open');

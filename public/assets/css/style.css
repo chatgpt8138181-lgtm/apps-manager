@@ -3391,6 +3391,32 @@ tbody tr.is-picked {
     width: 172px;
 }
 
+/* Searching a long list, above the table it filters. */
+.pool-tools {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    margin: 4px 0 14px;
+}
+
+.pool-search {
+    flex: 1 1 auto;
+    max-width: 420px;
+    min-height: 38px;
+    padding: 8px 12px;
+}
+
+.pool-count {
+    color: var(--muted);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+/* A row the search has put away stays away, cards included. */
+.table-wrap tr[hidden] {
+    display: none;
+}
+
 /* The new row waits behind this until it is asked for. */
 .pool-add-bar {
     margin-top: 14px;
