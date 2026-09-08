@@ -3,7 +3,7 @@ $root = is_file(__DIR__ . '/../includes/bootstrap.php') ? dirname(__DIR__) : __D
 require_once $root . '/includes/bootstrap.php';
 require_login();
 
-/* Search source for the command palette: apps from both modules. */
+/* Search source for the command palette. */
 
 header('Content-Type: application/json');
 
@@ -20,7 +20,7 @@ $stmt = db()->prepare(
     "SELECT pa.id, pa.app_name AS name, pa.package_name, pa.stage AS status, c.name AS console_name
      FROM apps pa
      LEFT JOIN consoles c ON c.id = pa.console_id
-     WHERE pa.stage <> 'none' AND (pa.app_name LIKE ? OR pa.package_name LIKE ?)
+     WHERE pa.app_name LIKE ? OR pa.package_name LIKE ?
      ORDER BY pa.created_at DESC, pa.id DESC
      LIMIT 8"
 );
@@ -30,30 +30,11 @@ foreach ($stmt->fetchAll() as $row) {
     $status = (string) $row['status'];
 
     $results[] = [
-        'group' => 'Publishing',
+        'group' => 'Apps',
         'title' => (string) $row['name'],
         'sub' => trim(((string) ($row['package_name'] ?? '')) . ' · ' . ucfirst($status)
             . (!empty($row['console_name']) ? ' · ' . $row['console_name'] : ''), ' ·'),
         'url' => 'app.php?id=' . (int) $row['id'],
-    ];
-}
-
-$stmt = db()->prepare(
-    "SELECT a.id, a.app_name, c.name AS category_name
-     FROM apps a
-     LEFT JOIN consoles c ON c.id = a.console_id
-     WHERE a.stage = 'none' AND a.app_name LIKE ?
-     ORDER BY a.id DESC
-     LIMIT 8"
-);
-$stmt->execute([$like]);
-
-foreach ($stmt->fetchAll() as $row) {
-    $results[] = [
-        'group' => 'Loading',
-        'title' => (string) $row['app_name'],
-        'sub' => '#' . (int) $row['id'] . (!empty($row['category_name']) ? ' · ' . $row['category_name'] : ''),
-        'url' => 'search.php?q=' . rawurlencode((string) $row['app_name']),
     ];
 }
 

@@ -303,61 +303,6 @@ function sorted_apps(?int $categoryId = null): array
 }
 
 
-function search_apps(string $query, int $categoryId): array
-{
-    $query = trim($query);
-    $all = sorted_apps($categoryId > 0 ? $categoryId : null);
-
-    if ($query === '') {
-        return $all;
-    }
-
-    /* An id may be typed with the # that the lists show, and that # means
-       exactly that app; a bare number matches the way a name does. */
-    $exactId = str_starts_with($query, '#');
-    $idNeedle = ltrim($query, '#');
-    $isNumeric = $idNeedle !== '' && ctype_digit($idNeedle);
-    $needle = text_lower($query);
-
-    return array_values(array_filter($all, static function (array $app) use ($isNumeric, $exactId, $idNeedle, $needle): bool {
-        if ($isNumeric) {
-            $id = (string) $app['id'];
-            if ($exactId ? $id === $idNeedle : text_contains($id, $idNeedle)) {
-                return true;
-            }
-        }
-
-        return text_contains(text_lower($app['app_name']), $needle);
-    }));
-}
-
-function update_app(int $appId, array $data): void
-{
-    $name = trim((string) ($data['app_name'] ?? ''));
-    if ($appId <= 0 || $name === '' || text_length($name) > 200) {
-        throw new RuntimeException('Invalid app update.');
-    }
-
-    if (!isset($data['loading_status'])) {
-        $current = db()->prepare('SELECT loading_status FROM apps WHERE id = ? LIMIT 1');
-        $current->execute([$appId]);
-        $row = $current->fetch();
-        if (!$row) {
-            throw new RuntimeException('App was not found.');
-        }
-        $data['loading_status'] = $row['loading_status'];
-    }
-
-    $stmt = db()->prepare(
-        'UPDATE apps SET app_name = ?, loading_status = ?, updated_at = NOW() WHERE id = ?'
-    );
-    $stmt->execute([
-        $name,
-        normalize_status((string) $data['loading_status']),
-        $appId,
-    ]);
-}
-
 function bulk_update_category_status(int $categoryId, string $field, string $value): void
 {
     if ($categoryId <= 0) {
@@ -393,23 +338,6 @@ function bulk_set_loading_status(array $appIds, string $status): int
     $stmt->execute(array_merge([normalize_status($status)], $appIds));
 
     return count($appIds);
-}
-
-function delete_app(int $appId): void
-{
-    $stmt = db()->prepare('SELECT icon_path FROM apps WHERE id = ?');
-    $stmt->execute([$appId]);
-    $app = $stmt->fetch();
-
-    $delete = db()->prepare('DELETE FROM apps WHERE id = ?');
-    $delete->execute([$appId]);
-
-    if ($app && !empty($app['icon_path'])) {
-        $path = public_path($app['icon_path']);
-        if (is_file($path)) {
-            unlink($path);
-        }
-    }
 }
 
 function app_icon_url(?string $path): string

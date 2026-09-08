@@ -53,7 +53,6 @@ function nav_icon(string $key): string
         'active-apps.php' => '<circle cx="12" cy="12" r="9"/><path d="m10 9 5 3-5 3z"/>',
         'rotations.php' => '<path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/>',
         'add-app.php' => '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/>',
-        'search.php' => '<circle cx="11" cy="11" r="6"/><path d="m20 20-3.5-3.5"/>',
         'categories.php' => '<path d="M3 12V5a2 2 0 0 1 2-2h7l9 9-9 9z"/><path d="M7.5 7.5h.01"/>',
         'activity.php' => '<path d="M3 12h4l3 8 4-16 3 8h4"/>',
         'admins.php' => '<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 11a3 3 0 1 0 0-6"/><path d="M18 20a6 6 0 0 0-3-5.2"/>',
@@ -163,7 +162,6 @@ function page_start(string $title): void
         'Rotations' => [
             'rotations.php' => 'Today',
             'dashboard.php' => 'Loading Board',
-            'search.php' => 'Search/Edit',
             'ip-record.php' => 'IP Record',
         ],
         'Setup' => [
