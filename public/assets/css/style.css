@@ -3272,4 +3272,13 @@ select[name="ip_ids[]"] {
     .pool-actions {
         margin-left: 0;
     }
+
+    /* An open picker takes the whole card row, not the narrow value column. */
+    .table-wrap td.col-ips {
+        flex-wrap: wrap;
+    }
+
+    .table-wrap td.col-ips .ip-cell:has(.ip-add-form:not([hidden])) {
+        flex: 1 1 100%;
+    }
 }

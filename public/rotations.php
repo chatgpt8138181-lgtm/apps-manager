@@ -269,7 +269,7 @@ page_start($view === 'history' ? 'Rotation History' : 'Rotations');
                                                 <span class="cell-sub">#<?= (int) $row['app_id'] ?></span>
                                             </span>
                                         </td>
-                                        <td><?php rotation_ip_cell($row, (int) ($ipCounts[(int) $row['app_id']] ?? 0), $ipPool); ?></td>
+                                        <td class="col-ips"><?php rotation_ip_cell($row, (int) ($ipCounts[(int) $row['app_id']] ?? 0), $ipPool); ?></td>
                                         <td><?php rotation_done_toggle('loading', $row); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
