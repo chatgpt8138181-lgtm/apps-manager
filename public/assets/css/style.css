@@ -477,8 +477,20 @@ table {
 
 /* A badge is as wide as its word, not as wide as its column. */
 .admin-table .col-role .badge {
-    align-self: flex-start;
+    justify-self: start;
     margin-bottom: 2px;
+}
+
+.admin-actions-view,
+.admin-actions-view[hidden] {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+}
+
+.admin-actions-view[hidden],
+.inline-reset-form[hidden] {
+    display: none;
 }
 
 .edit-table {

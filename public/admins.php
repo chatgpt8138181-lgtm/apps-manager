@@ -201,19 +201,23 @@ page_start('Admins');
                     <td class="col-when"><?= admin_when($admin['created_at'] ?? null) ?></td>
                     <td class="actions admin-actions">
                         <?php if ($adminId !== $currentAdminId): ?>
-                            <form method="post" class="inline-reset-form">
+                            <div class="admin-actions-view">
+                                <button class="btn small pw-toggle" type="button">Reset password</button>
+                                <form method="post" onsubmit="return confirm('Delete this account?');">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="action" value="delete_admin">
+                                    <input type="hidden" name="admin_id" value="<?= $adminId ?>">
+                                    <button class="btn danger small" type="submit">Delete</button>
+                                </form>
+                            </div>
+                            <form method="post" class="inline-reset-form" hidden>
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="action" value="reset_password">
                                 <input type="hidden" name="admin_id" value="<?= $adminId ?>">
                                 <input type="password" name="new_password" placeholder="New password" autocomplete="new-password" required>
                                 <input type="password" name="new_password_confirm" placeholder="Confirm" autocomplete="new-password" required>
-                                <button class="btn small" type="submit">Reset</button>
-                            </form>
-                            <form method="post" onsubmit="return confirm('Delete this account?');">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="action" value="delete_admin">
-                                <input type="hidden" name="admin_id" value="<?= $adminId ?>">
-                                <button class="btn danger small" type="submit">Delete</button>
+                                <button class="btn small primary" type="submit">Save</button>
+                                <button class="btn small pw-cancel" type="button">Cancel</button>
                             </form>
                         <?php else: ?>
                             <span class="hint">Use Change My Password above. This account cannot delete itself.</span>
@@ -226,6 +230,24 @@ page_start('Admins');
     </div>
 </section>
 <script>
+/* The password fields stay out of the row until they are asked for. */
+document.querySelectorAll('.pw-toggle').forEach((button) => {
+    const cell = button.closest('.admin-actions');
+    const form = cell.querySelector('.inline-reset-form');
+    const view = cell.querySelector('.admin-actions-view');
+
+    button.addEventListener('click', () => {
+        view.hidden = true;
+        form.hidden = false;
+        form.querySelector('input[type="password"]').focus();
+    });
+
+    form.querySelector('.pw-cancel').addEventListener('click', () => {
+        form.hidden = true;
+        view.hidden = false;
+    });
+});
+
 /* The note under the picker says what the chosen role means. */
 (() => {
     const notes = <?= json_encode($roleNotes, JSON_UNESCAPED_UNICODE) ?>;
